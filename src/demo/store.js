@@ -69,10 +69,10 @@ function seed() {
     savedWorkerIds: [],
     // the logged-in worker's own profile (the worker dashboard edits this)
     myProfile: {
-      skills: 'Plumbing, Electrical',
-      bio: 'Add a short bio so requesters know what you do best.',
-      rating: 4.7,
-      tier: 'Peer-Verified',
+      skills: 'Plumbing, Pipe fitting',
+      bio: 'Experienced plumber serving Kigali. Available weekdays for installations and repairs.',
+      rating: 0,
+      tier: 'Unverified',
     },
     seq: { task: 1, booking: 1 },
   };

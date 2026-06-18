@@ -17,7 +17,10 @@ export default function Layout({ children }) {
   return (
     <div>
       <header className="topbar">
-        <Link to="/" className="brand">TaPa Trust</Link>
+        <Link to="/" className="brand">
+          <span className="brand-mark">T</span>
+          TaPa Trust
+        </Link>
         {user && (
           <div className="topbar-right">
             <span className="who">
