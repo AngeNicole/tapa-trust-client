@@ -1,5 +1,15 @@
 // Small presentational helpers shared by the demo dashboards.
 
+// Format an amount in Rwandan francs, e.g. 25000 -> "RWF 25,000".
+export function rwf(n) {
+  return 'RWF ' + Number(n || 0).toLocaleString('en-US');
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export function monthLabel(iso) {
+  return MONTHS[Number(iso.slice(5, 7)) - 1] || '';
+}
+
 const STATUS = {
   pending: { cls: 'badge--neutral', label: 'Pending' },
   accepted: { cls: 'badge--info', label: 'Accepted' },

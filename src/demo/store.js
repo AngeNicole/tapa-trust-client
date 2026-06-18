@@ -14,7 +14,7 @@
 
 import { useEffect, useState } from 'react';
 
-const KEY = 'tapa_demo_state_v1';
+const KEY = 'tapa_demo_state_v2';
 const listeners = new Set();
 
 const SKILL_CATEGORIES = [
@@ -64,17 +64,65 @@ function seed() {
         tier: 'Unverified',
       },
     ],
-    tasks: [],
-    bookings: [],
-    savedWorkerIds: [],
+    tasks: [
+      { task_id: 1, title: 'Fix a leaking kitchen tap', category_id: 1, location: 'Kimironko', status: 'completed', requesterName: 'Patrick K.', requesterUserId: null },
+      { task_id: 2, title: 'Mount a 55-inch TV', category_id: 6, location: 'Kacyiru', status: 'completed', requesterName: 'Diane I.', requesterUserId: null },
+      { task_id: 3, title: 'Set up home Wi-Fi & smart TV', category_id: 7, location: 'Nyarutarama', status: 'completed', requesterName: 'You', requesterUserId: null },
+      { task_id: 4, title: 'Deep clean a 2-bedroom flat', category_id: 2, location: 'Remera', status: 'assigned', requesterName: 'You', requesterUserId: null },
+      { task_id: 5, title: 'Replace a broken light switch', category_id: 4, location: 'Kicukiro', status: 'assigned', requesterName: 'You', requesterUserId: null },
+      { task_id: 6, title: 'Assemble a flat-pack wardrobe', category_id: 5, location: 'Gisozi', status: 'open', requesterName: 'You', requesterUserId: null },
+    ],
+    bookings: [
+      mkBooking(1, 1, 'Fix a leaking kitchen tap', 1, 'Jean Bosco', 'Patrick K.', 'completed', 12000, { rating: 5, comment: 'On time and left everything tidy.' }),
+      mkBooking(2, 2, 'Mount a 55-inch TV', 1, 'Jean Bosco', 'Diane I.', 'completed', 15000, { rating: 4, comment: 'Solid work, will rebook.' }),
+      mkBooking(3, 3, 'Set up home Wi-Fi & smart TV', 3, 'Eric Niyonzima', 'You', 'completed', 20000, { rating: 5, comment: 'Very knowledgeable, sorted my Wi-Fi fast.' }),
+      mkBooking(4, 4, 'Deep clean a 2-bedroom flat', 2, 'Aline Uwase', 'You', 'in_progress', 22000, null),
+      mkBooking(5, 5, 'Replace a broken light switch', 3, 'Eric Niyonzima', 'You', 'pending', 9000, null),
+    ],
+    savedWorkerIds: [1, 3],
     // the logged-in worker's own profile (the worker dashboard edits this)
     myProfile: {
       skills: 'Plumbing, Pipe fitting',
       bio: 'Experienced plumber serving Kigali. Available weekdays for installations and repairs.',
-      rating: 0,
-      tier: 'Unverified',
+      rating: 4.7,
+      tier: 'Peer-Verified',
     },
-    seq: { task: 1, booking: 1 },
+    // worker wallet / invoices (RWF)
+    earnings: [
+      { id: 'INV-1018', date: '2026-01-12', task: 'Bathroom sink install', amount: 18000, status: 'released' },
+      { id: 'INV-1024', date: '2026-02-03', task: 'Kitchen tap repair', amount: 12000, status: 'released' },
+      { id: 'INV-1031', date: '2026-02-21', task: 'Radiator bleed & flush', amount: 9000, status: 'released' },
+      { id: 'INV-1042', date: '2026-03-09', task: 'Pipe replacement', amount: 25000, status: 'released' },
+      { id: 'INV-1055', date: '2026-04-02', task: 'Shower fitting', amount: 30000, status: 'released' },
+      { id: 'INV-1067', date: '2026-04-27', task: 'Mount 55-inch TV', amount: 15000, status: 'released' },
+      { id: 'INV-1079', date: '2026-05-15', task: 'Leak diagnosis', amount: 8000, status: 'released' },
+      { id: 'INV-1088', date: '2026-06-04', task: 'Wi-Fi & smart TV setup', amount: 20000, status: 'released' },
+      { id: 'INV-1093', date: '2026-06-16', task: 'Deep clean (in progress)', amount: 22000, status: 'pending' },
+    ],
+    seq: { task: 7, booking: 6, invoice: 1100 },
+  };
+}
+
+// Build a seeded booking with its lifecycle flags derived from a status.
+function mkBooking(booking_id, task_id, taskTitle, worker_id, workerName, requesterName, status, amount, review) {
+  const done = status === 'completed';
+  const started = done || status === 'in_progress';
+  return {
+    booking_id,
+    task_id,
+    taskTitle,
+    worker_id,
+    workerName,
+    requesterName,
+    requesterUserId: null,
+    status,
+    amount,
+    checkedIn: started || status === 'accepted',
+    startConfirmed: started,
+    checkedOut: done,
+    endConfirmed: done,
+    payment: done ? 'released' : started ? 'confirmed' : 'pending',
+    review: review || null,
   };
 }
 
@@ -149,6 +197,7 @@ export function selectWorker({ taskId, workerId }) {
       requesterName: task.requesterName,
       requesterUserId: task.requesterUserId ?? null,
       status: 'pending', // pending -> accepted -> in_progress -> completed
+      amount: 15000,
       checkedIn: false,
       startConfirmed: false,
       checkedOut: false,
@@ -186,6 +235,17 @@ export function confirmCompletion(id) {
       b.payment = 'released';
       const t = s.tasks.find((x) => x.task_id === b.task_id);
       if (t) t.status = 'completed';
+      // record the worker's earning (the wallet/invoices update live)
+      if (!s.earnings) s.earnings = [];
+      if (!s.seq.invoice) s.seq.invoice = 1100;
+      s.seq.invoice += 1;
+      s.earnings.unshift({
+        id: `INV-${s.seq.invoice}`,
+        date: new Date().toISOString().slice(0, 10),
+        task: b.taskTitle,
+        amount: b.amount || 15000,
+        status: 'released',
+      });
     }
     return s;
   });

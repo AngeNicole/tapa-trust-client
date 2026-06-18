@@ -1285,4 +1285,51 @@ body {
   .history-empty svg {
     @apply h-7 w-7 text-text-soft-400;
   }
+
+  /* ---- wallet + stats + charts + tables ---- */
+  .wallet {
+    @apply rounded-2xl p-5 text-static-white;
+    background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark));
+  }
+  .wallet-label {
+    @apply text-label-sm;
+    opacity: 0.85;
+  }
+  .wallet-amount {
+    @apply mt-1 text-title-h3 font-semibold;
+  }
+  .wallet-sub {
+    @apply mt-4 flex flex-wrap gap-x-8 gap-y-1 text-label-sm;
+    opacity: 0.92;
+  }
+  .stat-num {
+    @apply text-title-h5 font-semibold text-text-strong-950;
+  }
+
+  .chart {
+    @apply w-full;
+  }
+  .chart-axis { stroke: var(--color-stroke-soft-200); }
+  .chart-bar  { fill: var(--color-primary-base); }
+  .chart-val  { fill: var(--color-text-sub-600); font-size: 9px; font-weight: 600; }
+  .chart-lbl  { fill: var(--color-text-soft-400); font-size: 9px; }
+
+  .donut { @apply w-36; }
+  .donut-track { fill: none; stroke: var(--color-bg-soft-200); stroke-width: 16; }
+  .donut-rel { fill: none; stroke: var(--color-primary-base); stroke-width: 16; stroke-linecap: round; }
+  .donut-pct { fill: var(--color-text-strong-950); font-size: 22px; font-weight: 700; }
+  .donut-cap { fill: var(--color-text-soft-400); font-size: 10px; }
+
+  .tbl {
+    @apply w-full border-collapse text-paragraph-sm;
+  }
+  .tbl th {
+    @apply border-b border-stroke-soft-200 px-3 py-2 text-left text-label-xs font-semibold uppercase text-text-soft-400;
+  }
+  .tbl td {
+    @apply border-b border-stroke-soft-200 px-3 py-2.5 text-text-strong-950;
+  }
+  .tbl tr:last-child td {
+    @apply border-0;
+  }
 }
