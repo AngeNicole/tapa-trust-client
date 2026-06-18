@@ -2,6 +2,18 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
 
+// A strong password: at least 8 characters with an uppercase letter, a
+// lowercase letter, a number, and a special character.
+function isStrongPassword(pw) {
+  return (
+    pw.length >= 8 &&
+    /[a-z]/.test(pw) &&
+    /[A-Z]/.test(pw) &&
+    /[0-9]/.test(pw) &&
+    /[^A-Za-z0-9]/.test(pw)
+  );
+}
+
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -24,7 +36,9 @@ export default function Register() {
   function validate() {
     if (!form.name.trim()) return 'Please enter your name.';
     if (!form.email.trim()) return 'Please enter your email.';
-    if (form.password.length < 6) return 'Password must be at least 6 characters.';
+    if (!isStrongPassword(form.password)) {
+      return 'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character.';
+    }
     if (!['requester', 'worker'].includes(form.role)) return 'Please choose a role.';
     return '';
   }
@@ -110,6 +124,10 @@ export default function Register() {
             value={form.password}
             onChange={(e) => update('password', e.target.value)}
           />
+          <span className="role-hint">
+            At least 8 characters, with an uppercase letter, a lowercase letter, a number, and a
+            special character.
+          </span>
         </label>
 
         {error && <div className="form-error">{error}</div>}
