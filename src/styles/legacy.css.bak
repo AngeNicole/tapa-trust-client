@@ -1,0 +1,208 @@
+:root {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  color: #1a1a1a;
+  background: #f5f6f8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem;
+}
+
+h1 {
+  margin: 0 0 0.25rem;
+}
+
+.subtitle {
+  color: #555;
+  margin-top: 0;
+}
+
+.health {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  margin: 1rem 0;
+}
+
+.health--checking {
+  background: #eef0f3;
+  color: #555;
+}
+
+.health--connected {
+  background: #e3f6e8;
+  color: #1b7f3b;
+}
+
+.health--error {
+  background: #fdecea;
+  color: #b3261e;
+}
+
+.portals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.portal-link {
+  display: inline-block;
+  padding: 0.6rem 1rem;
+  background: #fff;
+  border: 1px solid #d8dbe0;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #1a1a1a;
+}
+
+.portal-link:hover {
+  border-color: #1b7f3b;
+}
+
+.note {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* --- top bar --- */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1.25rem;
+  background: #fff;
+  border-bottom: 1px solid #e2e5ea;
+}
+
+.brand {
+  font-weight: 700;
+  text-decoration: none;
+  color: #1a1a1a;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.who {
+  color: #444;
+  font-size: 0.95rem;
+}
+
+.role-tag {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.1rem 0.5rem;
+  background: #eef0f3;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  color: #555;
+}
+
+/* --- forms --- */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 420px;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.form input {
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #d8dbe0;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.form input:focus {
+  outline: none;
+  border-color: #1b7f3b;
+}
+
+.role-picker {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.role-option {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #d8dbe0;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  text-align: left;
+}
+
+.role-option--active {
+  border-color: #1b7f3b;
+  background: #e3f6e8;
+}
+
+.role-hint {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.btn-primary {
+  padding: 0.7rem 1rem;
+  background: #1b7f3b;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-secondary {
+  padding: 0.45rem 0.85rem;
+  background: #fff;
+  color: #1a1a1a;
+  border: 1px solid #d8dbe0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.form-error {
+  padding: 0.6rem 0.8rem;
+  background: #fdecea;
+  color: #b3261e;
+  border-radius: 8px;
+  font-size: 0.92rem;
+}
