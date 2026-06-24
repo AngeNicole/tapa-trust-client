@@ -1365,13 +1365,11 @@ body {
      Modern app shell (floating card on a soft gray page)
      ==================================================================== */
   .page-bg {
-    @apply min-h-screen w-full p-3 sm:p-5;
-    background: #d4d8e1;
+    @apply min-h-screen w-full bg-bg-white-0;
   }
   .app-shell {
-    @apply mx-auto flex max-w-[1500px] overflow-hidden rounded-3xl bg-bg-white-0;
-    height: calc(100vh - 2.5rem);
-    box-shadow: 0 24px 50px -24px rgba(20, 24, 40, 0.28);
+    @apply flex w-full overflow-hidden bg-bg-white-0;
+    height: 100vh;
   }
 
   /* sidebar */
@@ -1402,7 +1400,7 @@ body {
     @apply flex items-center gap-3 border-b border-stroke-soft-200 px-5 py-3.5 sm:gap-4 sm:px-6;
   }
   .search {
-    @apply flex flex-1 items-center gap-2 rounded-full border border-stroke-soft-200 bg-bg-weak-50 px-4 py-2.5 text-text-soft-400;
+    @apply flex flex-1 items-center gap-2 rounded-full border border-stroke-soft-200 bg-bg-white-0 px-4 py-2.5 text-text-soft-400;
   }
   .search svg { @apply h-4 w-4 shrink-0; }
   .search input {
@@ -1445,7 +1443,7 @@ body {
 
   /* right-rail stat panel */
   .rail-card {
-    @apply rounded-3xl border border-stroke-soft-200 bg-bg-weak-50 p-5;
+    @apply rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-5;
   }
   .rail-greet { @apply flex flex-col items-center text-center; }
   .rail-avatar {
@@ -1453,5 +1451,14 @@ body {
     background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark));
   }
   .rail-kpis { @apply mt-4 grid grid-cols-2 gap-3; }
-  .rail-kpi { @apply rounded-2xl bg-bg-white-0 p-3 text-center; }
+  .rail-kpi { @apply rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-3 text-center; }
+
+  /* recent activity feed */
+  .activity { @apply mt-2 flex flex-col gap-3; }
+  .activity-row { @apply flex items-start gap-2.5; }
+  .activity-dot { @apply mt-1.5 h-2 w-2 shrink-0 rounded-full; }
+  .activity-dot--pending { @apply bg-bg-sub-300; }
+  .activity-dot--accepted { @apply bg-blue-500; }
+  .activity-dot--in_progress { @apply bg-yellow-500; }
+  .activity-dot--completed { @apply bg-green-500; }
 }
