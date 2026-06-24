@@ -1265,10 +1265,13 @@ body {
     @apply flex w-full cursor-pointer items-center gap-2.5 rounded-xl px-3 py-2.5 text-label-sm font-medium text-text-sub-600 transition-colors hover:bg-bg-weak-50;
   }
   .nav-item svg {
-    @apply h-4 w-4 shrink-0;
+    @apply h-5 w-5 shrink-0;
   }
   .nav-item--active {
-    @apply bg-primary-lighter text-primary-dark hover:bg-primary-lighter;
+    @apply bg-primary-base text-static-white hover:bg-primary-base;
+  }
+  .nav-item--active .nav-count {
+    @apply bg-bg-white-0 text-primary-dark;
   }
   .nav-item--soon {
     @apply cursor-default text-text-disabled-300 hover:bg-transparent;
@@ -1404,7 +1407,7 @@ body {
     @apply flex h-9 w-9 items-center justify-center rounded-xl text-static-white;
     background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark));
   }
-  .shell-logo svg { @apply h-5 w-5; }
+  .shell-logo svg { @apply h-6 w-6; }
   .shell-brand-name { @apply text-label-lg font-bold text-text-strong-950; }
   .side-label {
     @apply mb-1 mt-4 px-3 text-subheading-2xs font-semibold uppercase text-text-soft-400;
@@ -1423,14 +1426,14 @@ body {
   .search {
     @apply flex flex-1 items-center gap-2 rounded-full border border-stroke-soft-200 bg-bg-white-0 px-4 py-2.5 text-text-soft-400;
   }
-  .search svg { @apply h-4 w-4 shrink-0; }
+  .search svg { @apply h-5 w-5 shrink-0; }
   .search input {
     @apply w-full border-0 bg-transparent p-0 text-paragraph-sm text-text-strong-950 outline-none;
   }
   .icon-btn {
     @apply flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full border border-stroke-soft-200 bg-bg-white-0 text-text-sub-600 transition-colors hover:bg-bg-weak-50;
   }
-  .icon-btn svg { @apply h-4 w-4; }
+  .icon-btn svg { @apply h-5 w-5; }
   .top-divider { @apply h-7 w-px shrink-0 bg-stroke-soft-200; }
   .top-user { @apply flex shrink-0 items-center gap-2.5; }
   .avatar-sm {
