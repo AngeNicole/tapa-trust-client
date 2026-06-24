@@ -20,6 +20,7 @@ import { StatusBadge, PaymentBadge, TierBadge, Stars, Loading, ErrorNote } from 
 import { DashShell } from '../../components/DashShell.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
+import { MapCard } from '../../components/MapCard.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../demo/icons.jsx';
 
@@ -42,7 +43,8 @@ export default function RequesterDashboard() {
 
   const items = [
     { key: 'profile', label: 'Profile', icon: Icons.user },
-    { key: 'hire', label: 'Post & hire', icon: Icons.plus },
+    { key: 'post', label: 'Post a task', icon: Icons.plus },
+    { key: 'hire', label: 'Find workers', icon: Icons.briefcase },
     { key: 'bookings', label: 'Bookings', icon: Icons.calendar, count: active.length },
     { key: 'history', label: 'History', icon: Icons.clock, count: history.length },
     { key: 'saved', label: 'Saved workers', icon: Icons.bookmark, count: (saved.data || []).length },
@@ -62,12 +64,13 @@ export default function RequesterDashboard() {
               kicker="TaPa Trust"
               title="Find trusted help, fast."
               ctaLabel="Post a task"
-              onCta={() => setTab('hire')}
+              onCta={() => setTab('post')}
             />
           </div>
           <ProfileView user={user} bookings={all} saved={saved.data || []} />
         </>
       )}
+      {tab === 'post' && <PostView onChanged={() => bookings.reload()} />}
       {tab === 'hire' && <HireView onChanged={() => { bookings.reload(); saved.reload(); }} />}
       {tab === 'bookings' && <BookingsView state={bookings} bookings={active} />}
       {tab === 'history' && <HistoryView state={bookings} bookings={history} />}
@@ -107,8 +110,31 @@ function ProfileView({ user, bookings, saved }) {
   );
 }
 
-function HireView({ onChanged }) {
+function PostView({ onChanged }) {
   const categories = useAsync(() => getCategories(), []);
+  const [err, setErr] = useState('');
+  const [loc, setLoc] = useState('');
+  return (
+    <>
+      <h1>Post a task</h1>
+      <p className="subtitle">Describe the job and where it is — then head to Find workers to assign someone.</p>
+      <ErrorNote message={err} />
+      <div className="grid2" style={{ marginTop: '0.75rem' }}>
+        <PostTask
+          categories={categories.data || []}
+          onLocationChange={setLoc}
+          onPost={async (body) => {
+            setErr('');
+            try { await createTask(body); setLoc(''); onChanged?.(); } catch (e) { setErr(e.message); throw e; }
+          }}
+        />
+        <MapCard location={loc} title="Task location" />
+      </div>
+    </>
+  );
+}
+
+function HireView({ onChanged }) {
   const workers = useAsync(() => getWorkers(), []);
   const tasks = useAsync(() => getMyTasks(), []);
   const saved = useAsync(() => getSavedWorkers(), []);
@@ -122,19 +148,20 @@ function HireView({ onChanged }) {
 
   return (
     <>
-      <h1>Post &amp; hire</h1>
-      <p className="subtitle">Post a task, then assign a worker to it.</p>
+      <h1>Find workers</h1>
+      <p className="subtitle">Browse trusted workers and assign one to an open task.</p>
       <ErrorNote message={err} />
 
-      <PostTask
-        categories={categories.data || []}
-        onPost={async (body) => { await guard(createTask(body)); tasks.reload(); }}
-      />
+      <div style={{ marginTop: '0.75rem', marginBottom: '0.5rem' }}>
+        <MapCard title="Workers in your area" location="Kigali, Rwanda" height={200} />
+      </div>
 
-      <h2 className="section-title">Find a worker</h2>
+      <h2 className="section-title">Available workers</h2>
       {workers.loading && <Loading />}
       {workers.error && <ErrorNote message={workers.error} />}
-      {!workers.loading && openTasks.length === 0 && <p className="meta">Post a task above, then assign one of these workers to it.</p>}
+      {!workers.loading && openTasks.length === 0 && (
+        <p className="meta">Post a task first, then assign one of these workers to it.</p>
+      )}
       <div className="grid2">
         {(workers.data || []).map((w) => (
           <WorkerCard
@@ -151,7 +178,7 @@ function HireView({ onChanged }) {
   );
 }
 
-function PostTask({ categories, onPost }) {
+function PostTask({ categories, onPost, onLocationChange }) {
   const [form, setForm] = useState({ title: '', category_id: '', description: '', location: '' });
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   async function submit(e) {
@@ -162,26 +189,27 @@ function PostTask({ categories, onPost }) {
     try { await onPost(body); setForm({ title: '', category_id: '', description: '', location: '' }); } catch { /* error shown by parent */ }
   }
   return (
-    <>
-      <h2 className="section-title">Post a task</h2>
-      <div className="card">
-        <form className="form" onSubmit={submit} style={{ maxWidth: '100%' }}>
-          <label>Title
-            <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Fix a leaking kitchen tap" />
-          </label>
-          <label>Category
-            <select className="select" value={form.category_id} onChange={(e) => set('category_id', e.target.value)}>
-              <option value="">Choose a category…</option>
-              {categories.map((c) => <option key={c.category_id} value={c.category_id}>{c.name}</option>)}
-            </select>
-          </label>
-          <label>Location (optional)
-            <input value={form.location} onChange={(e) => set('location', e.target.value)} placeholder="e.g. Kimironko" />
-          </label>
-          <button className="btn-primary" type="submit">Post task</button>
-        </form>
-      </div>
-    </>
+    <div className="card">
+      <form className="form" onSubmit={submit} style={{ maxWidth: '100%' }}>
+        <label>Title
+          <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Fix a leaking kitchen tap" />
+        </label>
+        <label>Category
+          <select className="select" value={form.category_id} onChange={(e) => set('category_id', e.target.value)}>
+            <option value="">Choose a category…</option>
+            {categories.map((c) => <option key={c.category_id} value={c.category_id}>{c.name}</option>)}
+          </select>
+        </label>
+        <label>Location (optional)
+          <input
+            value={form.location}
+            onChange={(e) => { set('location', e.target.value); onLocationChange?.(e.target.value); }}
+            placeholder="e.g. Kimironko"
+          />
+        </label>
+        <button className="btn-primary" type="submit">Post task</button>
+      </form>
+    </div>
   );
 }
 

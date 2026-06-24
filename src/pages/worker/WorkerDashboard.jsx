@@ -192,16 +192,30 @@ function TaskHistory({ workerId }) {
 function BookingsView({ state }) {
   const { data, loading, error, reload } = state;
   const [err, setErr] = useState('');
+  const [view, setView] = useState('active');
   const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
-  const bookings = data || [];
+  const all = data || [];
+  const activeJobs = all.filter((b) => b.status !== 'completed');
+  const doneJobs = all.filter((b) => b.status === 'completed');
+  const bookings = view === 'active' ? activeJobs : doneJobs;
 
   return (
     <>
       <h1>My bookings</h1>
       <p className="subtitle">Accept jobs and record check-in / check-out.</p>
       <ErrorNote message={error || err} />
+      <div className="subtabs">
+        <button type="button" className={`subtab ${view === 'active' ? 'subtab--active' : ''}`} onClick={() => setView('active')}>
+          Active ({activeJobs.length})
+        </button>
+        <button type="button" className={`subtab ${view === 'done' ? 'subtab--active' : ''}`} onClick={() => setView('done')}>
+          Done ({doneJobs.length})
+        </button>
+      </div>
       {loading ? <Loading /> : bookings.length === 0 ? (
-        <div className="empty" style={{ marginTop: '0.75rem' }}>No jobs yet. When a requester selects you, it shows up here.</div>
+        <div className="empty" style={{ marginTop: '0.75rem' }}>
+          {view === 'active' ? 'No active jobs. New jobs from requesters show up here.' : 'No completed jobs yet.'}
+        </div>
       ) : bookings.map((b) => (
         <div className="card" key={b.booking_id}>
           <div className="card-head">
