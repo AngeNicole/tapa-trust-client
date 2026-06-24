@@ -15,9 +15,10 @@ import {
   unsaveWorker,
   rebookWorker,
 } from '../../api/client.js';
-import { useAsync } from '../../api/hooks.js';
+import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, TierBadge, Stars, Loading, ErrorNote } from '../../demo/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../demo/icons.jsx';
 
 function initials(name = '') {
@@ -28,7 +29,9 @@ function initials(name = '') {
 export default function RequesterDashboard() {
   const { user } = useAuth();
   const [tab, setTab] = useState('profile');
-  const bookings = useAsync(() => getBookings(), []);
+  const notify = useToast();
+  const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
+  useBookingAlerts(bookings.data, 'requester', notify);
   const saved = useAsync(() => getSavedWorkers(), []);
 
   const all = bookings.data || [];

@@ -9,9 +9,10 @@ import {
   checkinBooking,
   checkoutBooking,
 } from '../../api/client.js';
-import { useAsync } from '../../api/hooks.js';
+import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, Loading, ErrorNote, rwf, monthLabel } from '../../demo/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../demo/icons.jsx';
 import { BarChart, Donut } from '../../demo/Charts.jsx';
 
@@ -25,7 +26,9 @@ const simAmount = (id) => 8000 + ((Number(id) * 37) % 6) * 3000;
 export default function WorkerDashboard() {
   const { user } = useAuth();
   const [tab, setTab] = useState('profile');
-  const bookings = useAsync(() => getBookings(), []);
+  const notify = useToast();
+  const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
+  useBookingAlerts(bookings.data, 'worker', notify);
   const count = bookings.data?.length || 0;
 
   const items = [
