@@ -1,7 +1,16 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { useDemoStore, updateMyProfile, acceptBooking, checkIn, checkOut } from '../../demo/store.js';
-import { StatusBadge, PaymentBadge, rwf, monthLabel } from '../../demo/ui.jsx';
+import {
+  getMyWorkerProfile,
+  updateMyWorkerProfile,
+  getWorkerHistory,
+  getBookings,
+  acceptBooking,
+  checkinBooking,
+  checkoutBooking,
+} from '../../api/client.js';
+import { useAsync } from '../../api/hooks.js';
+import { StatusBadge, PaymentBadge, Loading, ErrorNote, rwf, monthLabel } from '../../demo/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { Icons } from '../../demo/icons.jsx';
 import { BarChart, Donut } from '../../demo/Charts.jsx';
@@ -10,33 +19,44 @@ function initials(name = '') {
   const p = name.trim().split(/\s+/);
   return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'U';
 }
+// Stable, simulated payout amount per booking (no earnings API in Tier-1).
+const simAmount = (id) => 8000 + ((Number(id) * 37) % 6) * 3000;
 
 export default function WorkerDashboard() {
   const { user } = useAuth();
-  const store = useDemoStore();
   const [tab, setTab] = useState('profile');
+  const bookings = useAsync(() => getBookings(), []);
+  const count = bookings.data?.length || 0;
 
   const items = [
     { key: 'profile', label: 'Profile', icon: Icons.user },
-    { key: 'bookings', label: 'My bookings', icon: Icons.calendar, count: store.bookings.length },
+    { key: 'bookings', label: 'My bookings', icon: Icons.calendar, count },
     { key: 'earnings', label: 'Earnings', icon: Icons.wallet },
   ];
 
   return (
     <DashShell items={items} active={tab} onSelect={setTab}>
-      {tab === 'profile' && <ProfileView user={user} me={store.myProfile} bookings={store.bookings} />}
-      {tab === 'bookings' && <BookingsView bookings={store.bookings} />}
-      {tab === 'earnings' && <EarningsView earnings={store.earnings || []} />}
+      {tab === 'profile' && <ProfileView user={user} />}
+      {tab === 'bookings' && <BookingsView state={bookings} />}
+      {tab === 'earnings' && <EarningsView />}
     </DashShell>
   );
 }
 
-function ProfileView({ user, me, bookings }) {
+function ProfileView({ user }) {
+  const { data: me, loading, error } = useAsync(() => getMyWorkerProfile(), []);
+  if (loading) return <><h1>Your profile</h1><Loading /></>;
+  if (error) return <><h1>Your profile</h1><ErrorNote message={error} /></>;
+  return <ProfileEditor user={user} me={me} />;
+}
+
+function ProfileEditor({ user, me }) {
   const initialSkills = (me.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
   const [skills, setSkills] = useState(initialSkills);
   const [draft, setDraft] = useState('');
   const [bio, setBio] = useState(me.bio || '');
   const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState('');
 
   const addSkill = () => {
     const s = draft.trim();
@@ -44,14 +64,15 @@ function ProfileView({ user, me, bookings }) {
     setDraft('');
   };
   const reset = () => { setSkills(initialSkills); setBio(me.bio || ''); setDraft(''); };
-  const save = (e) => {
+  async function save(e) {
     e.preventDefault();
-    updateMyProfile({ skills: skills.join(', '), bio });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
-  };
-
-  const completed = bookings.filter((b) => b.status === 'completed');
+    setErr('');
+    try {
+      await updateMyWorkerProfile({ skills: skills.join(', '), bio });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } catch (e2) { setErr(e2.message); }
+  }
 
   return (
     <>
@@ -70,7 +91,7 @@ function ProfileView({ user, me, bookings }) {
             <div className="stars-row">
               {me.rating > 0 ? (
                 <span className="badge badge--star">
-                  {'★'.repeat(Math.round(me.rating))}{'☆'.repeat(5 - Math.round(me.rating))} {me.rating.toFixed(1)}
+                  {'★'.repeat(Math.round(me.rating))}{'☆'.repeat(5 - Math.round(me.rating))} {Number(me.rating).toFixed(1)}
                 </span>
               ) : (
                 <span className="meta">☆☆☆☆☆ No rating yet</span>
@@ -109,6 +130,7 @@ function ProfileView({ user, me, bookings }) {
           <textarea className="textarea" rows={3} maxLength={500} value={bio} onChange={(e) => setBio(e.target.value)} />
           <p className="meta" style={{ marginTop: '0.35rem' }}>Up to 500 characters.</p>
 
+          <ErrorNote message={err} />
           <div className="divider" />
           <div className="row" style={{ justifyContent: 'flex-end' }}>
             {saved && <span className="badge badge--done">Saved</span>}
@@ -118,46 +140,61 @@ function ProfileView({ user, me, bookings }) {
         </form>
       </div>
 
-      <div className="card">
-        <div className="card-title" style={{ marginBottom: '0.75rem' }}>Task history</div>
-        {completed.length === 0 ? (
-          <div className="history-empty">{Icons.check}No completed tasks yet</div>
-        ) : (
-          completed.map((b) => (
-            <div className="row" key={b.booking_id} style={{ justifyContent: 'space-between', padding: '0.5rem 0' }}>
-              <span className="meta">{b.taskTitle} — {b.requesterName}</span>
-              {b.review && <span className="badge badge--star">Reviewed {b.review.rating}★</span>}
-            </div>
-          ))
-        )}
-      </div>
+      <TaskHistory workerId={me.worker_id} />
     </>
   );
 }
 
-function BookingsView({ bookings }) {
+function TaskHistory({ workerId }) {
+  const { data, loading } = useAsync(() => getWorkerHistory(workerId), [workerId]);
+  const items = data || [];
+  return (
+    <div className="card">
+      <div className="card-title" style={{ marginBottom: '0.75rem' }}>Task history</div>
+      {loading ? (
+        <span className="meta">Loading…</span>
+      ) : items.length === 0 ? (
+        <div className="history-empty">{Icons.check}No completed tasks yet</div>
+      ) : (
+        items.map((h) => (
+          <div className="row" key={h.booking_id} style={{ justifyContent: 'space-between', padding: '0.5rem 0' }}>
+            <span className="meta">{h.taskTitle} · {String(h.date).slice(0, 10)}</span>
+            {h.review && <span className="badge badge--star">Reviewed {h.review.rating}★</span>}
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+function BookingsView({ state }) {
+  const { data, loading, error, reload } = state;
+  const [err, setErr] = useState('');
+  const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
+  const bookings = data || [];
+
   return (
     <>
       <h1>My bookings</h1>
       <p className="subtitle">Accept jobs and record check-in / check-out.</p>
-      {bookings.length === 0 && (
+      <ErrorNote message={error || err} />
+      {loading ? <Loading /> : bookings.length === 0 ? (
         <div className="empty" style={{ marginTop: '0.75rem' }}>No jobs yet. When a requester selects you, it shows up here.</div>
-      )}
-      {bookings.map((b) => (
+      ) : bookings.map((b) => (
         <div className="card" key={b.booking_id}>
           <div className="card-head">
             <div>
               <div className="card-title">{b.taskTitle}</div>
-              <div className="meta">Requested by {b.requesterName} · {rwf(b.amount)}</div>
+              <div className="meta">Requested by {b.requesterName}</div>
             </div>
             <div className="row"><StatusBadge status={b.status} /><PaymentBadge payment={b.payment} /></div>
           </div>
           <div className="actions">
-            {b.status === 'pending' && <button className="btn-primary" onClick={() => acceptBooking(b.booking_id)}>Accept job</button>}
-            {b.status === 'accepted' && !b.checkedIn && <button className="btn-primary" onClick={() => checkIn(b.booking_id)}>Check in</button>}
-            {b.checkedIn && !b.startConfirmed && <span className="meta">Checked in — waiting for requester to confirm start.</span>}
-            {b.startConfirmed && !b.checkedOut && <button className="btn-primary" onClick={() => checkOut(b.booking_id)}>Check out</button>}
-            {b.checkedOut && !b.endConfirmed && <span className="meta">Checked out — waiting for requester to confirm completion.</span>}
+            {b.status === 'pending' && <button className="btn-primary" onClick={() => act(acceptBooking(b.booking_id))}>Accept job</button>}
+            {b.status === 'accepted' && !b.checkedIn && <button className="btn-primary" onClick={() => act(checkinBooking(b.booking_id))}>Check in</button>}
+            {b.status === 'accepted' && b.checkedIn && <span className="meta">Checked in — waiting for requester to confirm start.</span>}
+            {b.status === 'in_progress' && !b.checkedOut && <button className="btn-primary" onClick={() => act(checkoutBooking(b.booking_id))}>Check out</button>}
+            {b.status === 'in_progress' && b.checkedOut && <span className="meta">Checked out — waiting for requester to confirm completion.</span>}
             {b.status === 'completed' && <span className="meta">Job complete. {b.review ? `Reviewed ${b.review.rating}★.` : 'Awaiting review.'}</span>}
           </div>
         </div>
@@ -166,48 +203,73 @@ function BookingsView({ bookings }) {
   );
 }
 
-function EarningsView({ earnings }) {
-  const released = earnings.filter((e) => e.status === 'released').reduce((a, e) => a + e.amount, 0);
-  const pending = earnings.filter((e) => e.status === 'pending').reduce((a, e) => a + e.amount, 0);
-  const total = released + pending;
-  const thisMonth = new Date().toISOString().slice(0, 7);
-  const monthTotal = earnings.filter((e) => e.date.slice(0, 7) === thisMonth).reduce((a, e) => a + e.amount, 0);
+function EarningsView() {
+  const { data, loading, error } = useAsync(async () => {
+    const me = await getMyWorkerProfile();
+    const [history, bookings] = await Promise.all([getWorkerHistory(me.worker_id), getBookings()]);
+    return { history, bookings };
+  }, []);
 
-  // last 6 months totals for the bar chart
+  if (loading) return <><h1>Earnings</h1><Loading /></>;
+  if (error) return <><h1>Earnings</h1><ErrorNote message={error} /></>;
+
+  const released = (data.history || []).map((h) => ({
+    id: `INV-${1000 + h.booking_id}`,
+    date: String(h.date).slice(0, 10),
+    task: h.taskTitle,
+    amount: simAmount(h.booking_id),
+    status: 'released',
+  }));
+  const pending = (data.bookings || [])
+    .filter((b) => b.status !== 'completed')
+    .map((b) => ({
+      id: `INV-${1000 + b.booking_id}`,
+      date: '—',
+      task: b.taskTitle,
+      amount: simAmount(b.booking_id),
+      status: 'pending',
+    }));
+  const invoices = [...pending, ...released];
+
+  const relTotal = released.reduce((a, e) => a + e.amount, 0);
+  const penTotal = pending.reduce((a, e) => a + e.amount, 0);
+  const total = relTotal + penTotal;
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const monthTotal = released.filter((e) => e.date.slice(0, 7) === thisMonth).reduce((a, e) => a + e.amount, 0);
+
   const byMonth = {};
-  earnings.forEach((e) => { const m = e.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + e.amount; });
+  released.forEach((e) => { const m = e.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + e.amount; });
   const months = Object.keys(byMonth).sort().slice(-6);
   const chartData = months.map((m) => ({ label: monthLabel(m + '-01'), value: byMonth[m] }));
 
   return (
     <>
       <h1>Earnings</h1>
-      <p className="subtitle">Your wallet, payout history and invoices (simulated).</p>
+      <p className="subtitle">Your wallet, payout history and invoices (amounts simulated).</p>
 
       <div className="wallet" style={{ marginTop: '0.75rem' }}>
         <div className="wallet-label">Available balance</div>
-        <div className="wallet-amount">{rwf(released)}</div>
+        <div className="wallet-amount">{rwf(relTotal)}</div>
         <div className="wallet-sub">
-          <span>Pending&nbsp;·&nbsp;{rwf(pending)}</span>
+          <span>Pending&nbsp;·&nbsp;{rwf(penTotal)}</span>
           <span>Total earned&nbsp;·&nbsp;{rwf(total)}</span>
         </div>
       </div>
 
       <div className="grid2" style={{ marginTop: '0.75rem' }}>
         <div className="card"><div className="stat-num">{rwf(monthTotal)}</div><div className="meta">This month</div></div>
-        <div className="card"><div className="stat-num">{earnings.filter((e) => e.status === 'released').length}</div><div className="meta">Invoices paid</div></div>
+        <div className="card"><div className="stat-num">{released.length}</div><div className="meta">Invoices paid</div></div>
       </div>
 
       <div className="grid2">
         <div className="card">
           <div className="card-title" style={{ marginBottom: '0.5rem' }}>Earnings — last 6 months</div>
-          <BarChart data={chartData} format={(v) => (v >= 1000 ? Math.round(v / 1000) + 'k' : v)} />
+          {chartData.length ? <BarChart data={chartData} format={(v) => (v >= 1000 ? Math.round(v / 1000) + 'k' : v)} />
+            : <span className="meta">No paid jobs yet.</span>}
         </div>
         <div className="card">
           <div className="card-title" style={{ marginBottom: '0.5rem' }}>Released vs pending</div>
-          <div className="row" style={{ justifyContent: 'center' }}>
-            <Donut released={released} pending={pending} />
-          </div>
+          <div className="row" style={{ justifyContent: 'center' }}><Donut released={relTotal} pending={penTotal} /></div>
         </div>
       </div>
 
@@ -216,28 +278,21 @@ function EarningsView({ earnings }) {
           <div className="card-title">Invoices</div>
           <button className="btn-secondary" onClick={() => window.print()}>Export</button>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="tbl">
-            <thead>
-              <tr><th>Invoice</th><th>Date</th><th>Task</th><th>Amount</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              {earnings.map((e) => (
-                <tr key={e.id}>
-                  <td>{e.id}</td>
-                  <td>{e.date}</td>
-                  <td>{e.task}</td>
-                  <td>{rwf(e.amount)}</td>
-                  <td>
-                    <span className={`badge ${e.status === 'released' ? 'badge--done' : 'badge--neutral'}`}>
-                      {e.status === 'released' ? 'Paid' : 'Pending'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {invoices.length === 0 ? <span className="meta">No invoices yet.</span> : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="tbl">
+              <thead><tr><th>Invoice</th><th>Date</th><th>Task</th><th>Amount</th><th>Status</th></tr></thead>
+              <tbody>
+                {invoices.map((e) => (
+                  <tr key={e.id}>
+                    <td>{e.id}</td><td>{e.date}</td><td>{e.task}</td><td>{rwf(e.amount)}</td>
+                    <td><span className={`badge ${e.status === 'released' ? 'badge--done' : 'badge--neutral'}`}>{e.status === 'released' ? 'Paid' : 'Pending'}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </>
   );

@@ -55,3 +55,80 @@ export function loginUser(payload) {
 export function fetchMe() {
   return apiFetch('/auth/me');
 }
+
+// --- categories ---
+export function getCategories() {
+  return apiFetch('/categories');
+}
+export function createCategory(payload) {
+  return apiFetch('/admin/categories', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+// --- workers ---
+export function getWorkers() {
+  return apiFetch('/workers');
+}
+export function getWorker(id) {
+  return apiFetch(`/workers/${id}`);
+}
+export function getWorkerHistory(id) {
+  return apiFetch(`/workers/${id}/history`);
+}
+export function getMyWorkerProfile() {
+  return apiFetch('/workers/me');
+}
+export function updateMyWorkerProfile(payload) {
+  return apiFetch('/workers/me', { method: 'PUT', body: JSON.stringify(payload) });
+}
+
+// --- tasks ---
+export function createTask(payload) {
+  return apiFetch('/tasks', { method: 'POST', body: JSON.stringify(payload) });
+}
+export function getMyTasks() {
+  return apiFetch('/tasks');
+}
+export function getTask(id) {
+  return apiFetch(`/tasks/${id}`);
+}
+
+// --- bookings (the trust loop) ---
+export function createBooking(payload) {
+  return apiFetch('/bookings', { method: 'POST', body: JSON.stringify(payload) });
+}
+export function getBookings() {
+  return apiFetch('/bookings');
+}
+const bookingAction = (id, action) => apiFetch(`/bookings/${id}/${action}`, { method: 'POST' });
+export const acceptBooking = (id) => bookingAction(id, 'accept');
+export const checkinBooking = (id) => bookingAction(id, 'checkin');
+export const confirmStart = (id) => bookingAction(id, 'confirm-start');
+export const checkoutBooking = (id) => bookingAction(id, 'checkout');
+export const confirmCompletion = (id) => bookingAction(id, 'confirm-completion');
+export function getPaymentStatus(id) {
+  return apiFetch(`/bookings/${id}/payment-status`);
+}
+export function rebookWorker(workerId) {
+  return apiFetch(`/bookings/rebook/${workerId}`, { method: 'POST' });
+}
+
+// --- reviews ---
+export function createReview(payload) {
+  return apiFetch('/reviews', { method: 'POST', body: JSON.stringify(payload) });
+}
+
+// --- saved workers ---
+export function getSavedWorkers() {
+  return apiFetch('/saved-workers');
+}
+export function saveWorker(workerId) {
+  return apiFetch('/saved-workers', { method: 'POST', body: JSON.stringify({ worker_id: workerId }) });
+}
+export function unsaveWorker(workerId) {
+  return apiFetch(`/saved-workers/${workerId}`, { method: 'DELETE' });
+}
+
+// --- admin ---
+export function getAdminUsers() {
+  return apiFetch('/admin/users');
+}

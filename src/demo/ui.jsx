@@ -38,6 +38,15 @@ export function TierBadge({ tier }) {
   return <span className="badge badge--primary">{tier}</span>;
 }
 
+export function Loading({ label = 'Loading…' }) {
+  return <div className="empty" style={{ marginTop: '0.75rem' }}>{label}</div>;
+}
+
+export function ErrorNote({ message }) {
+  if (!message) return null;
+  return <div className="form-error" style={{ marginTop: '0.75rem' }}>{message}</div>;
+}
+
 export function Stars({ rating }) {
   const full = Math.round(rating);
   return (
