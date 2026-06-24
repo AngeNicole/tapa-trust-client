@@ -1129,6 +1129,20 @@ body {
     @apply border-primary-base;
   }
 
+  /* password field with show/hide toggle */
+  .pw-wrap {
+    @apply relative;
+  }
+  .pw-wrap input {
+    @apply w-full pr-10;
+  }
+  .pw-toggle {
+    @apply absolute right-2 top-1/2 inline-flex -translate-y-1/2 cursor-pointer items-center justify-center bg-transparent p-1 text-text-soft-400 transition-colors hover:text-text-sub-600;
+  }
+  .pw-toggle svg {
+    @apply h-4 w-4;
+  }
+
   .role-picker {
     @apply flex gap-3;
   }

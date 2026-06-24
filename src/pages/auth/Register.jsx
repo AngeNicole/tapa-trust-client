@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
+import PasswordInput from '../../components/PasswordInput.jsx';
 
 // A strong password: at least 8 characters with an uppercase letter, a
 // lowercase letter, a number, and a special character.
@@ -119,10 +120,10 @@ export default function Register() {
 
         <label>
           Password
-          <input
-            type="password"
+          <PasswordInput
             value={form.password}
             onChange={(e) => update('password', e.target.value)}
+            autoComplete="new-password"
           />
           <span className="role-hint">
             At least 8 characters, with an uppercase letter, a lowercase letter, a number, and a
