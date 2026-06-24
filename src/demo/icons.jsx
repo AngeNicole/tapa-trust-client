@@ -19,4 +19,9 @@ export const Icons = {
   bookmark: <svg {...base}><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1Z" /></svg>,
   briefcase: <svg {...base}><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>,
   wallet: <svg {...base}><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M16 12h4M3 9h14a2 2 0 0 1 2 2" /></svg>,
+  search: <svg {...base}><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>,
+  mail: <svg {...base}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>,
+  bell: <svg {...base}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10.5 21a2 2 0 0 0 3 0" /></svg>,
+  logout: <svg {...base}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></svg>,
+  spark: <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c.5 4.5 3 7 7 7-4 .5-7 3-7 7-.5-4-3-6.5-7-7 4.5-.5 6.5-3 7-7Z" /></svg>,
 };

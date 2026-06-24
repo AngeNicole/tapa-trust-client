@@ -12,6 +12,8 @@ import {
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, Loading, ErrorNote, rwf, monthLabel } from '../../demo/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { Hero } from '../../components/Hero.jsx';
+import { StatsRail } from '../../components/StatsRail.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../demo/icons.jsx';
 import { BarChart, Donut } from '../../demo/Charts.jsx';
@@ -38,8 +40,25 @@ export default function WorkerDashboard() {
   ];
 
   return (
-    <DashShell items={items} active={tab} onSelect={setTab}>
-      {tab === 'profile' && <ProfileView user={user} />}
+    <DashShell
+      items={items}
+      active={tab}
+      onSelect={setTab}
+      rightRail={<StatsRail user={user} bookings={bookings.data || []} role="worker" />}
+    >
+      {tab === 'profile' && (
+        <>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <Hero
+              kicker="TaPa Trust"
+              title="Get hired and grow your reputation."
+              ctaLabel="View my bookings"
+              onCta={() => setTab('bookings')}
+            />
+          </div>
+          <ProfileView user={user} />
+        </>
+      )}
       {tab === 'bookings' && <BookingsView state={bookings} />}
       {tab === 'earnings' && <EarningsView />}
     </DashShell>

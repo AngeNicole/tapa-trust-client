@@ -18,6 +18,8 @@ import {
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, TierBadge, Stars, Loading, ErrorNote } from '../../demo/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { Hero } from '../../components/Hero.jsx';
+import { StatsRail } from '../../components/StatsRail.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../demo/icons.jsx';
 
@@ -47,8 +49,25 @@ export default function RequesterDashboard() {
   ];
 
   return (
-    <DashShell items={items} active={tab} onSelect={setTab}>
-      {tab === 'profile' && <ProfileView user={user} bookings={all} saved={saved.data || []} />}
+    <DashShell
+      items={items}
+      active={tab}
+      onSelect={setTab}
+      rightRail={<StatsRail user={user} bookings={all} role="requester" />}
+    >
+      {tab === 'profile' && (
+        <>
+          <div style={{ marginBottom: '1.25rem' }}>
+            <Hero
+              kicker="TaPa Trust"
+              title="Find trusted help, fast."
+              ctaLabel="Post a task"
+              onCta={() => setTab('hire')}
+            />
+          </div>
+          <ProfileView user={user} bookings={all} saved={saved.data || []} />
+        </>
+      )}
       {tab === 'hire' && <HireView onChanged={() => { bookings.reload(); saved.reload(); }} />}
       {tab === 'bookings' && <BookingsView state={bookings} bookings={active} />}
       {tab === 'history' && <HistoryView state={bookings} bookings={history} />}
