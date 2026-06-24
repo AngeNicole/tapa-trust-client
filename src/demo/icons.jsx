@@ -18,7 +18,7 @@ import {
   Sparkle,
 } from '@phosphor-icons/react';
 
-const w = 'duotone';
+const w = 'regular';
 
 export const Icons = {
   user: <User weight={w} />,
