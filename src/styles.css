@@ -1238,6 +1238,25 @@ body {
     box-shadow: var(--shadow-regular-xs);
   }
 
+  /* modal + star picker */
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-4;
+    background: rgba(14, 18, 27, 0.45);
+  }
+  .modal {
+    @apply w-full max-w-md rounded-3xl bg-bg-white-0 p-6;
+    box-shadow: var(--shadow-regular-md);
+    animation: toast-in 0.16s ease-out;
+  }
+  .modal-title { @apply text-title-h6 font-semibold text-text-strong-950; }
+  .star-pick { @apply flex gap-1.5; }
+  .star-pick button {
+    @apply cursor-pointer bg-transparent leading-none transition-transform hover:scale-110;
+    font-size: 2rem;
+    color: var(--color-bg-sub-300);
+  }
+  .star-pick button.on { color: var(--color-yellow-500); }
+
   /* map embed */
   .map-wrap {
     @apply overflow-hidden rounded-2xl border border-stroke-soft-200;

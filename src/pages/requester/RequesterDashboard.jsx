@@ -31,6 +31,7 @@ export default function RequesterDashboard() {
   const { user } = useAuth();
   // Browse workers is the requester's home — no task to post first.
   const [tab, setTab] = useState('hire');
+  const [reviewBooking, setReviewBooking] = useState(null); // booking awaiting a review prompt
   const notify = useToast();
   const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
   useBookingAlerts(bookings.data, 'requester', notify);
@@ -51,6 +52,7 @@ export default function RequesterDashboard() {
   const afterBook = () => { bookings.reload(); setTab('bookings'); notify('Booking requested — waiting for the worker to accept.'); };
 
   return (
+    <>
     <DashShell
       items={items}
       active={tab}
@@ -64,7 +66,7 @@ export default function RequesterDashboard() {
           onSavedChange={() => saved.reload()}
         />
       )}
-      {tab === 'bookings' && <BookingsView state={bookings} bookings={active} />}
+      {tab === 'bookings' && <BookingsView state={bookings} bookings={active} onCompleted={setReviewBooking} />}
       {tab === 'history' && <HistoryView state={bookings} bookings={history} />}
       {tab === 'saved' && <SavedView state={saved} onRebook={afterBook} />}
       {tab === 'profile' && (
@@ -81,6 +83,18 @@ export default function RequesterDashboard() {
         </>
       )}
     </DashShell>
+    {reviewBooking && (
+      <ReviewModal
+        workerName={reviewBooking.workerName}
+        onClose={() => setReviewBooking(null)}
+        onSubmit={async (rating, comment) => {
+          await createReview({ booking_id: reviewBooking.booking_id, rating, comment });
+          bookings.reload();
+          setReviewBooking(null);
+        }}
+      />
+    )}
+    </>
   );
 }
 
@@ -261,7 +275,7 @@ function WorkerProfilePanel({ workerId, saved, onBack, onBooked, onSavedChange }
 }
 
 // ── Bookings / History / Saved (unchanged behaviour, read from /bookings) ─
-function BookingsView({ state, bookings }) {
+function BookingsView({ state, bookings, onCompleted }) {
   const { loading, error, reload } = state;
   return (
     <>
@@ -270,7 +284,7 @@ function BookingsView({ state, bookings }) {
       <ErrorNote message={error} />
       {loading ? <Loading /> : bookings.length === 0 ? (
         <div className="empty" style={{ marginTop: '0.75rem' }}>No active bookings. Find a worker to book one.</div>
-      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} />)}
+      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onCompleted={onCompleted} />)}
     </>
   );
 }
@@ -289,9 +303,14 @@ function HistoryView({ state, bookings }) {
   );
 }
 
-function BookingCard({ b, reload }) {
+function BookingCard({ b, reload, onCompleted }) {
   const [err, setErr] = useState('');
   const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
+  // Confirm completion, then suggest a review via the popup (handled by parent).
+  async function complete() {
+    setErr('');
+    try { await confirmCompletion(b.booking_id); reload(); onCompleted?.(b); } catch (e) { setErr(e.message); }
+  }
   return (
     <div className="card">
       <div className="card-head">
@@ -307,7 +326,7 @@ function BookingCard({ b, reload }) {
         {b.status === 'accepted' && !b.checkedIn && <span className="meta">Accepted — waiting for {b.workerName} to check in.</span>}
         {b.status === 'accepted' && b.checkedIn && !b.startConfirmed && <button className="btn-primary" onClick={() => act(confirmStart(b.booking_id))}>Confirm start</button>}
         {b.status === 'in_progress' && !b.checkedOut && <span className="meta">Worker on the job — waiting for check out.</span>}
-        {b.status === 'in_progress' && b.checkedOut && !b.endConfirmed && <button className="btn-primary" onClick={() => act(confirmCompletion(b.booking_id))}>Confirm completion</button>}
+        {b.status === 'in_progress' && b.checkedOut && !b.endConfirmed && <button className="btn-primary" onClick={complete}>Confirm completion</button>}
         {b.status === 'completed' && !b.review && <ReviewForm onSubmit={(rating, comment) => act(createReview({ booking_id: b.booking_id, rating, comment }))} />}
         {b.review && (
           <div className="row">
@@ -333,6 +352,40 @@ function ReviewForm({ onSubmit }) {
       <input className="select" style={{ flex: 1, minWidth: '140px' }} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="How did it go?" />
       <button className="btn-primary" type="submit">Submit review</button>
     </form>
+  );
+}
+
+// Popup shown right after Confirm completion — suggest leaving a review.
+// Skippable via "Not now"; the review can still be left later from History.
+function ReviewModal({ workerName, onSubmit, onClose }) {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  async function submit() {
+    setBusy(true); setErr('');
+    try { await onSubmit(rating, comment); } catch (e) { setErr(e.message); setBusy(false); }
+  }
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-title">How was {workerName}?</div>
+        <p className="meta" style={{ marginTop: '0.25rem' }}>Leave a review to help other requesters — or skip it for now.</p>
+        <div className="star-pick" style={{ marginTop: '0.9rem' }}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <button type="button" key={n} className={n <= rating ? 'on' : ''} onClick={() => setRating(n)} aria-label={`${n} star${n > 1 ? 's' : ''}`}>
+              {n <= rating ? '★' : '☆'}
+            </button>
+          ))}
+        </div>
+        <textarea className="textarea" rows={3} style={{ marginTop: '0.9rem' }} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Add a comment (optional)" />
+        <ErrorNote message={err} />
+        <div className="row" style={{ justifyContent: 'flex-end', marginTop: '1rem' }}>
+          <button type="button" className="btn-ghost" onClick={onClose}>Not now</button>
+          <button type="button" className="btn-primary" onClick={submit} disabled={busy}>{busy ? 'Submitting…' : 'Submit review'}</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
