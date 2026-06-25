@@ -1435,6 +1435,27 @@ body {
   }
   .icon-btn svg { @apply h-5 w-5; }
   .top-divider { @apply h-7 w-px shrink-0 bg-stroke-soft-200; }
+
+  /* notifications bell + dropdown */
+  .notif { @apply relative; }
+  .notif-badge {
+    @apply absolute flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 font-bold text-static-white;
+    top: -2px; right: -2px; font-size: 10px;
+  }
+  .notif-backdrop { @apply fixed inset-0 z-40; }
+  .notif-panel {
+    @apply absolute right-0 top-12 z-50 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-stroke-soft-200 bg-bg-white-0;
+    box-shadow: var(--shadow-regular-md);
+  }
+  .notif-head { @apply border-b border-stroke-soft-200 px-4 py-3 text-label-sm font-semibold text-text-strong-950; }
+  .notif-empty { @apply px-4 py-6 text-center text-paragraph-sm text-text-sub-600; }
+  .notif-item {
+    @apply flex w-full cursor-pointer items-start gap-2.5 border-b border-stroke-soft-200 px-4 py-3 text-left text-paragraph-sm text-text-sub-600 transition-colors hover:bg-bg-weak-50;
+  }
+  .notif-item:last-child { @apply border-0; }
+  .notif-item--unread { @apply bg-bg-weak-50 font-medium text-text-strong-950; }
+  .notif-item .activity-dot { @apply mt-1.5; }
+  .notif-msg { @apply flex-1; }
   .top-user { @apply flex shrink-0 items-center gap-2.5; }
   .avatar-sm {
     @apply flex h-9 w-9 items-center justify-center rounded-full text-label-sm font-semibold text-static-white;

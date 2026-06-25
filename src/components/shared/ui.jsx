@@ -38,6 +38,17 @@ export function TierBadge({ tier }) {
   return <span className="badge badge--primary">{tier}</span>;
 }
 
+// Simulated verification status — a labelled status badge, not a security claim.
+const VERIFY = {
+  verified: { cls: 'badge--done', label: 'Verified' },
+  pending: { cls: 'badge--progress', label: 'Pending review' },
+  unverified: { cls: 'badge--neutral', label: 'Unverified' },
+};
+export function VerifyBadge({ status }) {
+  const v = VERIFY[status] || VERIFY.unverified;
+  return <span className={`badge ${v.cls}`}>{v.label}</span>;
+}
+
 export function Loading({ label = 'Loading…' }) {
   return <div className="empty" style={{ marginTop: '0.75rem' }}>{label}</div>;
 }

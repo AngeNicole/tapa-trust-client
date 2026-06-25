@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import {
   getMyWorkerProfile,
   updateMyWorkerProfile,
+  setAvailability,
+  submitVerification,
   getWorkerHistory,
   getBookings,
   acceptBooking,
@@ -10,13 +12,13 @@ import {
   checkoutBooking,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, Loading, ErrorNote, rwf, monthLabel } from '../../demo/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Loading, ErrorNote, rwf, monthLabel } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
 import { useToast } from '../../components/Toast.jsx';
-import { Icons } from '../../demo/icons.jsx';
-import { BarChart, Donut } from '../../demo/Charts.jsx';
+import { Icons } from '../../components/shared/icons.jsx';
+import { BarChart, Donut } from '../../components/shared/Charts.jsx';
 
 function initials(name = '') {
   const p = name.trim().split(/\s+/);
@@ -66,13 +68,58 @@ export default function WorkerDashboard() {
 }
 
 function ProfileView({ user }) {
-  const { data: me, loading, error } = useAsync(() => getMyWorkerProfile(), []);
+  const { data: me, loading, error, reload } = useAsync(() => getMyWorkerProfile(), []);
   if (loading) return <><h1>Your profile</h1><Loading /></>;
   if (error) return <><h1>Your profile</h1><ErrorNote message={error} /></>;
-  return <ProfileEditor user={user} me={me} />;
+  return <ProfileEditor user={user} me={me} reload={reload} />;
 }
 
-function ProfileEditor({ user, me }) {
+function AvailabilityToggle({ me, reload }) {
+  const [available, setAvail] = useState(!!me.is_available);
+  const [busy, setBusy] = useState(false);
+  async function toggle() {
+    const next = !available;
+    setBusy(true); setAvail(next);
+    try { await setAvailability(next); reload(); } catch { setAvail(!next); } finally { setBusy(false); }
+  }
+  return (
+    <button type="button" className="btn-secondary" onClick={toggle} disabled={busy} title="Workers must be available to appear in browse">
+      <span className={`activity-dot ${available ? 'activity-dot--completed' : 'activity-dot--pending'}`} style={{ display: 'inline-block', marginRight: 6 }} />
+      {available ? 'Available' : 'Unavailable'} — tap to go {available ? 'offline' : 'available'}
+    </button>
+  );
+}
+
+function VerificationCard({ status, reload }) {
+  const [ref, setRef] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  async function submit(e) {
+    e.preventDefault();
+    setBusy(true); setErr('');
+    try { await submitVerification({ reference: ref || 'demo-id' }); reload(); } catch (e2) { setErr(e2.message); setBusy(false); }
+  }
+  return (
+    <div className="card">
+      <div className="card-head" style={{ marginBottom: '0.4rem' }}>
+        <div className="card-title">Identity verification</div>
+        <VerifyBadge status={status} />
+      </div>
+      <p className="meta">Simulated verification — no real ID is checked. An admin reviews and approves it. You can skip this and finish it later.</p>
+      {status === 'verified' && <p className="meta" style={{ marginTop: '0.5rem' }}>You're verified. ✓</p>}
+      {status === 'pending' && <p className="meta" style={{ marginTop: '0.5rem' }}>Your submission is pending admin review.</p>}
+      {status === 'unverified' && (
+        <form className="row" onSubmit={submit} style={{ marginTop: '0.6rem', width: '100%' }}>
+          <input className="input" style={{ flex: 1, minWidth: '180px' }} value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Reference / mock document — Simulated verification" />
+          <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Submitting…' : 'Submit for verification'}</button>
+        </form>
+      )}
+      <ErrorNote message={err} />
+    </div>
+  );
+}
+
+function ProfileEditor({ user, me, reload }) {
   const initialSkills = (me.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
   const [skills, setSkills] = useState(initialSkills);
   const [draft, setDraft] = useState('');
@@ -102,26 +149,32 @@ function ProfileEditor({ user, me }) {
       <p className="subtitle">This is what requesters see when they consider you for a task.</p>
 
       <div className="card" style={{ marginTop: '0.75rem' }}>
-        <div className="row" style={{ alignItems: 'center', gap: '1rem', flexWrap: 'nowrap' }}>
-          <div className="avatar">{initials(user.name)}</div>
-          <div>
-            <div className="row" style={{ gap: '0.6rem' }}>
-              <span className="card-title">{user.name}</span>
-              <span className="badge badge--primary">{me.tier}</span>
-            </div>
-            <span className="pin">{Icons.pin}{user.location || 'Location not set'}</span>
-            <div className="stars-row">
-              {me.rating > 0 ? (
-                <span className="badge badge--star">
-                  {'★'.repeat(Math.round(me.rating))}{'☆'.repeat(5 - Math.round(me.rating))} {Number(me.rating).toFixed(1)}
-                </span>
-              ) : (
-                <span className="meta">☆☆☆☆☆ No rating yet</span>
-              )}
+        <div className="card-head" style={{ alignItems: 'center' }}>
+          <div className="row" style={{ alignItems: 'center', gap: '1rem', flexWrap: 'nowrap' }}>
+            <div className="avatar">{initials(user.name)}</div>
+            <div>
+              <div className="row" style={{ gap: '0.6rem' }}>
+                <span className="card-title">{user.name}</span>
+                <span className="badge badge--primary">{me.tier}</span>
+                <VerifyBadge status={me.verification} />
+              </div>
+              <span className="pin">{Icons.pin}{user.location || 'Location not set'}</span>
+              <div className="stars-row">
+                {me.rating > 0 ? (
+                  <span className="badge badge--star">
+                    {'★'.repeat(Math.round(me.rating))}{'☆'.repeat(5 - Math.round(me.rating))} {Number(me.rating).toFixed(1)}
+                  </span>
+                ) : (
+                  <span className="meta">☆☆☆☆☆ No rating yet</span>
+                )}
+              </div>
             </div>
           </div>
+          <AvailabilityToggle me={me} reload={reload} />
         </div>
       </div>
+
+      <VerificationCard status={me.verification} reload={reload} />
 
       <div className="card">
         <div className="card-title" style={{ marginBottom: '0.75rem' }}>Edit details</div>

@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
-  getCategories,
   getWorkers,
-  getMyTasks,
-  createTask,
-  createBooking,
+  getWorker,
+  bookWorker,
   getBookings,
   confirmStart,
   confirmCompletion,
@@ -16,13 +14,13 @@ import {
   rebookWorker,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, TierBadge, Stars, Loading, ErrorNote } from '../../demo/ui.jsx';
+import { StatusBadge, PaymentBadge, TierBadge, VerifyBadge, Stars, Loading, ErrorNote } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
 import { MapCard } from '../../components/MapCard.jsx';
 import { useToast } from '../../components/Toast.jsx';
-import { Icons } from '../../demo/icons.jsx';
+import { Icons } from '../../components/shared/icons.jsx';
 
 function initials(name = '') {
   const p = name.trim().split(/\s+/);
@@ -31,7 +29,8 @@ function initials(name = '') {
 
 export default function RequesterDashboard() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('profile');
+  // Browse workers is the requester's home — no task to post first.
+  const [tab, setTab] = useState('hire');
   const notify = useToast();
   const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
   useBookingAlerts(bookings.data, 'requester', notify);
@@ -42,13 +41,14 @@ export default function RequesterDashboard() {
   const history = all.filter((b) => b.status === 'completed');
 
   const items = [
-    { key: 'profile', label: 'Profile', icon: Icons.user },
-    { key: 'post', label: 'Post a task', icon: Icons.plus },
     { key: 'hire', label: 'Find workers', icon: Icons.briefcase },
     { key: 'bookings', label: 'Bookings', icon: Icons.calendar, count: active.length },
     { key: 'history', label: 'History', icon: Icons.clock, count: history.length },
     { key: 'saved', label: 'Saved workers', icon: Icons.bookmark, count: (saved.data || []).length },
+    { key: 'profile', label: 'Profile', icon: Icons.user },
   ];
+
+  const afterBook = () => { bookings.reload(); setTab('bookings'); notify('Booking requested — waiting for the worker to accept.'); };
 
   return (
     <DashShell
@@ -57,30 +57,34 @@ export default function RequesterDashboard() {
       onSelect={setTab}
       rightRail={<StatsRail user={user} bookings={all} role="requester" />}
     >
+      {tab === 'hire' && (
+        <HireView
+          savedIds={(saved.data || []).map((w) => w.worker_id)}
+          onBooked={afterBook}
+          onSavedChange={() => saved.reload()}
+        />
+      )}
+      {tab === 'bookings' && <BookingsView state={bookings} bookings={active} />}
+      {tab === 'history' && <HistoryView state={bookings} bookings={history} />}
+      {tab === 'saved' && <SavedView state={saved} onRebook={afterBook} />}
       {tab === 'profile' && (
         <>
           <div style={{ marginBottom: '1.25rem' }}>
             <Hero
               kicker="TaPa Trust"
               title="Find trusted help, fast."
-              ctaLabel="Post a task"
-              onCta={() => setTab('post')}
+              ctaLabel="Browse workers"
+              onCta={() => setTab('hire')}
             />
           </div>
           <ProfileView user={user} bookings={all} saved={saved.data || []} />
         </>
       )}
-      {tab === 'post' && <PostView onChanged={() => bookings.reload()} />}
-      {tab === 'hire' && <HireView onChanged={() => { bookings.reload(); saved.reload(); }} />}
-      {tab === 'bookings' && <BookingsView state={bookings} bookings={active} />}
-      {tab === 'history' && <HistoryView state={bookings} bookings={history} />}
-      {tab === 'saved' && <SavedView state={saved} onRebook={() => bookings.reload()} />}
     </DashShell>
   );
 }
 
 function ProfileView({ user, bookings, saved }) {
-  const tasks = useAsync(() => getMyTasks(), []);
   const active = bookings.filter((b) => b.status !== 'completed').length;
   const completed = bookings.filter((b) => b.status === 'completed').length;
   return (
@@ -101,7 +105,7 @@ function ProfileView({ user, bookings, saved }) {
         </div>
       </div>
       <div className="grid2">
-        <div className="card"><div className="stat-num">{tasks.data?.length ?? '—'}</div><div className="meta">Tasks posted</div></div>
+        <div className="card"><div className="stat-num">{bookings.length}</div><div className="meta">Total bookings</div></div>
         <div className="card"><div className="stat-num">{active}</div><div className="meta">Active bookings</div></div>
         <div className="card"><div className="stat-num">{completed}</div><div className="meta">Completed jobs</div></div>
         <div className="card"><div className="stat-num">{saved.length}</div><div className="meta">Saved workers</div></div>
@@ -110,132 +114,153 @@ function ProfileView({ user, bookings, saved }) {
   );
 }
 
-function PostView({ onChanged }) {
-  const categories = useAsync(() => getCategories(), []);
-  const [err, setErr] = useState('');
-  const [loc, setLoc] = useState('');
-  return (
-    <>
-      <h1>Post a task</h1>
-      <p className="subtitle">Describe the job and where it is — then head to Find workers to assign someone.</p>
-      <ErrorNote message={err} />
-      <div className="grid2" style={{ marginTop: '0.75rem' }}>
-        <PostTask
-          categories={categories.data || []}
-          onLocationChange={setLoc}
-          onPost={async (body) => {
-            setErr('');
-            try { await createTask(body); setLoc(''); onChanged?.(); } catch (e) { setErr(e.message); throw e; }
-          }}
-        />
-        <MapCard location={loc} title="Task location" />
-      </div>
-    </>
-  );
+// ── Find workers: browse → open a worker profile → Book ──────────────────
+function HireView({ savedIds, onBooked, onSavedChange }) {
+  const [selected, setSelected] = useState(null); // worker_id being viewed
+  if (selected) {
+    return (
+      <WorkerProfilePanel
+        workerId={selected}
+        saved={savedIds.includes(selected)}
+        onBack={() => setSelected(null)}
+        onBooked={onBooked}
+        onSavedChange={onSavedChange}
+      />
+    );
+  }
+  return <BrowseWorkers savedIds={savedIds} onOpen={setSelected} onSavedChange={onSavedChange} />;
 }
 
-function HireView({ onChanged }) {
-  const workers = useAsync(() => getWorkers(), []);
-  const tasks = useAsync(() => getMyTasks(), []);
-  const saved = useAsync(() => getSavedWorkers(), []);
+function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
+  const [term, setTerm] = useState('');
+  const [skill, setSkill] = useState('');
+  const workers = useAsync(() => getWorkers(skill), [skill]);
   const [err, setErr] = useState('');
 
-  const openTasks = (tasks.data || []).filter((t) => t.status === 'open');
-  const savedIds = (saved.data || []).map((w) => w.worker_id);
+  async function toggleSave(w) {
+    setErr('');
+    try {
+      await (savedIds.includes(w.worker_id) ? unsaveWorker(w.worker_id) : saveWorker(w.worker_id));
+      onSavedChange?.();
+    } catch (e) { setErr(e.message); }
+  }
 
-  const reloadAll = () => { tasks.reload(); saved.reload(); onChanged?.(); };
-  const guard = async (p) => { setErr(''); try { await p; } catch (e) { setErr(e.message); throw e; } };
+  const list = workers.data || [];
 
   return (
     <>
       <h1>Find workers</h1>
-      <p className="subtitle">Browse trusted workers and assign one to an open task.</p>
+      <p className="subtitle">Browse available workers, open a profile, and book — no task to post.</p>
       <ErrorNote message={err} />
 
-      <div style={{ marginTop: '0.75rem', marginBottom: '0.5rem' }}>
+      <div style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}>
         <MapCard title="Workers in your area" location="Kigali, Rwanda" height={200} />
       </div>
 
-      <h2 className="section-title">Available workers</h2>
-      {workers.loading && <Loading />}
-      {workers.error && <ErrorNote message={workers.error} />}
-      {!workers.loading && openTasks.length === 0 && (
-        <p className="meta">Post a task first, then assign one of these workers to it.</p>
+      <form className="row" onSubmit={(e) => { e.preventDefault(); setSkill(term.trim()); }} style={{ marginBottom: '1rem' }}>
+        <input className="input" style={{ flex: 1, minWidth: '180px' }} value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Search a skill, e.g. Plumbing" />
+        <button className="btn-primary" type="submit">Search</button>
+        {skill && <button type="button" className="btn-secondary" onClick={() => { setTerm(''); setSkill(''); }}>Clear</button>}
+      </form>
+
+      {workers.loading ? <Loading /> : workers.error ? <ErrorNote message={workers.error} /> : list.length === 0 ? (
+        <div className="empty">No available workers{skill ? ` for “${skill}”` : ''} right now.</div>
+      ) : (
+        <div className="grid2">
+          {list.map((w) => (
+            <div className="card" key={w.worker_id}>
+              <div className="card-head">
+                <div className="row" style={{ gap: '0.6rem' }}>
+                  <span className="avatar" style={{ width: 40, height: 40, borderRadius: 12, fontSize: '0.9rem' }}>{initials(w.name)}</span>
+                  <div>
+                    <div className="card-title">{w.name}</div>
+                    <div className="meta">{w.skills || 'No skills listed yet'}</div>
+                  </div>
+                </div>
+                <Stars rating={Number(w.rating) || 0} />
+              </div>
+              <div className="row" style={{ marginTop: '0.6rem' }}>
+                <TierBadge tier={w.tier} />
+                <VerifyBadge status={w.verification} />
+                <span className="meta">{w.completedJobs || 0} jobs done</span>
+              </div>
+              <div className="actions">
+                <button className="btn-primary" onClick={() => onOpen(w.worker_id)}>View profile</button>
+                <button className="btn-secondary" onClick={() => toggleSave(w)}>{savedIds.includes(w.worker_id) ? '★ Saved' : '☆ Save'}</button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
-      <div className="grid2">
-        {(workers.data || []).map((w) => (
-          <WorkerCard
-            key={w.worker_id}
-            worker={w}
-            openTasks={openTasks}
-            saved={savedIds.includes(w.worker_id)}
-            onAssign={async (taskId) => { await guard(createBooking({ task_id: Number(taskId), worker_id: w.worker_id })); reloadAll(); }}
-            onToggleSave={async () => { await guard(savedIds.includes(w.worker_id) ? unsaveWorker(w.worker_id) : saveWorker(w.worker_id)); saved.reload(); }}
-          />
-        ))}
-      </div>
     </>
   );
 }
 
-function PostTask({ categories, onPost, onLocationChange }) {
-  const [form, setForm] = useState({ title: '', category_id: '', description: '', location: '' });
-  const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-  async function submit(e) {
-    e.preventDefault();
-    if (!form.title.trim()) return;
-    const body = { title: form.title, description: form.description, location: form.location };
-    if (form.category_id) body.category_id = Number(form.category_id);
-    try { await onPost(body); setForm({ title: '', category_id: '', description: '', location: '' }); } catch { /* error shown by parent */ }
+function WorkerProfilePanel({ workerId, saved, onBack, onBooked, onSavedChange }) {
+  const { data: w, loading, error } = useAsync(() => getWorker(workerId), [workerId]);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function book() {
+    setBusy(true); setErr('');
+    try { await bookWorker(workerId); onBooked?.(); } catch (e) { setErr(e.message); setBusy(false); }
   }
+  async function toggleSave() {
+    setErr('');
+    try { await (saved ? unsaveWorker(workerId) : saveWorker(workerId)); onSavedChange?.(); } catch (e) { setErr(e.message); }
+  }
+
   return (
-    <div className="card">
-      <form className="form" onSubmit={submit} style={{ maxWidth: '100%' }}>
-        <label>Title
-          <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="e.g. Fix a leaking kitchen tap" />
-        </label>
-        <label>Category
-          <select className="select" value={form.category_id} onChange={(e) => set('category_id', e.target.value)}>
-            <option value="">Choose a category…</option>
-            {categories.map((c) => <option key={c.category_id} value={c.category_id}>{c.name}</option>)}
-          </select>
-        </label>
-        <label>Location (optional)
-          <input
-            value={form.location}
-            onChange={(e) => { set('location', e.target.value); onLocationChange?.(e.target.value); }}
-            placeholder="e.g. Kimironko"
-          />
-        </label>
-        <button className="btn-primary" type="submit">Post task</button>
-      </form>
-    </div>
+    <>
+      <button type="button" className="btn-ghost" onClick={onBack} style={{ paddingLeft: 0 }}>← Back to workers</button>
+      {loading ? <Loading /> : error ? <ErrorNote message={error} /> : (
+        <>
+          <div className="card" style={{ marginTop: '0.5rem' }}>
+            <div className="card-head">
+              <div className="row" style={{ gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
+                <span className="avatar">{initials(w.name)}</span>
+                <div>
+                  <div className="row" style={{ gap: '0.5rem' }}>
+                    <span className="card-title">{w.name}</span>
+                    <TierBadge tier={w.tier} />
+                    <VerifyBadge status={w.verification} />
+                  </div>
+                  <div className="stars-row"><Stars rating={Number(w.rating) || 0} /></div>
+                  <div className="meta" style={{ marginTop: '0.35rem' }}>
+                    {w.is_available ? 'Available now' : 'Currently unavailable'} · {w.activeJobsCount || 0} active · {(w.taskHistory || []).length} completed
+                  </div>
+                </div>
+              </div>
+            </div>
+            {w.skills && <div className="meta" style={{ marginTop: '0.75rem' }}><strong>Skills:</strong> {w.skills}</div>}
+            {w.bio && <p className="meta" style={{ marginTop: '0.35rem' }}>{w.bio}</p>}
+            <ErrorNote message={err} />
+            <div className="actions">
+              <button className="btn-primary" onClick={book} disabled={busy}>{busy ? 'Booking…' : 'Book this worker'}</button>
+              <button className="btn-secondary" onClick={toggleSave}>{saved ? '★ Saved' : '☆ Save'}</button>
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-title" style={{ marginBottom: '0.75rem' }}>Track record</div>
+            {(w.taskHistory || []).length === 0 ? (
+              <div className="history-empty">{Icons.check}No completed jobs yet</div>
+            ) : (
+              w.taskHistory.map((h) => (
+                <div className="row" key={h.booking_id} style={{ justifyContent: 'space-between', padding: '0.5rem 0' }}>
+                  <span className="meta">{h.taskTitle} · {String(h.date).slice(0, 10)}</span>
+                  {h.review && <span className="badge badge--star">Reviewed {h.review.rating}★</span>}
+                </div>
+              ))
+            )}
+          </div>
+        </>
+      )}
+    </>
   );
 }
 
-function WorkerCard({ worker, openTasks, saved, onAssign, onToggleSave }) {
-  const [taskId, setTaskId] = useState('');
-  return (
-    <div className="card">
-      <div className="card-head">
-        <div className="card-title">{worker.name}</div>
-        <Stars rating={Number(worker.rating) || 0} />
-      </div>
-      <div className="meta">{worker.skills || 'No skills listed yet'}</div>
-      {worker.bio && <p className="meta" style={{ marginTop: '0.25rem' }}>{worker.bio}</p>}
-      <div className="row" style={{ marginTop: '0.5rem' }}><TierBadge tier={worker.tier} /></div>
-      <div className="actions">
-        <select className="select" value={taskId} onChange={(e) => setTaskId(e.target.value)}>
-          <option value="">Assign to task…</option>
-          {openTasks.map((t) => <option key={t.task_id} value={t.task_id}>{t.title}</option>)}
-        </select>
-        <button className="btn-primary" onClick={() => { if (taskId) { onAssign(taskId); setTaskId(''); } }} disabled={!taskId}>Select</button>
-        <button className="btn-secondary" onClick={onToggleSave}>{saved ? '★ Saved' : '☆ Save'}</button>
-      </div>
-    </div>
-  );
-}
-
+// ── Bookings / History / Saved (unchanged behaviour, read from /bookings) ─
 function BookingsView({ state, bookings }) {
   const { loading, error, reload } = state;
   return (
@@ -244,7 +269,7 @@ function BookingsView({ state, bookings }) {
       <p className="subtitle">Track each job from accepted through to completion.</p>
       <ErrorNote message={error} />
       {loading ? <Loading /> : bookings.length === 0 ? (
-        <div className="empty" style={{ marginTop: '0.75rem' }}>No active bookings. Post &amp; hire to start one.</div>
+        <div className="empty" style={{ marginTop: '0.75rem' }}>No active bookings. Find a worker to book one.</div>
       ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} />)}
     </>
   );
@@ -322,7 +347,7 @@ function SavedView({ state, onRebook }) {
       <p className="subtitle">Your preferred workers — rebook any of them in one tap.</p>
       <ErrorNote message={error || err} />
       {loading ? <Loading /> : saved.length === 0 ? (
-        <div className="empty" style={{ marginTop: '0.75rem' }}>No saved workers yet. Tap “Save” on a worker in Post &amp; hire.</div>
+        <div className="empty" style={{ marginTop: '0.75rem' }}>No saved workers yet. Tap “Save” on a worker in Find workers.</div>
       ) : saved.map((w) => (
         <div className="card" key={w.worker_id}>
           <div className="card-head">

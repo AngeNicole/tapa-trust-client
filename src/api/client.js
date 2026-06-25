@@ -65,8 +65,14 @@ export function createCategory(payload) {
 }
 
 // --- workers ---
-export function getWorkers() {
-  return apiFetch('/workers');
+// Browse: only available workers by default; optional skill filter.
+export function getWorkers(skill) {
+  const q = skill && skill.trim() ? `?skill=${encodeURIComponent(skill.trim())}` : '';
+  return apiFetch(`/workers${q}`);
+}
+// All workers regardless of availability (admin/oversight).
+export function getAllWorkers() {
+  return apiFetch('/workers?all=true');
 }
 export function getWorker(id) {
   return apiFetch(`/workers/${id}`);
@@ -80,21 +86,19 @@ export function getMyWorkerProfile() {
 export function updateMyWorkerProfile(payload) {
   return apiFetch('/workers/me', { method: 'PUT', body: JSON.stringify(payload) });
 }
-
-// --- tasks ---
-export function createTask(payload) {
-  return apiFetch('/tasks', { method: 'POST', body: JSON.stringify(payload) });
+export function setAvailability(isAvailable) {
+  return apiFetch('/workers/me/availability', { method: 'PUT', body: JSON.stringify({ is_available: isAvailable }) });
 }
-export function getMyTasks() {
-  return apiFetch('/tasks');
-}
-export function getTask(id) {
-  return apiFetch(`/tasks/${id}`);
+// Simulated digital-ID verification (Tier 1) — clearly mock, not a real check.
+export function submitVerification(payload) {
+  return apiFetch('/workers/me/verification', { method: 'POST', body: JSON.stringify(payload || {}) });
 }
 
 // --- bookings (the trust loop) ---
-export function createBooking(payload) {
-  return apiFetch('/bookings', { method: 'POST', body: JSON.stringify(payload) });
+// The only booking-creation path: book straight from a worker profile.
+// The server auto-creates the internal task; the client never touches tasks.
+export function bookWorker(workerId) {
+  return apiFetch(`/bookings/book/${workerId}`, { method: 'POST' });
 }
 export function getBookings() {
   return apiFetch('/bookings');
@@ -128,7 +132,18 @@ export function unsaveWorker(workerId) {
   return apiFetch(`/saved-workers/${workerId}`, { method: 'DELETE' });
 }
 
+// --- notifications ---
+export function getNotifications() {
+  return apiFetch('/notifications');
+}
+export function markNotificationRead(id) {
+  return apiFetch(`/notifications/${id}/read`, { method: 'POST' });
+}
+
 // --- admin ---
 export function getAdminUsers() {
   return apiFetch('/admin/users');
+}
+export function verifyWorker(workerId) {
+  return apiFetch(`/admin/workers/${workerId}/verify`, { method: 'POST' });
 }

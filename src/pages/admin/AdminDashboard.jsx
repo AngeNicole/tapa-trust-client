@@ -1,25 +1,68 @@
 import { useState } from 'react';
-import { getAdminUsers, getCategories, createCategory } from '../../api/client.js';
+import { getAdminUsers, getCategories, createCategory, getAllWorkers, verifyWorker } from '../../api/client.js';
 import { useAsync } from '../../api/hooks.js';
-import { Loading, ErrorNote } from '../../demo/ui.jsx';
+import { Loading, ErrorNote, VerifyBadge } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
-import { Icons } from '../../demo/icons.jsx';
+import { Icons } from '../../components/shared/icons.jsx';
 
 export default function AdminDashboard() {
-  const [tab, setTab] = useState('users');
+  const [tab, setTab] = useState('verify');
   const users = useAsync(() => getAdminUsers(), []);
   const categories = useAsync(() => getCategories(), []);
+  const workers = useAsync(() => getAllWorkers(), []);
+
+  const pending = (workers.data || []).filter((w) => w.verification === 'pending').length;
 
   const items = [
+    { key: 'verify', label: 'Verifications', icon: Icons.check, count: pending },
     { key: 'users', label: 'Users', icon: Icons.user, count: users.data?.length || 0 },
     { key: 'categories', label: 'Categories', icon: Icons.briefcase, count: categories.data?.length || 0 },
   ];
 
   return (
     <DashShell items={items} active={tab} onSelect={setTab}>
+      {tab === 'verify' && <VerifyView state={workers} />}
       {tab === 'users' && <UsersView state={users} />}
       {tab === 'categories' && <CategoriesView state={categories} />}
     </DashShell>
+  );
+}
+
+function VerifyView({ state }) {
+  const { data, loading, error, reload } = state;
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(null);
+  async function approve(workerId) {
+    setErr(''); setBusy(workerId);
+    try { await verifyWorker(workerId); reload(); } catch (e) { setErr(e.message); } finally { setBusy(null); }
+  }
+  const workers = data || [];
+  return (
+    <>
+      <h1>Verifications</h1>
+      <p className="subtitle">Approve workers' simulated identity verification. Oversight only.</p>
+      <ErrorNote message={error || err} />
+      {loading ? <Loading /> : workers.length === 0 ? (
+        <div className="empty" style={{ marginTop: '0.75rem' }}>No workers yet.</div>
+      ) : workers.map((w) => (
+        <div className="card" key={w.worker_id}>
+          <div className="card-head">
+            <div>
+              <div className="card-title">{w.name}</div>
+              <div className="meta">{w.skills || 'No skills listed yet'} · {w.is_available ? 'Available' : 'Unavailable'}</div>
+            </div>
+            <div className="row">
+              <VerifyBadge status={w.verification} />
+              {w.verification !== 'verified' && (
+                <button className="btn-primary" disabled={busy === w.worker_id} onClick={() => approve(w.worker_id)}>
+                  {busy === w.worker_id ? 'Approving…' : 'Approve'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 
@@ -73,7 +116,7 @@ function CategoriesView({ state }) {
   return (
     <>
       <h1>Skill categories</h1>
-      <p className="subtitle">The service categories requesters can post tasks under.</p>
+      <p className="subtitle">The service categories workers list skills under.</p>
       <div className="card" style={{ marginTop: '0.75rem' }}>
         {state.loading ? <span className="meta">Loading…</span> : (
           <div className="row">

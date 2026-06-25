@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { Icons } from '../demo/icons.jsx';
+import { Icons } from './shared/icons.jsx';
+import { NotificationsBell } from './NotificationsBell.jsx';
 
 function initials(name = '') {
   const p = name.trim().split(/\s+/);
@@ -58,7 +59,7 @@ export function DashShell({ items, active, onSelect, children, rightRail }) {
             <input type="text" placeholder="Search…" aria-label="Search" />
           </label>
           <button type="button" className="icon-btn" aria-label="Messages">{Icons.mail}</button>
-          <button type="button" className="icon-btn" aria-label="Notifications">{Icons.bell}</button>
+          <NotificationsBell />
           <span className="top-divider" />
           <div className="top-user">
             <span className="avatar-sm">{initials(user?.name)}</span>
