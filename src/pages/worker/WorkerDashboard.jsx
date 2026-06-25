@@ -91,13 +91,15 @@ function AvailabilityToggle({ me, reload }) {
 }
 
 function VerificationCard({ status, reload }) {
-  const [ref, setRef] = useState('');
+  const [fileName, setFileName] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   async function submit(e) {
     e.preventDefault();
+    if (!fileName) return;
     setBusy(true); setErr('');
-    try { await submitVerification({ reference: ref || 'demo-id' }); reload(); } catch (e2) { setErr(e2.message); setBusy(false); }
+    // Simulated: the document is not stored — we send the filename as the marker.
+    try { await submitVerification({ document: fileName }); reload(); } catch (e2) { setErr(e2.message); setBusy(false); }
   }
   return (
     <div className="card">
@@ -105,13 +107,26 @@ function VerificationCard({ status, reload }) {
         <div className="card-title">Identity verification</div>
         <VerifyBadge status={status} />
       </div>
-      <p className="meta">Simulated verification — no real ID is checked. An admin reviews and approves it. You can skip this and finish it later.</p>
+      <p className="meta">Simulated verification — upload a mock ID document. No real ID is checked and the file isn't stored; an admin reviews and approves it. You can skip this and finish it later.</p>
       {status === 'verified' && <p className="meta" style={{ marginTop: '0.5rem' }}>You're verified. ✓</p>}
-      {status === 'pending' && <p className="meta" style={{ marginTop: '0.5rem' }}>Your submission is pending admin review.</p>}
+      {status === 'pending' && <p className="meta" style={{ marginTop: '0.5rem' }}>Your document is pending admin review.</p>}
       {status === 'unverified' && (
-        <form className="row" onSubmit={submit} style={{ marginTop: '0.6rem', width: '100%' }}>
-          <input className="input" style={{ flex: 1, minWidth: '180px' }} value={ref} onChange={(e) => setRef(e.target.value)} placeholder="Reference / mock document — Simulated verification" />
-          <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Submitting…' : 'Submit for verification'}</button>
+        <form onSubmit={submit} style={{ marginTop: '0.6rem' }}>
+          <div className="row">
+            <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+              {Icons.upload} Choose document
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                style={{ display: 'none' }}
+                onChange={(e) => setFileName(e.target.files?.[0]?.name || '')}
+              />
+            </label>
+            <span className="meta">{fileName || 'No file selected — Simulated verification'}</span>
+            <button className="btn-primary" type="submit" disabled={busy || !fileName}>
+              {busy ? 'Submitting…' : 'Submit document'}
+            </button>
+          </div>
         </form>
       )}
       <ErrorNote message={err} />

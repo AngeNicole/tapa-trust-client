@@ -16,6 +16,7 @@ import {
   Bell,
   SignOut,
   Sparkle,
+  UploadSimple,
 } from '@phosphor-icons/react';
 
 const w = 'regular';
@@ -36,4 +37,5 @@ export const Icons = {
   bell: <Bell weight={w} />,
   logout: <SignOut weight={w} />,
   spark: <Sparkle weight={w} />,
+  upload: <UploadSimple weight={w} />,
 };
