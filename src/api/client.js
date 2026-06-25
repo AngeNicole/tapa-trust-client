@@ -68,7 +68,20 @@ export function createCategory(payload) {
   return apiFetch('/admin/categories', { method: 'POST', body: JSON.stringify(payload) });
 }
 
-// --- workers ---
+// --- public (unauthenticated) browse ---
+// Powers the logged-out landing + worker profile. Narrow public projection.
+export function getPublicWorkers(skill) {
+  const q = skill && skill.trim() ? `?skill=${encodeURIComponent(skill.trim())}` : '';
+  return apiFetch(`/public/workers${q}`);
+}
+export function getPublicWorker(id) {
+  return apiFetch(`/public/workers/${id}`);
+}
+export function getPublicWorkerHistory(id) {
+  return apiFetch(`/public/workers/${id}/history`);
+}
+
+// --- workers (authed, in-app) ---
 // Browse: only available workers by default; optional skill filter.
 export function getWorkers(skill) {
   const q = skill && skill.trim() ? `?skill=${encodeURIComponent(skill.trim())}` : '';

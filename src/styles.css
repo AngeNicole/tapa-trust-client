@@ -1266,6 +1266,19 @@ body {
     border: 0;
   }
 
+  /* public (logged-out) chrome */
+  .public-page { @apply min-h-screen w-full bg-bg-white-0; }
+  .public-top { @apply flex items-center gap-4 border-b border-stroke-soft-200 px-5 py-3.5 sm:px-8; }
+  .public-actions { @apply ml-auto flex shrink-0 items-center gap-3; }
+  .public-link { @apply text-label-sm font-medium text-text-sub-600 no-underline transition-colors hover:text-text-strong-950; }
+  .public-main { @apply mx-auto max-w-6xl px-5 py-8 sm:px-8; }
+  .public-hero { @apply mb-2; }
+  .public-hero-title { @apply text-title-h3 font-semibold text-text-strong-950; }
+  .grid3 { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+  .worker-tile {
+    @apply block rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-4 text-inherit no-underline transition-colors hover:border-primary-base;
+  }
+
   /* ---- sidebar dashboard shell ---- */
   .dash {
     @apply flex flex-col gap-5 bg-bg-weak-50 p-5 sm:flex-row sm:gap-6 sm:p-6;

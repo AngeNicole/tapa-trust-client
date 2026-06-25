@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
+import { resumeAfterAuth } from '../../api/pendingBooking.js';
 import PasswordInput from '../../components/PasswordInput.jsx';
 
 // A strong password: at least 8 characters with an uppercase letter, a
@@ -18,12 +19,16 @@ function isStrongPassword(pw) {
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Coming from a "Book" click while logged out → requester-only, no picker.
+  const bookingFlow = location.state?.book != null;
+  const initialRole = bookingFlow ? 'requester' : location.state?.role || 'requester';
 
   const [form, setForm] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'requester',
+    role: initialRole,
     location: '',
     phone: '',
   });
@@ -55,7 +60,8 @@ export default function Register() {
     setSubmitting(true);
     try {
       const user = await register(form);
-      navigate(homePathForRole(user.role), { replace: true });
+      const resumePath = await resumeAfterAuth(user);
+      navigate(resumePath || homePathForRole(user.role), { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -66,29 +72,34 @@ export default function Register() {
   return (
     <div className="page">
       <h1>Create your account</h1>
+      {bookingFlow && (
+        <p className="subtitle">Create a requester account to finish booking the worker you selected.</p>
+      )}
 
       <form className="form" onSubmit={onSubmit}>
-        <label>
-          I am a
-          <div className="role-picker">
-            <button
-              type="button"
-              className={`role-option ${form.role === 'requester' ? 'role-option--active' : ''}`}
-              onClick={() => update('role', 'requester')}
-            >
-              Requester
-              <span className="role-hint">I need to hire skilled help</span>
-            </button>
-            <button
-              type="button"
-              className={`role-option ${form.role === 'worker' ? 'role-option--active' : ''}`}
-              onClick={() => update('role', 'worker')}
-            >
-              Worker
-              <span className="role-hint">I offer skilled services</span>
-            </button>
-          </div>
-        </label>
+        {!bookingFlow && (
+          <label>
+            I am a
+            <div className="role-picker">
+              <button
+                type="button"
+                className={`role-option ${form.role === 'requester' ? 'role-option--active' : ''}`}
+                onClick={() => update('role', 'requester')}
+              >
+                Requester
+                <span className="role-hint">I need to hire skilled help</span>
+              </button>
+              <button
+                type="button"
+                className={`role-option ${form.role === 'worker' ? 'role-option--active' : ''}`}
+                onClick={() => update('role', 'worker')}
+              >
+                Worker
+                <span className="role-hint">I offer skilled services</span>
+              </button>
+            </div>
+          </label>
+        )}
 
         <label>
           Full name
