@@ -67,18 +67,31 @@ function VerifyView({ state }) {
 }
 
 function UsersView({ state }) {
+  const [view, setView] = useState('all');
   const roleBadge = (r) => ({ admin: 'badge--primary', worker: 'badge--info', requester: 'badge--neutral' }[r] || 'badge--neutral');
+  const all = state.data || [];
+  const counts = {
+    all: all.length,
+    requester: all.filter((u) => u.role === 'requester').length,
+    worker: all.filter((u) => u.role === 'worker').length,
+  };
+  const rows = view === 'all' ? all : all.filter((u) => u.role === view);
   return (
     <>
       <h1>Users</h1>
       <p className="subtitle">Oversight only — admins never post, accept, or pay.</p>
+      <div className="subtabs">
+        <button type="button" className={`subtab ${view === 'all' ? 'subtab--active' : ''}`} onClick={() => setView('all')}>All ({counts.all})</button>
+        <button type="button" className={`subtab ${view === 'requester' ? 'subtab--active' : ''}`} onClick={() => setView('requester')}>Requesters ({counts.requester})</button>
+        <button type="button" className={`subtab ${view === 'worker' ? 'subtab--active' : ''}`} onClick={() => setView('worker')}>Workers ({counts.worker})</button>
+      </div>
       {state.loading ? <Loading /> : state.error ? <ErrorNote message={state.error} /> : (
-        <div className="card" style={{ marginTop: '0.75rem' }}>
+        <div className="card">
           <div style={{ overflowX: 'auto' }}>
             <table className="tbl">
               <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Location</th><th>Joined</th></tr></thead>
               <tbody>
-                {(state.data || []).map((u) => (
+                {rows.map((u) => (
                   <tr key={u.user_id}>
                     <td>{u.user_id}</td>
                     <td>{u.name}</td>

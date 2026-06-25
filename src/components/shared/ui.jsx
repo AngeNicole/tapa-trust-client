@@ -1,5 +1,22 @@
 // Small presentational helpers shared by the demo dashboards.
 
+function initials(name = '') {
+  const p = name.trim().split(/\s+/);
+  return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'U';
+}
+
+// Avatar: a profile photo if one is set, otherwise initials on a gradient.
+export function Avatar({ name, photo, className = 'avatar', style }) {
+  if (photo) {
+    return (
+      <span className={className} style={{ padding: 0, overflow: 'hidden', ...style }}>
+        <img src={photo} alt={name || 'avatar'} />
+      </span>
+    );
+  }
+  return <span className={className} style={style}>{initials(name)}</span>;
+}
+
 // Format an amount in Rwandan francs, e.g. 25000 -> "RWF 25,000".
 export function rwf(n) {
   return 'RWF ' + Number(n || 0).toLocaleString('en-US');

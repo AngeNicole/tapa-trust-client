@@ -3,6 +3,8 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import {
   getMyWorkerProfile,
   updateMyWorkerProfile,
+  updateMe,
+  getCategories,
   setAvailability,
   submitVerification,
   getWorkerHistory,
@@ -12,7 +14,7 @@ import {
   checkoutBooking,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Loading, ErrorNote, rwf, monthLabel } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, rwf, monthLabel } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
@@ -135,29 +137,6 @@ function VerificationCard({ status, reload }) {
 }
 
 function ProfileEditor({ user, me, reload }) {
-  const initialSkills = (me.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
-  const [skills, setSkills] = useState(initialSkills);
-  const [draft, setDraft] = useState('');
-  const [bio, setBio] = useState(me.bio || '');
-  const [saved, setSaved] = useState(false);
-  const [err, setErr] = useState('');
-
-  const addSkill = () => {
-    const s = draft.trim();
-    if (s && !skills.includes(s)) setSkills([...skills, s]);
-    setDraft('');
-  };
-  const reset = () => { setSkills(initialSkills); setBio(me.bio || ''); setDraft(''); };
-  async function save(e) {
-    e.preventDefault();
-    setErr('');
-    try {
-      await updateMyWorkerProfile({ skills: skills.join(', '), bio });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
-    } catch (e2) { setErr(e2.message); }
-  }
-
   return (
     <>
       <h1>Your profile</h1>
@@ -166,7 +145,7 @@ function ProfileEditor({ user, me, reload }) {
       <div className="card" style={{ marginTop: '0.75rem' }}>
         <div className="card-head" style={{ alignItems: 'center' }}>
           <div className="row" style={{ alignItems: 'center', gap: '1rem', flexWrap: 'nowrap' }}>
-            <div className="avatar">{initials(user.name)}</div>
+            <Avatar name={user.name} photo={me.photo} />
             <div>
               <div className="row" style={{ gap: '0.6rem' }}>
                 <span className="card-title">{user.name}</span>
@@ -190,48 +169,113 @@ function ProfileEditor({ user, me, reload }) {
       </div>
 
       <VerificationCard status={me.verification} reload={reload} />
-
-      <div className="card">
-        <div className="card-title" style={{ marginBottom: '0.75rem' }}>Edit details</div>
-        <form onSubmit={save}>
-          <label className="field-label">Skills</label>
-          <div className="row" style={{ marginBottom: '0.6rem' }}>
-            {skills.length === 0 && <span className="meta">No skills added yet.</span>}
-            {skills.map((s) => (
-              <span className="chip" key={s}>
-                {s}
-                <button type="button" onClick={() => setSkills(skills.filter((x) => x !== s))} aria-label={`Remove ${s}`}>×</button>
-              </span>
-            ))}
-          </div>
-          <div className="row" style={{ marginBottom: '1rem' }}>
-            <input
-              className="input"
-              style={{ flex: 1, minWidth: '160px' }}
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } }}
-              placeholder="Add a skill, e.g. Tiling"
-            />
-            <button type="button" className="btn-secondary" onClick={addSkill}>Add</button>
-          </div>
-
-          <label className="field-label">Bio</label>
-          <textarea className="textarea" rows={3} maxLength={500} value={bio} onChange={(e) => setBio(e.target.value)} />
-          <p className="meta" style={{ marginTop: '0.35rem' }}>Up to 500 characters.</p>
-
-          <ErrorNote message={err} />
-          <div className="divider" />
-          <div className="row" style={{ justifyContent: 'flex-end' }}>
-            {saved && <span className="badge badge--done">Saved</span>}
-            <button type="button" className="btn-ghost" onClick={reset}>Cancel</button>
-            <button type="submit" className="btn-primary">Save changes</button>
-          </div>
-        </form>
-      </div>
-
+      <PersonalDetailsCard user={user} me={me} reload={reload} />
+      <SkillsCard me={me} reload={reload} />
       <TaskHistory workerId={me.worker_id} />
     </>
+  );
+}
+
+function PersonalDetailsCard({ user, me, reload }) {
+  const { refreshUser } = useAuth();
+  const [name, setName] = useState(user.name || '');
+  const [phone, setPhone] = useState(user.phone || '');
+  const [location, setLocation] = useState(user.location || '');
+  const [photo, setPhoto] = useState(me.photo || '');
+  const [bio, setBio] = useState(me.bio || '');
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState('');
+
+  async function save(e) {
+    e.preventDefault();
+    setErr('');
+    try {
+      await updateMe({ name, phone, location });
+      await updateMyWorkerProfile({ photo, bio });
+      await refreshUser();
+      reload();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } catch (e2) { setErr(e2.message); }
+  }
+
+  return (
+    <div className="card">
+      <div className="card-title" style={{ marginBottom: '0.25rem' }}>Personal details</div>
+      <p className="meta" style={{ marginBottom: '0.75rem' }}>Your contact info and how you present yourself to requesters.</p>
+      <form className="form" onSubmit={save} style={{ maxWidth: '100%' }}>
+        <div className="grid2">
+          <label>Full name<input value={name} onChange={(e) => setName(e.target.value)} /></label>
+          <label>Phone<input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07…" /></label>
+          <label>Location<input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Kigali, Gasabo" /></label>
+          <label>Profile photo URL<input value={photo} onChange={(e) => setPhoto(e.target.value)} placeholder="https://…" /></label>
+        </div>
+        <label>Bio
+          <textarea className="textarea" rows={3} maxLength={500} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell requesters about your work, experience and what you do best." />
+        </label>
+        <p className="meta">Tip: use your bio for experience, qualifications and certifications.</p>
+        <ErrorNote message={err} />
+        <div className="row" style={{ justifyContent: 'flex-end' }}>
+          {saved && <span className="badge badge--done">Saved</span>}
+          <button type="submit" className="btn-primary">Save details</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function SkillsCard({ me, reload }) {
+  const cats = useAsync(() => getCategories(), []);
+  const [skills, setSkills] = useState((me.skills || '').split(',').map((s) => s.trim()).filter(Boolean));
+  const [draft, setDraft] = useState('');
+  const [saved, setSaved] = useState(false);
+  const [err, setErr] = useState('');
+
+  const categoryNames = (cats.data || []).map((c) => c.name);
+  const customs = skills.filter((s) => !categoryNames.includes(s));
+  const toggle = (n) => setSkills((s) => (s.includes(n) ? s.filter((x) => x !== n) : [...s, n]));
+  const addCustom = () => { const v = draft.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setDraft(''); };
+
+  async function save() {
+    setErr('');
+    try { await updateMyWorkerProfile({ skills: skills.join(', ') }); reload(); setSaved(true); setTimeout(() => setSaved(false), 1500); }
+    catch (e) { setErr(e.message); }
+  }
+
+  return (
+    <div className="card">
+      <div className="card-title" style={{ marginBottom: '0.25rem' }}>Skills</div>
+      <p className="meta">Pick from the service categories, and add any others.</p>
+
+      <label className="field-label" style={{ marginTop: '0.75rem' }}>Service categories</label>
+      <div className="row">
+        {cats.loading ? <span className="meta">Loading…</span> : categoryNames.map((n) => (
+          <button type="button" key={n} className={skills.includes(n) ? 'chip' : 'chip-opt'} onClick={() => toggle(n)}>
+            {skills.includes(n) ? '✓ ' : ''}{n}
+          </button>
+        ))}
+      </div>
+
+      <label className="field-label" style={{ marginTop: '0.9rem' }}>Other skills</label>
+      <div className="row">
+        {customs.length === 0 && <span className="meta">None added.</span>}
+        {customs.map((s) => (
+          <span className="chip" key={s}>{s}<button type="button" onClick={() => toggle(s)} aria-label={`Remove ${s}`}>×</button></span>
+        ))}
+      </div>
+      <div className="row" style={{ marginTop: '0.5rem' }}>
+        <input className="input" style={{ flex: 1, minWidth: '160px' }} value={draft} onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } }} placeholder="Add another skill, e.g. Tiling" />
+        <button type="button" className="btn-secondary" onClick={addCustom}>Add</button>
+      </div>
+
+      <ErrorNote message={err} />
+      <div className="divider" />
+      <div className="row" style={{ justifyContent: 'flex-end' }}>
+        {saved && <span className="badge badge--done">Saved</span>}
+        <button className="btn-primary" onClick={save}>Save skills</button>
+      </div>
+    </div>
   );
 }
 

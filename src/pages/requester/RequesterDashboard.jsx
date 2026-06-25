@@ -14,7 +14,7 @@ import {
   rebookWorker,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, TierBadge, VerifyBadge, Stars, Loading, ErrorNote } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, TierBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
@@ -185,7 +185,7 @@ function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
             <div className="card" key={w.worker_id}>
               <div className="card-head">
                 <div className="row" style={{ gap: '0.6rem' }}>
-                  <span className="avatar" style={{ width: 40, height: 40, borderRadius: 12, fontSize: '0.9rem' }}>{initials(w.name)}</span>
+                  <Avatar name={w.name} photo={w.photo} className="avatar" style={{ width: 40, height: 40, borderRadius: 12, fontSize: '0.9rem' }} />
                   <div>
                     <div className="card-title">{w.name}</div>
                     <div className="meta">{w.skills || 'No skills listed yet'}</div>
@@ -232,7 +232,7 @@ function WorkerProfilePanel({ workerId, saved, onBack, onBooked, onSavedChange }
           <div className="card" style={{ marginTop: '0.5rem' }}>
             <div className="card-head">
               <div className="row" style={{ gap: '0.75rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-                <span className="avatar">{initials(w.name)}</span>
+                <Avatar name={w.name} photo={w.photo} />
                 <div>
                   <div className="row" style={{ gap: '0.5rem' }}>
                     <span className="card-title">{w.name}</span>

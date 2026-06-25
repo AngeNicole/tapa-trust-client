@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Icons } from './shared/icons.jsx';
@@ -13,6 +14,16 @@ function initials(name = '') {
 export function DashShell({ items, active, onSelect, children, rightRail }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  // Track which menus have been opened so their count badge clears after a view.
+  const [opened, setOpened] = useState(() => new Set([active]));
+  useEffect(() => {
+    setOpened((s) => (s.has(active) ? s : new Set(s).add(active)));
+  }, [active]);
+
+  function select(key) {
+    setOpened((s) => new Set(s).add(key));
+    onSelect(key);
+  }
 
   function onLogout() {
     logout();
@@ -33,13 +44,13 @@ export function DashShell({ items, active, onSelect, children, rightRail }) {
             key={it.key}
             type="button"
             className={`nav-item ${active === it.key ? 'nav-item--active' : ''} ${it.soon ? 'nav-item--soon' : ''}`}
-            onClick={it.soon ? undefined : () => onSelect(it.key)}
+            onClick={it.soon ? undefined : () => select(it.key)}
             disabled={it.soon}
           >
             {it.icon}
             <span>{it.label}</span>
             {it.soon && <span className="nav-pill">Soon</span>}
-            {!it.soon && it.count > 0 && <span className="nav-count">{it.count}</span>}
+            {!it.soon && it.count > 0 && !opened.has(it.key) && <span className="nav-count">{it.count}</span>}
           </button>
         ))}
 

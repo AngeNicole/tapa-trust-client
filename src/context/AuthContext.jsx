@@ -64,7 +64,18 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  const value = { user, loading, login, register, logout };
+  // Re-fetch the current user (e.g. after editing personal details).
+  const refreshUser = useCallback(async () => {
+    try {
+      const { user: u } = await fetchMe();
+      setUser(u);
+      return u;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const value = { user, loading, login, register, logout, refreshUser };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

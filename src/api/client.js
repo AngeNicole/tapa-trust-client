@@ -55,6 +55,10 @@ export function loginUser(payload) {
 export function fetchMe() {
   return apiFetch('/auth/me');
 }
+// Update the logged-in user's personal details (name, phone, location).
+export function updateMe(payload) {
+  return apiFetch('/auth/me', { method: 'PUT', body: JSON.stringify(payload) });
+}
 
 // --- categories ---
 export function getCategories() {
