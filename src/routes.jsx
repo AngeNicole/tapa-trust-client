@@ -3,7 +3,8 @@ import { useAuth, homePathForRole } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import RoleGate from './components/RoleGate.jsx';
 import Layout from './components/Layout.jsx';
-import Landing from './pages/Landing.jsx';
+import PublicBrowse from './pages/public/PublicBrowse.jsx';
+import PublicWorkerProfile from './pages/public/PublicWorkerProfile.jsx';
 import Login from './pages/auth/Login.jsx';
 import Register from './pages/auth/Register.jsx';
 import RequesterDashboard from './pages/requester/RequesterDashboard.jsx';
@@ -43,7 +44,8 @@ function area(roles, Page) {
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
+      <Route path="/" element={<PublicBrowse />} />
+      <Route path="/workers/:id" element={<PublicWorkerProfile />} />
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
       <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
 

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
+import { resumeAfterAuth, getPendingBooking } from '../../api/pendingBooking.js';
+import PasswordInput from '../../components/PasswordInput.jsx';
 
 export default function Login() {
   const { login } = useAuth();
@@ -24,7 +26,8 @@ export default function Login() {
     setSubmitting(true);
     try {
       const user = await login(form);
-      navigate(homePathForRole(user.role), { replace: true });
+      const resumePath = await resumeAfterAuth(user);
+      navigate(resumePath || homePathForRole(user.role), { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -35,6 +38,9 @@ export default function Login() {
   return (
     <div className="page">
       <h1>Log in</h1>
+      {getPendingBooking() != null && (
+        <p className="subtitle">Log in as a requester to finish booking the worker you selected.</p>
+      )}
 
       <form className="form" onSubmit={onSubmit}>
         <label>
@@ -48,10 +54,10 @@ export default function Login() {
 
         <label>
           Password
-          <input
-            type="password"
+          <PasswordInput
             value={form.password}
             onChange={(e) => update('password', e.target.value)}
+            autoComplete="current-password"
           />
         </label>
 
