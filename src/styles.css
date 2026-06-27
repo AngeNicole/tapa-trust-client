@@ -1416,7 +1416,7 @@ body {
     @apply fixed right-4 top-4 z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2;
   }
   .toast {
-    @apply flex cursor-pointer items-start gap-2 rounded-xl border border-stroke-soft-200 bg-bg-white-0 px-4 py-3 text-paragraph-sm text-text-strong-950;
+    @apply flex w-full cursor-pointer items-start gap-2 rounded-xl border border-stroke-soft-200 bg-bg-white-0 px-4 py-3 text-left text-paragraph-sm text-text-strong-950;
     box-shadow: var(--shadow-regular-md);
     animation: toast-in 0.18s ease-out;
   }

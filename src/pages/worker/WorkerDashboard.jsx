@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
   getMyWorkerProfile,
@@ -77,12 +77,19 @@ function ProfileView({ user }) {
 }
 
 function AvailabilityToggle({ me, reload }) {
+  const notify = useToast();
   const [available, setAvail] = useState(!!me.is_available);
   const [busy, setBusy] = useState(false);
+  // Keep in sync if the profile reloads (or changes from another session).
+  useEffect(() => { setAvail(!!me.is_available); }, [me.is_available]);
   async function toggle() {
     const next = !available;
     setBusy(true); setAvail(next);
-    try { await setAvailability(next); reload(); } catch { setAvail(!next); } finally { setBusy(false); }
+    // Server may reject going available (e.g. requires skills + bio first) —
+    // revert and surface the reason rather than failing silently.
+    try { await setAvailability(next); reload(); }
+    catch (e) { setAvail(!next); notify(e.message || 'Could not update availability'); }
+    finally { setBusy(false); }
   }
   return (
     <button type="button" className="btn-secondary" onClick={toggle} disabled={busy} title="Workers must be available to appear in browse">
@@ -101,7 +108,7 @@ function VerificationCard({ status, reload }) {
     if (!fileName) return;
     setBusy(true); setErr('');
     // Simulated: the document is not stored — we send the filename as the marker.
-    try { await submitVerification({ document: fileName }); reload(); } catch (e2) { setErr(e2.message); setBusy(false); }
+    try { await submitVerification({ document: fileName }); reload(); } catch (e2) { setErr(e2.message); } finally { setBusy(false); }
   }
   return (
     <div className="card">

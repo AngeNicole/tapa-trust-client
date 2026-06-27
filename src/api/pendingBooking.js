@@ -16,14 +16,23 @@ export function clearPendingBooking() {
 }
 
 // After authentication, if there's a pending booking and the user is a
-// requester, create it. Returns the path to land on ('/requester') or null
-// (caller falls back to the normal post-auth destination).
+// requester, create it. Returns the path to land on, or null (caller falls
+// back to the normal post-auth destination).
+//   - success → '/requester' (the new booking is there)
+//   - failure → back to the worker's public profile so they can retry Book
+// Pending is always cleared so we never re-fire it on a later login.
 export async function resumeAfterAuth(user) {
   const id = getPendingBooking();
-  clearPendingBooking();
-  if (id && user?.role === 'requester') {
-    try { await bookWorker(id); } catch { /* surfaced on the bookings screen */ }
-    return '/requester';
+  if (!id || user?.role !== 'requester') {
+    clearPendingBooking();
+    return null;
   }
-  return null;
+  try {
+    await bookWorker(id);
+    clearPendingBooking();
+    return '/requester';
+  } catch {
+    clearPendingBooking();
+    return `/workers/${id}`;
+  }
 }

@@ -66,8 +66,8 @@ export default function RequesterDashboard() {
           onSavedChange={() => saved.reload()}
         />
       )}
-      {tab === 'bookings' && <BookingsView state={bookings} bookings={active} onCompleted={setReviewBooking} />}
-      {tab === 'history' && <HistoryView state={bookings} bookings={history} />}
+      {tab === 'bookings' && <BookingsView state={bookings} bookings={active} onReview={setReviewBooking} />}
+      {tab === 'history' && <HistoryView state={bookings} bookings={history} onReview={setReviewBooking} />}
       {tab === 'saved' && <SavedView state={saved} onRebook={afterBook} />}
       {tab === 'profile' && (
         <>
@@ -275,7 +275,7 @@ function WorkerProfilePanel({ workerId, saved, onBack, onBooked, onSavedChange }
 }
 
 // ── Bookings / History / Saved (unchanged behaviour, read from /bookings) ─
-function BookingsView({ state, bookings, onCompleted }) {
+function BookingsView({ state, bookings, onReview }) {
   const { loading, error, reload } = state;
   return (
     <>
@@ -284,12 +284,12 @@ function BookingsView({ state, bookings, onCompleted }) {
       <ErrorNote message={error} />
       {loading ? <Loading /> : bookings.length === 0 ? (
         <div className="empty" style={{ marginTop: '0.75rem' }}>No active bookings. Find a worker to book one.</div>
-      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onCompleted={onCompleted} />)}
+      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} />)}
     </>
   );
 }
 
-function HistoryView({ state, bookings }) {
+function HistoryView({ state, bookings, onReview }) {
   const { loading, error, reload } = state;
   return (
     <>
@@ -298,18 +298,18 @@ function HistoryView({ state, bookings }) {
       <ErrorNote message={error} />
       {loading ? <Loading /> : bookings.length === 0 ? (
         <div className="empty" style={{ marginTop: '0.75rem' }}>No completed jobs yet.</div>
-      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} />)}
+      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} />)}
     </>
   );
 }
 
-function BookingCard({ b, reload, onCompleted }) {
+function BookingCard({ b, reload, onReview }) {
   const [err, setErr] = useState('');
   const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
   // Confirm completion, then suggest a review via the popup (handled by parent).
   async function complete() {
     setErr('');
-    try { await confirmCompletion(b.booking_id); reload(); onCompleted?.(b); } catch (e) { setErr(e.message); }
+    try { await confirmCompletion(b.booking_id); reload(); onReview?.(b); } catch (e) { setErr(e.message); }
   }
   return (
     <div className="card">
@@ -327,7 +327,7 @@ function BookingCard({ b, reload, onCompleted }) {
         {b.status === 'accepted' && b.checkedIn && !b.startConfirmed && <button className="btn-primary" onClick={() => act(confirmStart(b.booking_id))}>Confirm start</button>}
         {b.status === 'in_progress' && !b.checkedOut && <span className="meta">Worker on the job — waiting for check out.</span>}
         {b.status === 'in_progress' && b.checkedOut && !b.endConfirmed && <button className="btn-primary" onClick={complete}>Confirm completion</button>}
-        {b.status === 'completed' && !b.review && <ReviewForm onSubmit={(rating, comment) => act(createReview({ booking_id: b.booking_id, rating, comment }))} />}
+        {b.status === 'completed' && !b.review && <button className="btn-secondary" onClick={() => onReview?.(b)}>Leave a review</button>}
         {b.review && (
           <div className="row">
             <span className="badge badge--star">Reviewed {b.review.rating}★</span>
@@ -337,21 +337,6 @@ function BookingCard({ b, reload, onCompleted }) {
         )}
       </div>
     </div>
-  );
-}
-
-function ReviewForm({ onSubmit }) {
-  const [rating, setRating] = useState('5');
-  const [comment, setComment] = useState('');
-  return (
-    <form className="row" onSubmit={(e) => { e.preventDefault(); onSubmit(Number(rating), comment); }} style={{ width: '100%' }}>
-      <span className="meta">Leave a review:</span>
-      <select className="select" value={rating} onChange={(e) => setRating(e.target.value)}>
-        {[5, 4, 3, 2, 1].map((n) => <option key={n} value={n}>{n} ★</option>)}
-      </select>
-      <input className="select" style={{ flex: 1, minWidth: '140px' }} value={comment} onChange={(e) => setComment(e.target.value)} placeholder="How did it go?" />
-      <button className="btn-primary" type="submit">Submit review</button>
-    </form>
   );
 }
 

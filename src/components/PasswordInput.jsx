@@ -23,7 +23,6 @@ export default function PasswordInput({ value, onChange, placeholder, autoComple
         onClick={() => setShow((s) => !s)}
         aria-label={show ? 'Hide password' : 'Show password'}
         aria-pressed={show}
-        tabIndex={-1}
       >
         {show ? EyeOff : Eye}
       </button>
