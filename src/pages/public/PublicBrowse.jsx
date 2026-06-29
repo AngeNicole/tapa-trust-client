@@ -41,13 +41,23 @@ export default function PublicBrowse() {
     <PublicShell search={term} onSearch={setTerm}>
       {/* hero */}
       <section className="landing-hero">
-        <span className="hero-eyebrow">TaPa Trust · Kigali</span>
-        <h1 className="hero-h1">Hire trusted skilled workers, fast.</h1>
+        <span className="hero-eyebrow">Trusted services · Kigali</span>
+        <h1 className="hero-h1">Hire trusted skilled workers, <span className="hero-accent">fast.</span></h1>
         <p className="hero-sub">Plumbers, cleaners, electricians and more — verified, reviewed, and bookable in a tap. Browse freely; sign up only when you book.</p>
         <div className="hero-ctas">
-          <button type="button" className="btn-primary btn-lg" onClick={scrollToWorkers}>Browse workers</button>
-          <Link to="/register" state={{ role: 'worker' }} className="btn-secondary btn-lg">Join as a worker</Link>
+          <button type="button" className="btn-dark" onClick={scrollToWorkers}>Browse workers <span aria-hidden="true">→</span></button>
+          <Link to="/register" state={{ role: 'worker' }} className="btn-outline">Join as a worker</Link>
         </div>
+        {all.length > 0 && (
+          <div className="hero-proof">
+            <div className="avatar-cluster">
+              {all.slice(0, 5).map((w) => (
+                <Avatar key={w.worker_id} name={w.name} photo={w.photo} className="avatar" style={{ width: 40, height: 40, borderRadius: 999, fontSize: '0.85rem' }} />
+              ))}
+            </div>
+            <span className="meta">Trusted by {all.length}+ workers across Kigali</span>
+          </div>
+        )}
         <div className="stat-strip">
           <div><div className="stat-num">{all.length}</div><div className="meta">available now</div></div>
           <div><div className="stat-num">{trades.length}</div><div className="meta">trades</div></div>
@@ -57,8 +67,10 @@ export default function PublicBrowse() {
 
       {/* how it works */}
       <section className="section-block">
-        <div className="section-head">How it works</div>
-        <p className="section-sub">From browsing to a finished job, in three steps.</p>
+        <div className="section-center">
+          <div className="section-head">How it works</div>
+          <p className="section-sub">From browsing to a finished job, in three steps.</p>
+        </div>
         <div className="how">
           {STEPS.map((s, i) => (
             <div className="step-card" key={s.t}>
@@ -112,8 +124,10 @@ export default function PublicBrowse() {
 
       {/* why TaPa Trust */}
       <section className="section-block">
-        <div className="section-head">Why TaPa Trust</div>
-        <p className="section-sub">A closed trust loop — identity, time, completion and payment, all accountable.</p>
+        <div className="section-center">
+          <div className="section-head">Why TaPa Trust</div>
+          <p className="section-sub">A closed trust loop — identity, time, completion and payment, all accountable.</p>
+        </div>
         <div className="features">
           {FEATURES.map((f) => (
             <div className="feature-card" key={f.t}>

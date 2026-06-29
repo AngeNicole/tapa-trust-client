@@ -1276,46 +1276,73 @@ body {
   .public-hero-title { @apply text-title-h3 font-semibold text-text-strong-950; }
   .grid3 { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
   .worker-tile {
-    @apply block rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-4 text-inherit no-underline transition-colors hover:border-primary-base;
+    @apply block rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-5 text-inherit no-underline transition-all hover:-translate-y-1 hover:border-primary-base;
   }
+  .worker-tile:hover { box-shadow: var(--shadow-regular-md); }
 
-  /* ---- public landing sections ("website" feel) ---- */
+  /* ---- public landing (Framer-style marketing) ---- */
   .landing-hero {
-    @apply mb-12 rounded-3xl px-6 py-14 text-center sm:px-12 sm:py-20;
-    background: radial-gradient(120% 120% at 50% 0%, var(--color-primary-lighter) 0%, var(--color-bg-white-0) 70%);
+    @apply relative mb-20 overflow-hidden rounded-[32px] px-6 py-20 text-center sm:px-12 sm:py-28;
+    background:
+      radial-gradient(55% 55% at 12% 6%, var(--color-purple-alpha-24), transparent 60%),
+      radial-gradient(50% 50% at 88% 10%, var(--color-sky-alpha-24), transparent 60%),
+      radial-gradient(60% 55% at 78% 98%, var(--color-pink-alpha-16), transparent 60%),
+      var(--color-bg-white-0);
+    border: 1px solid var(--color-stroke-soft-200);
   }
   .hero-eyebrow {
-    @apply mb-3 inline-block rounded-full bg-primary-lighter px-3 py-1 text-label-xs font-semibold uppercase text-primary-dark;
+    @apply mb-5 inline-block rounded-full border border-stroke-soft-200 bg-bg-white-0 px-3.5 py-1.5 text-label-xs font-semibold uppercase text-text-sub-600;
   }
-  .hero-h1 { @apply mx-auto text-title-h1 font-semibold text-text-strong-950; max-width: 16ch; }
-  .hero-sub { @apply mx-auto mt-4 max-w-2xl text-paragraph-lg text-text-sub-600; }
-  .hero-ctas { @apply mt-7 flex flex-wrap justify-center gap-3; }
-  .btn-lg { @apply rounded-full px-6 py-3 text-label-md no-underline; }
-  .stat-strip { @apply mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-2; }
-  .stat-strip .stat-num { @apply text-title-h5; }
+  .hero-h1 {
+    @apply mx-auto font-semibold text-text-strong-950;
+    font-size: clamp(2.5rem, 6vw, 4.5rem); line-height: 1.04; letter-spacing: -0.02em; max-width: 15ch;
+  }
+  .hero-accent {
+    background: linear-gradient(95deg, var(--color-primary-base), var(--color-sky-600));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero-sub { @apply mx-auto mt-5 max-w-2xl text-paragraph-xl text-text-sub-600; }
+  .hero-ctas { @apply mt-8 flex flex-wrap justify-center gap-3; }
+  .btn-lg { @apply rounded-full px-7 py-3.5 text-label-md no-underline; }
+  .btn-dark {
+    @apply inline-flex cursor-pointer items-center gap-2 rounded-full bg-neutral-950 px-7 py-3.5 text-label-md font-medium text-static-white no-underline transition-transform hover:scale-[1.03];
+  }
+  .btn-outline {
+    @apply inline-flex cursor-pointer items-center gap-2 rounded-full border border-stroke-sub-300 bg-bg-white-0 px-7 py-3.5 text-label-md font-medium text-text-strong-950 no-underline transition-colors hover:border-primary-base;
+  }
+  .hero-proof { @apply mt-9 flex flex-col items-center gap-2.5; }
+  .avatar-cluster { @apply flex items-center; }
+  .avatar-cluster > * { margin-left: -12px; box-shadow: 0 0 0 3px var(--color-bg-white-0); }
+  .avatar-cluster > *:first-child { margin-left: 0; }
+  .stat-strip { @apply mt-10 flex flex-wrap items-center justify-center gap-x-10 gap-y-3; }
+  .stat-strip .stat-num { @apply text-title-h4; }
 
-  .section-head { @apply text-title-h5 font-semibold text-text-strong-950; }
-  .section-sub { @apply mb-5 mt-1 text-paragraph-md text-text-sub-600; }
-  .section-block { @apply mt-14; }
+  .section-block { @apply mt-20; }
+  .section-center { @apply mx-auto mb-8 max-w-2xl text-center; }
+  .section-head { @apply text-title-h3 font-semibold text-text-strong-950; letter-spacing: -0.01em; }
+  .section-sub { @apply mt-2 text-paragraph-lg text-text-sub-600; }
 
-  .how { @apply grid gap-4 sm:grid-cols-3; }
-  .step-card { @apply rounded-2xl border border-stroke-soft-200 p-5; }
+  .how { @apply grid gap-5 sm:grid-cols-3; }
+  .step-card { @apply rounded-3xl border border-stroke-soft-200 p-6 transition-transform hover:-translate-y-1; }
   .step-num {
-    @apply mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-primary-lighter text-label-md font-bold text-primary-dark;
+    @apply mb-4 flex h-11 w-11 items-center justify-center rounded-2xl text-label-lg font-bold text-static-white;
+    background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark));
   }
-  .step-card .card-title { @apply mb-1; }
+  .step-card .card-title { @apply mb-1 text-label-lg; }
 
-  .features { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
-  .feature-card { @apply rounded-2xl border border-stroke-soft-200 p-5; }
+  .features { @apply grid gap-5 sm:grid-cols-2 lg:grid-cols-4; }
+  .feature-card { @apply rounded-3xl border border-stroke-soft-200 p-6 transition-transform hover:-translate-y-1; }
   .feature-ic {
-    @apply mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary-lighter text-primary-base;
+    @apply mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-static-white;
+    background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark));
   }
   .feature-ic svg { @apply h-5 w-5; }
+  .feature-card .card-title { @apply text-label-lg; }
 
   .public-footer {
-    @apply mt-16 border-t border-stroke-soft-200 py-8 text-paragraph-sm text-text-sub-600;
+    @apply mt-24 border-t border-stroke-soft-200 py-10 text-paragraph-sm text-text-sub-600;
   }
-  .public-footer a { @apply text-text-sub-600 no-underline hover:text-text-strong-950; }
+  .public-footer a, .public-footer .public-link { @apply text-text-sub-600 no-underline hover:text-text-strong-950; }
 
   /* ---- sidebar dashboard shell ---- */
   .dash {
