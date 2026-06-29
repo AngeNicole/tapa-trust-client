@@ -3,9 +3,9 @@ import { Icons } from './shared/icons.jsx';
 
 // Light public chrome for logged-out pages: logo, optional search,
 // "Join as a worker" and "Log in". Distinct from the dashboard sidebar shell.
-export function PublicShell({ children, search, onSearch }) {
+export function PublicShell({ children, search, onSearch, tone }) {
   return (
-    <div className="public-page">
+    <div className={`public-page${tone === 'warm' ? ' tone-warm' : ''}`}>
       <header className="public-top">
         <Link to="/" className="brand">
           <span className="shell-logo">{Icons.spark}</span>

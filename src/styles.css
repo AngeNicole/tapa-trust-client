@@ -1344,6 +1344,54 @@ body {
   }
   .public-footer a, .public-footer .public-link { @apply text-text-sub-600 no-underline hover:text-text-strong-950; }
 
+  /* ---- warm worker-profile theme (cream + terracotta) ---- */
+  .public-page.tone-warm { background: #f3eee6; }
+  .pp-grid { @apply grid items-start gap-6 lg:grid-cols-[340px_1fr]; }
+  .pp-side { @apply lg:sticky; top: 1.5rem; }
+  .pp-card { background: #fbf8f3; border: 1px solid #e7dfd3; @apply rounded-3xl p-6; }
+  .pp-id { @apply overflow-hidden p-0; }
+  .pp-photo {
+    @apply flex w-full items-center justify-center text-static-white;
+    aspect-ratio: 1 / 1;
+    background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark));
+    font-size: 3rem; font-weight: 600;
+  }
+  .pp-photo img { @apply h-full w-full object-cover; }
+  .pp-id-body { @apply p-5; }
+  .pp-name { @apply font-semibold; font-size: 1.6rem; color: #2a2622; letter-spacing: -0.01em; }
+  .pp-loc { @apply mt-1 flex items-center gap-1; color: #8a8276; font-size: 0.9rem; }
+  .pp-loc svg { @apply h-4 w-4; }
+  .pp-rating { @apply mt-3 flex items-center gap-2; }
+  .pp-stars { color: #c05621; letter-spacing: 1px; }
+  .pp-mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #8a8276; font-size: 0.9rem; }
+  .pp-badges { @apply mt-4 flex flex-wrap gap-2; }
+  .pp-pill-green { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-label-xs font-medium; background: #d9f2e4; color: #1b7f4d; }
+  .pp-pill-green svg { @apply h-3.5 w-3.5; }
+  .pp-pill-muted { @apply inline-flex items-center rounded-full px-2.5 py-1 text-label-xs font-medium; background: #ece4d8; color: #6d6457; }
+  .pp-div { border: 0; border-top: 1px solid #e7dfd3; @apply my-4; }
+  .pp-stat { @apply flex items-center justify-between py-1; color: #6d6457; font-size: 0.95rem; }
+  .pp-stat strong { color: #2a2622; }
+  .pp-book {
+    @apply mt-4 w-full cursor-pointer rounded-xl py-3.5 text-label-md font-semibold text-static-white transition-colors;
+    background: #c05621;
+  }
+  .pp-book:hover { background: #a8481b; }
+  .pp-book:disabled { opacity: 0.6; cursor: default; }
+  .pp-note { @apply mt-2.5 text-center; color: #8a8276; font-size: 0.82rem; }
+  .pp-h { @apply mb-3 flex items-center gap-2 font-semibold; font-size: 1.15rem; color: #2a2622; }
+  .pp-h svg { @apply h-5 w-5; color: #c05621; }
+  .pp-text { color: #4a4136; @apply text-paragraph-md; }
+  .pp-skills { @apply flex flex-wrap gap-2.5; }
+  .pp-skill { @apply rounded-full px-3.5 py-1.5 text-label-sm font-medium; background: #ece4d8; color: #4a4136; }
+  .pp-cert { @apply flex items-center gap-2 py-1; color: #2a2622; }
+  .pp-cert svg { @apply h-[1.1rem] w-[1.1rem] shrink-0; color: #1b9d57; }
+  .pp-job { @apply flex items-start justify-between gap-4 py-3.5; }
+  .pp-job + .pp-job { border-top: 1px solid #e7dfd3; }
+  .pp-job-title { @apply font-semibold; color: #2a2622; }
+  .pp-job-meta { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #8a8276; font-size: 0.82rem; @apply mt-0.5; }
+  .pp-job-stars { color: #c05621; white-space: nowrap; }
+  .pp-back { @apply mb-4 inline-block cursor-pointer no-underline; color: #6d6457; }
+
   /* ---- sidebar dashboard shell ---- */
   .dash {
     @apply flex flex-col gap-5 bg-bg-weak-50 p-5 sm:flex-row sm:gap-6 sm:p-6;

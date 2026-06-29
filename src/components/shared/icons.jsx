@@ -17,6 +17,9 @@ import {
   SignOut,
   Sparkle,
   UploadSimple,
+  GraduationCap,
+  Certificate,
+  CheckCircle,
 } from '@phosphor-icons/react';
 
 const w = 'regular';
@@ -38,4 +41,7 @@ export const Icons = {
   logout: <SignOut weight={w} />,
   spark: <Sparkle weight={w} />,
   upload: <UploadSimple weight={w} />,
+  graduation: <GraduationCap weight="fill" />,
+  certificate: <Certificate weight="fill" />,
+  checkCircle: <CheckCircle weight="fill" />,
 };
