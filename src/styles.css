@@ -1279,6 +1279,44 @@ body {
     @apply block rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-4 text-inherit no-underline transition-colors hover:border-primary-base;
   }
 
+  /* ---- public landing sections ("website" feel) ---- */
+  .landing-hero {
+    @apply mb-12 rounded-3xl px-6 py-14 text-center sm:px-12 sm:py-20;
+    background: radial-gradient(120% 120% at 50% 0%, var(--color-primary-lighter) 0%, var(--color-bg-white-0) 70%);
+  }
+  .hero-eyebrow {
+    @apply mb-3 inline-block rounded-full bg-primary-lighter px-3 py-1 text-label-xs font-semibold uppercase text-primary-dark;
+  }
+  .hero-h1 { @apply mx-auto text-title-h1 font-semibold text-text-strong-950; max-width: 16ch; }
+  .hero-sub { @apply mx-auto mt-4 max-w-2xl text-paragraph-lg text-text-sub-600; }
+  .hero-ctas { @apply mt-7 flex flex-wrap justify-center gap-3; }
+  .btn-lg { @apply rounded-full px-6 py-3 text-label-md no-underline; }
+  .stat-strip { @apply mt-8 flex flex-wrap items-center justify-center gap-x-8 gap-y-2; }
+  .stat-strip .stat-num { @apply text-title-h5; }
+
+  .section-head { @apply text-title-h5 font-semibold text-text-strong-950; }
+  .section-sub { @apply mb-5 mt-1 text-paragraph-md text-text-sub-600; }
+  .section-block { @apply mt-14; }
+
+  .how { @apply grid gap-4 sm:grid-cols-3; }
+  .step-card { @apply rounded-2xl border border-stroke-soft-200 p-5; }
+  .step-num {
+    @apply mb-3 flex h-9 w-9 items-center justify-center rounded-full bg-primary-lighter text-label-md font-bold text-primary-dark;
+  }
+  .step-card .card-title { @apply mb-1; }
+
+  .features { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-4; }
+  .feature-card { @apply rounded-2xl border border-stroke-soft-200 p-5; }
+  .feature-ic {
+    @apply mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-primary-lighter text-primary-base;
+  }
+  .feature-ic svg { @apply h-5 w-5; }
+
+  .public-footer {
+    @apply mt-16 border-t border-stroke-soft-200 py-8 text-paragraph-sm text-text-sub-600;
+  }
+  .public-footer a { @apply text-text-sub-600 no-underline hover:text-text-strong-950; }
+
   /* ---- sidebar dashboard shell ---- */
   .dash {
     @apply flex flex-col gap-5 bg-bg-weak-50 p-5 sm:flex-row sm:gap-6 sm:p-6;
