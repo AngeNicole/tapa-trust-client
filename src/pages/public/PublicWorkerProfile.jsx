@@ -48,7 +48,8 @@ export default function PublicWorkerProfile() {
   const certs = w ? splitList(w.certifications) : [];
 
   return (
-    <PublicShell tone="warm">
+    <PublicShell>
+      <div className="pp-wrap">
       <Link to="/" className="pp-back">← Back to workers</Link>
       {loading ? <Loading /> : error ? <ErrorNote message={error} /> : (
         <div className="pp-grid">
@@ -134,6 +135,7 @@ export default function PublicWorkerProfile() {
           </div>
         </div>
       )}
+      </div>
     </PublicShell>
   );
 }
