@@ -133,6 +133,17 @@ export function rebookWorker(workerId) {
   return apiFetch(`/bookings/rebook/${workerId}`, { method: 'POST' });
 }
 
+// --- booking chat / price agreement ---
+export function getBookingMessages(bookingId) {
+  return apiFetch(`/bookings/${bookingId}/messages`);
+}
+export function sendBookingMessage(bookingId, { body, amount } = {}) {
+  return apiFetch(`/bookings/${bookingId}/messages`, { method: 'POST', body: JSON.stringify({ body: body || null, amount: amount ?? null }) });
+}
+export function agreeBookingPrice(bookingId, amount) {
+  return apiFetch(`/bookings/${bookingId}/agree-price`, { method: 'POST', body: JSON.stringify({ amount }) });
+}
+
 // --- reviews ---
 export function createReview(payload) {
   return apiFetch('/reviews', { method: 'POST', body: JSON.stringify(payload) });
