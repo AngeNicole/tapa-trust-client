@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { getPublicWorkers } from '../../api/client.js';
 import { useAsync } from '../../api/hooks.js';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
@@ -14,8 +14,9 @@ function stars(r) {
 
 export default function PublicWorkers() {
   const { user, loading: authLoading } = useAuth();
+  const [params] = useSearchParams();
   const [term, setTerm] = useState('');
-  const [skill, setSkill] = useState('');
+  const [skill, setSkill] = useState(params.get('skill') || '');
   const [sort, setSort] = useState('rating');
   const workers = useAsync(() => getPublicWorkers(), []);
 

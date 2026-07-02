@@ -20,6 +20,13 @@ import {
   GraduationCap,
   Certificate,
   CheckCircle,
+  Wrench,
+  Broom,
+  Lightning,
+  Hammer,
+  DeviceMobile,
+  Truck,
+  Quotes,
 } from '@phosphor-icons/react';
 
 const w = 'regular';
@@ -44,4 +51,11 @@ export const Icons = {
   graduation: <GraduationCap weight="fill" />,
   certificate: <Certificate weight="fill" />,
   checkCircle: <CheckCircle weight="fill" />,
+  wrench: <Wrench weight={w} />,
+  broom: <Broom weight={w} />,
+  lightning: <Lightning weight={w} />,
+  hammer: <Hammer weight={w} />,
+  device: <DeviceMobile weight={w} />,
+  truck: <Truck weight={w} />,
+  quote: <Quotes weight="fill" />,
 };

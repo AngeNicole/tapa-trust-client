@@ -1374,6 +1374,50 @@ body {
   .footer-col a, .footer-col button { @apply block cursor-pointer bg-transparent py-1 text-left text-paragraph-sm text-text-sub-600 no-underline hover:text-text-strong-950; }
   .footer-bottom { @apply mt-10 flex flex-col items-center justify-between gap-3 border-t border-stroke-soft-200 pt-6 text-paragraph-sm text-text-sub-600 sm:flex-row; }
 
+  /* ---- newsletter (footer trust capture, Aeline-style) ---- */
+  .footer-news { @apply mt-4 flex gap-2; max-width: 320px; }
+  .footer-news input { @apply min-w-0 flex-1 rounded-full border border-stroke-soft-200 bg-bg-white-0 px-4 py-2.5 text-paragraph-sm text-text-strong-950 outline-none transition-colors focus:border-primary-base; }
+  .footer-news button { @apply shrink-0 cursor-pointer rounded-full bg-neutral-950 px-4 py-2.5 text-label-sm font-medium text-static-white transition-transform hover:scale-[1.03]; }
+
+  /* ---- hero marquee (auto-scrolling worker cards, Aeline-style) ---- */
+  .marquee { @apply relative mt-16 overflow-hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+  .marquee-track { @apply flex gap-4; width: max-content; animation: mq 42s linear infinite; }
+  .marquee:hover .marquee-track { animation-play-state: paused; }
+  @keyframes mq { to { transform: translateX(-50%); } }
+  .mq-card { @apply flex w-64 shrink-0 items-center gap-3 rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-4 text-left; box-shadow: 0 20px 40px -32px rgba(20, 24, 40, 0.35); }
+  .mq-name { @apply truncate text-label-md font-semibold text-text-strong-950; }
+  .mq-meta { @apply truncate text-label-sm text-text-sub-600; }
+  @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
+
+  /* ---- stats band (big numbers, Aeline "about") ---- */
+  .stats-band { @apply grid grid-cols-2 gap-6 rounded-[32px] border border-stroke-soft-200 bg-bg-weak-50 px-6 py-10 md:grid-cols-4 sm:px-10; }
+  .stat-big { @apply text-center; }
+  .stat-big .n { @apply block font-semibold text-text-strong-950; font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.02em; line-height: 1; }
+  .stat-big .n em { @apply not-italic text-primary-base; }
+  .stat-big .l { @apply mt-2 block text-paragraph-sm text-text-sub-600; }
+
+  /* ---- popular trades (service cards, Aeline-style) ---- */
+  .trades-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
+  .trade-card { @apply flex items-center gap-4 rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-5 text-inherit no-underline transition-all hover:-translate-y-1 hover:border-primary-base; }
+  .trade-card:hover { box-shadow: var(--shadow-regular-md); }
+  .trade-ic { @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-static-white; background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark)); }
+  .trade-ic svg { @apply h-6 w-6; }
+  .trade-card .trade-t { @apply text-label-lg font-semibold text-text-strong-950; }
+  .trade-card .trade-d { @apply text-paragraph-sm text-text-sub-600; }
+  .trade-card .arrow { @apply ml-auto text-primary-base opacity-0 transition-opacity; }
+  .trade-card:hover .arrow { @apply opacity-100; }
+
+  /* ---- testimonials (Aeline "what they say") ---- */
+  .tgrid { @apply grid gap-5 md:grid-cols-3; }
+  .tcard { @apply flex flex-col rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-6; }
+  .tcard .tquote-ic { @apply mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary-lighter text-primary-base; }
+  .tcard .tquote-ic svg { @apply h-5 w-5; }
+  .tcard .tquote { @apply text-paragraph-lg text-text-strong-950; }
+  .tcard .twho { @apply mt-5 flex items-center gap-3 pt-5; border-top: 1px solid var(--color-stroke-soft-200); }
+  .tcard .tname { @apply text-label-md font-semibold text-text-strong-950; }
+  .tcard .trole { @apply text-label-sm text-text-sub-600; }
+  .tstars { color: var(--color-yellow-500); letter-spacing: 1px; }
+
   /* ---- worker profile (two-column, SaaS theme) ---- */
   .pp-wrap { @apply py-10; }
   .pp-grid { @apply grid items-start gap-6 lg:grid-cols-[340px_1fr]; }

@@ -1,11 +1,21 @@
+import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { getPublicWorkers } from '../../api/client.js';
 import { useAsync } from '../../api/hooks.js';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
+import { useToast } from '../../components/Toast.jsx';
 import { Avatar, Stars } from '../../components/shared/ui.jsx';
 import { PublicShell } from '../../components/PublicShell.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 
+const TRADES = [
+  { name: 'Plumbing', ic: Icons.wrench, d: 'Leaks, taps, drains and installs' },
+  { name: 'Cleaning', ic: Icons.broom, d: 'Homes, offices and deep cleans' },
+  { name: 'Electrical', ic: Icons.lightning, d: 'Wiring, fixtures and safety' },
+  { name: 'Moving', ic: Icons.truck, d: 'Moves and heavy lifting' },
+  { name: 'Furniture Assembly', ic: Icons.hammer, d: 'Flat-pack and fittings' },
+  { name: 'Tech Setup', ic: Icons.device, d: 'Wi-Fi, TVs and smart home' },
+];
 const STEPS = [
   { t: 'Browse & compare', d: 'Search by trade and compare workers by rating, verification and track record — no account needed.' },
   { t: 'Book in a tap', d: 'Open a profile and book. Create a quick requester account only when you confirm.' },
@@ -17,15 +27,37 @@ const FEATURES = [
   { ic: Icons.calendar, t: 'Mutual completion', d: 'A job only completes when both sides confirm.' },
   { ic: Icons.wallet, t: 'Payment status', d: 'Track payment pending → confirmed → released (simulated) end to end.', lg: true },
 ];
+const QUOTES = [
+  { q: 'Booked a plumber in minutes, and the check-in / check-out made the whole job completely transparent.', n: 'Aline U.', r: 'Requester · Kigali' },
+  { q: 'Verification and reviews meant I knew exactly who I was letting into my home before they arrived.', n: 'Patrick K.', r: 'Requester · Gasabo' },
+  { q: 'As a worker, my profile and ratings keep me getting rebooked. It is the trust that wins the next job.', n: 'Jean B.', r: 'Plumber · Kicukiro' },
+];
+
+function fmt(n) {
+  return n >= 1000 ? `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k` : String(n);
+}
 
 export default function PublicBrowse() {
   const { user, loading: authLoading } = useAuth();
+  const notify = useToast();
+  const [email, setEmail] = useState('');
   const workers = useAsync(() => getPublicWorkers(), []);
 
   if (!authLoading && user) return <Navigate to={homePathForRole(user.role)} replace />;
 
   const all = workers.data || [];
   const jobsDone = all.reduce((n, w) => n + (w.completedJobs || 0), 0);
+  const trades = new Set(all.flatMap((w) => (w.skills || '').split(',').map((s) => s.trim()).filter(Boolean)));
+  const rated = all.filter((w) => Number(w.rating) > 0);
+  const avg = rated.length ? (rated.reduce((s, w) => s + Number(w.rating), 0) / rated.length) : 0;
+  const marquee = all.length ? [...all, ...all] : []; // duplicated for seamless loop
+
+  const subscribe = (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setEmail('');
+    notify("Thanks — we'll keep you posted.");
+  };
 
   return (
     <PublicShell landing>
@@ -46,39 +78,62 @@ export default function PublicBrowse() {
                 <Avatar key={w.worker_id} name={w.name} photo={w.photo} className="avatar" style={{ width: 38, height: 38, borderRadius: 999, fontSize: '0.8rem' }} />
               ))}
             </div>
-            <span className="meta">{all.length}+ verified workers · {jobsDone} jobs done</span>
+            <span className="meta">{all.length}+ verified workers · {avg.toFixed(1)}★ average</span>
           </div>
         )}
 
-        {/* product preview */}
-        {all.length > 0 && (
-          <div className="preview">
-            <div className="preview-frame">
-              <div className="preview-bar">
-                <span className="preview-dot" /><span className="preview-dot" /><span className="preview-dot" />
-                <span className="preview-url">tapatrust.app/workers</span>
-              </div>
-              <div className="preview-body">
-                {all.slice(0, 3).map((w) => (
-                  <div className="preview-card" key={w.worker_id}>
-                    <div className="row" style={{ gap: '0.5rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-                      <Avatar name={w.name} photo={w.photo} className="avatar" style={{ width: 36, height: 36, borderRadius: 10, fontSize: '0.8rem' }} />
-                      <div style={{ minWidth: 0 }}>
-                        <div className="card-title" style={{ fontSize: '0.9rem' }}>{w.name}</div>
-                        <div className="meta" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.75rem' }}>{w.skills || 'Skilled worker'}</div>
-                      </div>
-                    </div>
-                    <div className="row" style={{ marginTop: '0.5rem' }}><Stars rating={Number(w.rating) || 0} /></div>
+        {/* auto-scrolling worker carousel */}
+        {marquee.length > 0 && (
+          <div className="marquee" aria-hidden="true">
+            <div className="marquee-track">
+              {marquee.map((w, i) => (
+                <div className="mq-card" key={`${w.worker_id}-${i}`}>
+                  <Avatar name={w.name} photo={w.photo} className="avatar" style={{ width: 44, height: 44, borderRadius: 12, fontSize: '0.9rem' }} />
+                  <div style={{ minWidth: 0 }}>
+                    <div className="mq-name">{w.name}</div>
+                    <div className="mq-meta">{w.skills || 'Skilled worker'}</div>
+                    <div style={{ marginTop: 2 }}><Stars rating={Number(w.rating) || 0} /></div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
       </section>
 
+      {/* stats band */}
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="stats-band">
+          <div className="stat-big"><span className="n">{fmt(all.length)}<em>+</em></span><span className="l">Verified workers</span></div>
+          <div className="stat-big"><span className="n">{trades.size}<em>+</em></span><span className="l">Trades covered</span></div>
+          <div className="stat-big"><span className="n">{fmt(jobsDone)}<em>+</em></span><span className="l">Jobs completed</span></div>
+          <div className="stat-big"><span className="n">{avg.toFixed(1)}<em>★</em></span><span className="l">Average rating</span></div>
+        </div>
+      </section>
+
+      {/* popular trades */}
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="section-center">
+          <div className="section-eyebrow">Popular trades</div>
+          <div className="section-head">Whatever needs doing, someone can do it</div>
+          <p className="section-sub">Pick a trade to jump straight into matching workers.</p>
+        </div>
+        <div className="trades-grid">
+          {TRADES.map((tr) => (
+            <Link to={`/workers?skill=${encodeURIComponent(tr.name)}`} className="trade-card" key={tr.name}>
+              <span className="trade-ic">{tr.ic}</span>
+              <span style={{ minWidth: 0 }}>
+                <span className="trade-t" style={{ display: 'block' }}>{tr.name}</span>
+                <span className="trade-d" style={{ display: 'block' }}>{tr.d}</span>
+              </span>
+              <span className="arrow" aria-hidden="true">→</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* how it works */}
-      <section className="section" id="how">
+      <section className="section" id="how" style={{ paddingTop: 0 }}>
         <div className="section-center">
           <div className="section-eyebrow">How it works</div>
           <div className="section-head">From search to done, in three steps</div>
@@ -96,7 +151,7 @@ export default function PublicBrowse() {
       </section>
 
       {/* why */}
-      <section className="section" id="why">
+      <section className="section" id="why" style={{ paddingTop: 0 }}>
         <div className="section-center">
           <div className="section-eyebrow">The trust loop</div>
           <div className="section-head">Accountable from start to finish</div>
@@ -113,8 +168,32 @@ export default function PublicBrowse() {
         </div>
       </section>
 
+      {/* testimonials */}
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="section-center">
+          <div className="section-eyebrow">What they say</div>
+          <div className="section-head">Trusted by people across Kigali</div>
+        </div>
+        <div className="tgrid">
+          {QUOTES.map((c) => (
+            <div className="tcard" key={c.n}>
+              <span className="tquote-ic">{Icons.quote}</span>
+              <p className="tquote">“{c.q}”</p>
+              <div className="twho">
+                <Avatar name={c.n} className="avatar" style={{ width: 40, height: 40, borderRadius: 999, fontSize: '0.85rem' }} />
+                <span>
+                  <span className="tname" style={{ display: 'block' }}>{c.n}</span>
+                  <span className="trole" style={{ display: 'block' }}>{c.r}</span>
+                </span>
+                <span className="tstars" style={{ marginLeft: 'auto' }}>★★★★★</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* CTA band */}
-      <section className="section">
+      <section className="section" style={{ paddingTop: 0 }}>
         <div className="cta-band">
           <h2 className="cta-h">Ready to get it fixed?</h2>
           <p className="cta-sub">Browse verified workers and book in minutes — no account needed to start looking.</p>
@@ -131,6 +210,10 @@ export default function PublicBrowse() {
           <div>
             <div className="footer-brand">TaPa Trust</div>
             <p className="meta" style={{ marginTop: '0.5rem', maxWidth: '24ch' }}>Trusted, verified skilled services in Kigali.</p>
+            <form className="footer-news" onSubmit={subscribe}>
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Your email" aria-label="Email for updates" />
+              <button type="submit">Notify me</button>
+            </form>
           </div>
           <div className="footer-col">
             <h4>Product</h4>
