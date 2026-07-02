@@ -1269,11 +1269,13 @@ body {
   /* ===== Public marketing site (SaaS) ===== */
   .public-page { @apply min-h-screen w-full bg-bg-white-0; scroll-behavior: smooth; }
   .public-top {
-    @apply sticky top-0 z-30 flex items-center gap-6 border-b border-stroke-soft-200 bg-bg-white-0 px-5 py-3.5 sm:px-8;
+    @apply sticky top-0 z-30 grid items-center gap-4 border-b border-stroke-soft-200 bg-bg-white-0 px-5 py-4 sm:px-8;
+    grid-template-columns: 1fr auto 1fr;
   }
-  .public-nav { @apply hidden items-center gap-7 md:flex; }
+  .public-top > .brand { @apply justify-self-start; }
+  .public-nav { @apply hidden items-center gap-8 justify-self-center md:flex; }
   .public-nav a { @apply cursor-pointer text-label-sm font-medium text-text-sub-600 no-underline transition-colors hover:text-text-strong-950; }
-  .public-actions { @apply ml-auto flex shrink-0 items-center gap-2.5; }
+  .public-actions { @apply flex shrink-0 items-center gap-2.5 justify-self-end; }
   .public-link { @apply text-label-sm font-medium text-text-sub-600 no-underline transition-colors hover:text-text-strong-950; }
   .public-main { @apply mx-auto max-w-6xl px-5 sm:px-8; }
   .grid3 { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
@@ -1283,15 +1285,15 @@ body {
   .worker-tile:hover { box-shadow: var(--shadow-regular-md); }
 
   /* ---- dedicated Browse workers page ---- */
-  .browse-head { @apply pt-10 pb-1; }
+  .browse-head { @apply pt-14 pb-1; }
   .browse-title { @apply mt-2 font-semibold text-text-strong-950; font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.02em; }
-  .browse-sub { @apply mt-1 text-paragraph-lg text-text-sub-600; }
-  .filters { @apply mt-7 flex flex-wrap items-center gap-3; }
+  .browse-sub { @apply mt-2 text-paragraph-lg text-text-sub-600; }
+  .filters { @apply mt-9 flex flex-wrap items-center gap-3; }
   .filters .search { @apply flex-1; min-width: 240px; max-width: 520px; }
   .filters .select { @apply shrink-0; }
-  .browse-chips { @apply mb-7 mt-3 flex flex-wrap gap-2; }
-  .wgrid { @apply grid gap-5 pb-16 sm:grid-cols-2 lg:grid-cols-3; }
-  .wcard { @apply flex flex-col rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-5 text-inherit no-underline transition-all; }
+  .browse-chips { @apply mb-10 mt-4 flex flex-wrap gap-2.5; }
+  .wgrid { @apply grid gap-6 pb-24 sm:grid-cols-2 lg:grid-cols-3; }
+  .wcard { @apply flex flex-col rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-6 text-inherit no-underline transition-all; }
   .wcard:hover { @apply -translate-y-1 border-primary-base; box-shadow: var(--shadow-regular-md); }
   .wcard-top { @apply flex items-center gap-3.5; }
   .wcard-name { @apply flex flex-wrap items-center gap-2 text-label-lg font-semibold text-text-strong-950; }
@@ -1345,19 +1347,19 @@ body {
   .preview-card { @apply rounded-xl border border-stroke-soft-200 p-3 text-left; }
 
   /* sections */
-  .section { @apply py-16 sm:py-24; scroll-margin-top: 80px; }
-  .section-center { @apply mx-auto mb-10 max-w-2xl text-center; }
-  .section-eyebrow { @apply mb-2 text-label-sm font-semibold uppercase text-primary-base; letter-spacing: 0.04em; }
+  .section { @apply py-20 sm:py-28; scroll-margin-top: 88px; }
+  .section-center { @apply mx-auto mb-14 max-w-2xl text-center; }
+  .section-eyebrow { @apply mb-3 text-label-sm font-semibold uppercase text-primary-base; letter-spacing: 0.04em; }
   .section-head { @apply text-title-h3 font-semibold text-text-strong-950; letter-spacing: -0.02em; }
-  .section-sub { @apply mt-2 text-paragraph-lg text-text-sub-600; }
+  .section-sub { @apply mt-3 text-paragraph-lg text-text-sub-600; }
 
-  .how { @apply grid gap-5 md:grid-cols-3; }
-  .step-card { @apply rounded-3xl border border-stroke-soft-200 p-7 transition-transform hover:-translate-y-1; }
+  .how { @apply grid gap-6 md:grid-cols-3; }
+  .step-card { @apply rounded-3xl border border-stroke-soft-200 p-8 transition-transform hover:-translate-y-1; }
   .step-num { @apply mb-4 flex h-11 w-11 items-center justify-center rounded-2xl text-label-lg font-bold text-static-white; background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark)); }
   .step-card .card-title { @apply mb-1 text-label-lg; }
 
-  .bento { @apply grid gap-5 md:grid-cols-3; }
-  .bento-card { @apply rounded-3xl border border-stroke-soft-200 p-7; }
+  .bento { @apply grid gap-6 md:grid-cols-3; }
+  .bento-card { @apply rounded-3xl border border-stroke-soft-200 p-8; }
   .bento-lg { @apply md:col-span-2; }
   .feature-ic { @apply mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-static-white; background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark)); }
   .feature-ic svg { @apply h-5 w-5; }
@@ -1367,7 +1369,7 @@ body {
   .cta-h { @apply mx-auto font-semibold text-static-white; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.1; letter-spacing: -0.02em; max-width: 18ch; }
   .cta-sub { @apply mx-auto mt-3 max-w-xl text-paragraph-lg; color: rgba(255, 255, 255, 0.85); }
 
-  .public-footer { @apply border-t border-stroke-soft-200 py-12; }
+  .public-footer { @apply mt-8 border-t border-stroke-soft-200 py-16; }
   .footer-grid { @apply grid gap-8 sm:grid-cols-2 md:grid-cols-4; }
   .footer-brand { @apply text-label-lg font-bold text-text-strong-950; }
   .footer-col h4 { @apply mb-3 text-label-sm font-semibold text-text-strong-950; }
@@ -1380,7 +1382,7 @@ body {
   .footer-news button { @apply shrink-0 cursor-pointer rounded-full bg-neutral-950 px-4 py-2.5 text-label-sm font-medium text-static-white transition-transform hover:scale-[1.03]; }
 
   /* ---- hero marquee (auto-scrolling worker cards, Aeline-style) ---- */
-  .marquee { @apply relative mt-16 overflow-hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
+  .marquee { @apply relative mt-20 overflow-hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent); }
   .marquee-track { @apply flex gap-4; width: max-content; animation: mq 42s linear infinite; }
   .marquee:hover .marquee-track { animation-play-state: paused; }
   @keyframes mq { to { transform: translateX(-50%); } }
@@ -1390,15 +1392,15 @@ body {
   @media (prefers-reduced-motion: reduce) { .marquee-track { animation: none; } }
 
   /* ---- stats band (big numbers, Aeline "about") ---- */
-  .stats-band { @apply grid grid-cols-2 gap-6 rounded-[32px] border border-stroke-soft-200 bg-bg-weak-50 px-6 py-10 md:grid-cols-4 sm:px-10; }
+  .stats-band { @apply grid grid-cols-2 gap-8 rounded-[32px] border border-stroke-soft-200 bg-bg-weak-50 px-8 py-12 md:grid-cols-4 sm:px-12 sm:py-14; }
   .stat-big { @apply text-center; }
   .stat-big .n { @apply block font-semibold text-text-strong-950; font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.02em; line-height: 1; }
   .stat-big .n em { @apply not-italic text-primary-base; }
   .stat-big .l { @apply mt-2 block text-paragraph-sm text-text-sub-600; }
 
   /* ---- popular trades (service cards, Aeline-style) ---- */
-  .trades-grid { @apply grid gap-4 sm:grid-cols-2 lg:grid-cols-3; }
-  .trade-card { @apply flex items-center gap-4 rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-5 text-inherit no-underline transition-all hover:-translate-y-1 hover:border-primary-base; }
+  .trades-grid { @apply grid gap-6 sm:grid-cols-2 lg:grid-cols-3; }
+  .trade-card { @apply flex items-center gap-4 rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-6 text-inherit no-underline transition-all hover:-translate-y-1 hover:border-primary-base; }
   .trade-card:hover { box-shadow: var(--shadow-regular-md); }
   .trade-ic { @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-static-white; background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark)); }
   .trade-ic svg { @apply h-6 w-6; }
@@ -1408,8 +1410,8 @@ body {
   .trade-card:hover .arrow { @apply opacity-100; }
 
   /* ---- testimonials (Aeline "what they say") ---- */
-  .tgrid { @apply grid gap-5 md:grid-cols-3; }
-  .tcard { @apply flex flex-col rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-6; }
+  .tgrid { @apply grid gap-6 md:grid-cols-3; }
+  .tcard { @apply flex flex-col rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-8; }
   .tcard .tquote-ic { @apply mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary-lighter text-primary-base; }
   .tcard .tquote-ic svg { @apply h-5 w-5; }
   .tcard .tquote { @apply text-paragraph-lg text-text-strong-950; }
