@@ -1347,6 +1347,14 @@ body {
   .preview-card { @apply rounded-xl border border-stroke-soft-200 p-3 text-left; }
 
   /* sections */
+  /* accent palette — set --a/--a2 (icon gradient) + --asoft (card tint) per card */
+  .acc-purple { --a: var(--color-purple-500); --a2: var(--color-purple-700); --asoft: var(--color-purple-50); }
+  .acc-blue   { --a: var(--color-blue-500);   --a2: var(--color-blue-700);   --asoft: var(--color-blue-50); }
+  .acc-green  { --a: var(--color-green-600);  --a2: var(--color-green-800);  --asoft: var(--color-green-50); }
+  .acc-orange { --a: var(--color-orange-500); --a2: var(--color-orange-700); --asoft: var(--color-orange-50); }
+  .acc-red    { --a: var(--color-red-500);    --a2: var(--color-red-700);    --asoft: var(--color-red-50); }
+  .acc-yellow { --a: var(--color-yellow-500); --a2: var(--color-orange-600); --asoft: var(--color-yellow-50); }
+
   .section { @apply py-20 sm:py-28; scroll-margin-top: 88px; }
   .section-center { @apply mx-auto mb-14 max-w-2xl text-center; }
   .section-eyebrow { @apply mb-3 text-label-sm font-semibold uppercase text-primary-base; letter-spacing: 0.04em; }
@@ -1355,13 +1363,13 @@ body {
 
   .how { @apply grid gap-6 md:grid-cols-3; }
   .step-card { @apply rounded-3xl border border-stroke-soft-200 p-8 transition-transform hover:-translate-y-1; }
-  .step-num { @apply mb-4 flex h-11 w-11 items-center justify-center rounded-2xl text-label-lg font-bold text-static-white; background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark)); }
+  .step-num { @apply mb-4 flex h-11 w-11 items-center justify-center rounded-2xl text-label-lg font-bold text-static-white; background: linear-gradient(135deg, var(--a, var(--color-primary-base)), var(--a2, var(--color-primary-dark))); }
   .step-card .card-title { @apply mb-1 text-label-lg; }
 
   .bento { @apply grid gap-6 md:grid-cols-3; }
-  .bento-card { @apply rounded-3xl border border-stroke-soft-200 p-8; }
+  .bento-card { @apply rounded-3xl border border-stroke-soft-200 p-8; background: var(--asoft, var(--color-bg-white-0)); }
   .bento-lg { @apply md:col-span-2; }
-  .feature-ic { @apply mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-static-white; background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark)); }
+  .feature-ic { @apply mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-static-white; background: linear-gradient(135deg, var(--a, var(--color-primary-base)), var(--a2, var(--color-primary-dark))); }
   .feature-ic svg { @apply h-5 w-5; }
   .bento-card .card-title { @apply text-label-lg; }
 
@@ -1400,14 +1408,29 @@ body {
 
   /* ---- popular trades (service cards, Aeline-style) ---- */
   .trades-grid { @apply grid gap-6 sm:grid-cols-2 lg:grid-cols-3; }
-  .trade-card { @apply flex items-center gap-4 rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-6 text-inherit no-underline transition-all hover:-translate-y-1 hover:border-primary-base; }
-  .trade-card:hover { box-shadow: var(--shadow-regular-md); }
-  .trade-ic { @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-static-white; background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark)); }
-  .trade-ic svg { @apply h-6 w-6; }
-  .trade-card .trade-t { @apply text-label-lg font-semibold text-text-strong-950; }
-  .trade-card .trade-d { @apply text-paragraph-sm text-text-sub-600; }
-  .trade-card .arrow { @apply ml-auto text-primary-base opacity-0 transition-opacity; }
-  .trade-card:hover .arrow { @apply opacity-100; }
+  .trade-card { @apply flex flex-col overflow-hidden rounded-3xl border border-stroke-soft-200 bg-bg-white-0 text-inherit no-underline transition-all hover:-translate-y-1; }
+  .trade-card:hover { border-color: var(--a); box-shadow: var(--shadow-regular-md); }
+  .trade-media { @apply relative flex items-end p-4; aspect-ratio: 16 / 10; background: linear-gradient(135deg, var(--a), var(--a2)); }
+  .trade-media img { @apply absolute inset-0 h-full w-full object-cover; }
+  .trade-media::after { content: ''; @apply absolute inset-0; background: linear-gradient(to top, rgba(12, 16, 28, 0.5), transparent 62%); }
+  .trade-ic { @apply relative z-10 flex h-11 w-11 items-center justify-center rounded-xl text-static-white; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.35); backdrop-filter: blur(6px); }
+  .trade-ic svg { @apply h-5 w-5; }
+  .trade-body { @apply p-6; }
+  .trade-card .trade-t { @apply block text-label-lg font-semibold text-text-strong-950; }
+  .trade-card .trade-d { @apply mt-1 block text-paragraph-sm text-text-sub-600; }
+  .trade-go { @apply mt-3 inline-flex items-center gap-1 text-label-sm font-medium; color: var(--a); }
+
+  /* hero image showcase (worker photo + floating accent badges) */
+  .hero-show { @apply relative mx-auto mt-16 max-w-3xl; }
+  .hero-show-img { @apply overflow-hidden rounded-[32px] border border-stroke-soft-200; aspect-ratio: 16 / 9; box-shadow: 0 44px 90px -44px rgba(20, 24, 40, 0.4); }
+  .hero-show-img img { @apply h-full w-full object-cover; }
+  .hero-badge { @apply absolute z-10 flex items-center gap-2.5 rounded-2xl border border-stroke-soft-200 bg-bg-white-0 px-4 py-3 text-left; box-shadow: 0 20px 40px -20px rgba(20, 24, 40, 0.3); }
+  .hero-badge .b-ic { @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-static-white; }
+  .hero-badge .b-ic svg { @apply h-5 w-5; }
+  .hero-badge .b-t { @apply block text-label-sm font-semibold text-text-strong-950; }
+  .hero-badge .b-s { @apply block text-label-xs text-text-sub-600; }
+  .hero-badge-rating { bottom: 1.25rem; left: 1.25rem; }
+  .hero-badge-verified { top: 1.25rem; right: 1.25rem; }
 
   /* ---- testimonials (Aeline "what they say") ---- */
   .tgrid { @apply grid gap-6 md:grid-cols-3; }
