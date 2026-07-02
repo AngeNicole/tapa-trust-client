@@ -164,3 +164,8 @@ export function getAdminUsers() {
 export function verifyWorker(workerId) {
   return apiFetch(`/admin/workers/${workerId}/verify`, { method: 'POST' });
 }
+// Reject (or send back for redo): returns the worker to unverified and stores an
+// optional note the worker sees; they can fix what was missing and resubmit.
+export function rejectWorker(workerId, note) {
+  return apiFetch(`/admin/workers/${workerId}/reject`, { method: 'POST', body: JSON.stringify({ note: note || null }) });
+}

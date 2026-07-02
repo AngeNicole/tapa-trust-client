@@ -1,12 +1,16 @@
 import { Link } from 'react-router-dom';
 import { Icons } from './shared/icons.jsx';
 
+const ASIDE_IMG = 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=900&q=75&auto=format&fit=crop';
+
 // Split-screen auth chrome: a branded showcase panel beside the form card.
 // Purely presentational — pages keep their own form logic.
 export default function AuthLayout({ title, subtitle, children, altText, altTo, altLabel }) {
   return (
     <div className="auth">
       <aside className="auth-aside">
+        <img className="auth-aside-img" src={ASIDE_IMG} alt="" aria-hidden="true" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+        <span className="auth-aside-veil" aria-hidden="true" />
         <Link to="/" className="auth-brand"><span className="shell-logo">{Icons.spark}</span> TaPa Trust</Link>
         <div className="auth-aside-body">
           <h2 className="auth-aside-h">Trusted skilled workers, on demand.</h2>

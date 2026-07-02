@@ -49,7 +49,8 @@ export default function PublicBrowse() {
 
   if (!authLoading && user) return <Navigate to={homePathForRole(user.role)} replace />;
 
-  const all = workers.data || [];
+  // Landing stats reflect only real, admin-verified workers.
+  const all = (workers.data || []).filter((w) => w.verification === 'verified');
   const jobsDone = all.reduce((n, w) => n + (w.completedJobs || 0), 0);
   const trades = new Set(all.flatMap((w) => (w.skills || '').split(',').map((s) => s.trim()).filter(Boolean)));
   const rated = all.filter((w) => Number(w.rating) > 0);

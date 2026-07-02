@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getAdminUsers, getCategories, createCategory, getAllWorkers, verifyWorker } from '../../api/client.js';
+import { getAdminUsers, getCategories, createCategory, getAllWorkers, verifyWorker, rejectWorker } from '../../api/client.js';
 import { useAsync } from '../../api/hooks.js';
 import { Loading, ErrorNote, VerifyBadge } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
@@ -32,19 +32,40 @@ function VerifyView({ state }) {
   const { data, loading, error, reload } = state;
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(null);
+  const [panel, setPanel] = useState(null); // { workerId, mode: 'redo' | 'reject' }
+  const [note, setNote] = useState('');
+
+  function openPanel(workerId, mode) {
+    setErr(''); setNote(''); setPanel({ workerId, mode });
+  }
   async function approve(workerId) {
     setErr(''); setBusy(workerId);
     try { await verifyWorker(workerId); reload(); } catch (e) { setErr(e.message); } finally { setBusy(null); }
   }
+  async function sendBack() {
+    if (!panel) return;
+    if (panel.mode === 'redo' && !note.trim()) { setErr('Tell the worker what to fix before asking them to redo.'); return; }
+    setErr(''); setBusy(panel.workerId);
+    try { await rejectWorker(panel.workerId, note.trim()); setPanel(null); setNote(''); reload(); }
+    catch (e) { setErr(e.message); } finally { setBusy(null); }
+  }
+
   const workers = data || [];
+  // Show the ones needing a decision first, then the rest for oversight.
+  const order = { pending: 0, unverified: 1, verified: 2 };
+  const sorted = [...workers].sort((a, b) => (order[a.verification] ?? 3) - (order[b.verification] ?? 3));
+  const pendingCount = workers.filter((w) => w.verification === 'pending').length;
+
   return (
     <>
       <h1>Verifications</h1>
-      <p className="subtitle">Approve workers' simulated identity verification. Oversight only.</p>
+      <p className="subtitle">
+        Review workers&apos; simulated identity verification. {pendingCount} awaiting a decision — approve, ask them to redo, or reject.
+      </p>
       <ErrorNote message={error || err} />
       {loading ? <Loading /> : workers.length === 0 ? (
         <div className="empty" style={{ marginTop: '0.75rem' }}>No workers yet.</div>
-      ) : workers.map((w) => (
+      ) : sorted.map((w) => (
         <div className="card" key={w.worker_id}>
           <div className="card-head">
             <div>
@@ -54,12 +75,46 @@ function VerifyView({ state }) {
             <div className="row">
               <VerifyBadge status={w.verification} />
               {w.verification !== 'verified' && (
-                <button className="btn-primary" disabled={busy === w.worker_id} onClick={() => approve(w.worker_id)}>
-                  {busy === w.worker_id ? 'Approving…' : 'Approve'}
-                </button>
+                <>
+                  <button className="btn-primary" disabled={busy === w.worker_id} onClick={() => approve(w.worker_id)}>
+                    {busy === w.worker_id && !panel ? 'Approving…' : 'Approve'}
+                  </button>
+                  <button className="btn-secondary" disabled={busy === w.worker_id} onClick={() => openPanel(w.worker_id, 'redo')}>
+                    Request redo
+                  </button>
+                  <button className="btn-danger" disabled={busy === w.worker_id} onClick={() => openPanel(w.worker_id, 'reject')}>
+                    Reject
+                  </button>
+                </>
               )}
             </div>
           </div>
+
+          {panel && panel.workerId === w.worker_id && (
+            <div className="review-panel">
+              <label className="review-label">
+                {panel.mode === 'redo' ? 'What should the worker fix and resubmit?' : 'Reason for rejection (optional)'}
+              </label>
+              <textarea
+                className="input"
+                rows={3}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={panel.mode === 'redo'
+                  ? 'e.g. The ID photo is blurry — please re-upload a clear one.'
+                  : 'e.g. Submitted document does not match the profile name.'}
+              />
+              <div className="row" style={{ marginTop: '0.5rem' }}>
+                <button className={panel.mode === 'redo' ? 'btn-primary' : 'btn-danger'} disabled={busy === w.worker_id} onClick={sendBack}>
+                  {busy === w.worker_id ? 'Sending…' : panel.mode === 'redo' ? 'Send back to redo' : 'Confirm rejection'}
+                </button>
+                <button className="btn-secondary" disabled={busy === w.worker_id} onClick={() => { setPanel(null); setNote(''); setErr(''); }}>
+                  Cancel
+                </button>
+              </div>
+              <p className="note" style={{ marginTop: '0.5rem' }}>The worker returns to unverified, sees your note, and can resubmit.</p>
+            </div>
+          )}
         </div>
       ))}
     </>

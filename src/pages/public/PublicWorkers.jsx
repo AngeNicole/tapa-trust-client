@@ -22,7 +22,8 @@ export default function PublicWorkers() {
 
   if (!authLoading && user) return <Navigate to={homePathForRole(user.role)} replace />;
 
-  const all = workers.data || [];
+  // Only real, admin-verified workers surface publicly — no pending/unverified profiles.
+  const all = (workers.data || []).filter((w) => w.verification === 'verified');
   const trades = [...new Set(all.flatMap((w) => (w.skills || '').split(',').map((s) => s.trim()).filter(Boolean)))].sort();
   const t = term.trim().toLowerCase();
   const list = all

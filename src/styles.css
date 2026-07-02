@@ -1172,34 +1172,45 @@ body {
   .btn-secondary:hover {
     @apply bg-bg-weak-50;
   }
+  .btn-danger {
+    @apply cursor-pointer rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-label-sm font-medium text-red-700 transition-colors hover:bg-red-100 disabled:cursor-default disabled:opacity-60;
+  }
+
+  /* admin verification review panel */
+  .review-panel { @apply mt-4 rounded-xl border border-stroke-soft-200 bg-bg-weak-50 p-4; }
+  .review-label { @apply mb-1.5 block text-label-sm font-medium text-text-strong-950; }
+  .review-panel textarea { @apply w-full resize-y; }
 
   .form-error {
     @apply rounded-lg bg-red-50 px-3 py-2.5 text-paragraph-sm text-red-700;
   }
 
   /* ---- split-screen auth (login / register) ---- */
-  .auth { @apply grid min-h-screen w-full bg-bg-white-0 lg:grid-cols-2; }
+  .auth { @apply grid min-h-screen w-full bg-bg-white-0; }
+  @media (min-width: 1024px) { .auth { grid-template-columns: 400px minmax(0, 1fr); } }
   .auth-aside {
-    @apply relative hidden flex-col overflow-hidden p-12 lg:flex;
+    @apply relative hidden flex-col overflow-hidden p-10 lg:flex;
     background: linear-gradient(150deg, var(--color-purple-600), var(--color-purple-900));
   }
-  .auth-aside::before {
-    content: ''; @apply absolute inset-0;
-    background: radial-gradient(55% 45% at 15% 0%, rgba(255, 255, 255, 0.22), transparent 70%);
+  .auth-aside-img { @apply absolute inset-0 h-full w-full object-cover; z-index: 0; }
+  .auth-aside-veil {
+    @apply absolute inset-0; z-index: 0;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--color-purple-700) 82%, transparent), color-mix(in srgb, var(--color-purple-950) 92%, transparent));
   }
   .auth-aside > * { @apply relative z-10; }
+  .auth-aside > .auth-aside-img, .auth-aside > .auth-aside-veil { z-index: 0; }
   .auth-aside .shell-logo { background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.3); }
   .auth-aside .auth-brand { @apply text-static-white; }
   .auth-aside-body { @apply mt-auto; }
-  .auth-aside-h { @apply font-semibold text-static-white; font-size: clamp(1.9rem, 3vw, 2.6rem); line-height: 1.08; letter-spacing: -0.02em; max-width: 16ch; }
-  .auth-aside-p { @apply mt-4 max-w-sm text-paragraph-lg; color: rgba(255, 255, 255, 0.86); }
-  .auth-points { @apply mt-7 flex flex-col gap-3.5; }
-  .auth-points li { @apply flex items-center gap-3 text-label-md text-static-white; }
+  .auth-aside-h { @apply font-semibold text-static-white; font-size: clamp(1.6rem, 2.4vw, 2.1rem); line-height: 1.1; letter-spacing: -0.02em; max-width: 14ch; }
+  .auth-aside-p { @apply mt-3 text-paragraph-md; color: rgba(255, 255, 255, 0.86); }
+  .auth-points { @apply mt-6 flex flex-col gap-3; }
+  .auth-points li { @apply flex items-center gap-3 text-label-sm text-static-white; }
   .auth-points .pt-ic { @apply flex h-6 w-6 shrink-0 items-center justify-center rounded-full; background: rgba(255, 255, 255, 0.22); }
   .auth-points .pt-ic svg { @apply h-4 w-4; }
-  .auth-quote { @apply mt-9 max-w-md rounded-2xl border p-5; border-color: rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(6px); }
-  .auth-quote p { @apply text-paragraph-md text-static-white; }
-  .auth-quote .qwho { @apply mt-3 text-label-sm; color: rgba(255, 255, 255, 0.8); }
+  .auth-quote { @apply mt-7 w-full rounded-2xl border p-4; border-color: rgba(255, 255, 255, 0.22); background: rgba(255, 255, 255, 0.12); backdrop-filter: blur(6px); }
+  .auth-quote p { @apply text-paragraph-sm text-static-white; }
+  .auth-quote .qwho { @apply mt-2 text-label-xs; color: rgba(255, 255, 255, 0.8); }
 
   .auth-main { @apply flex flex-col items-center justify-center px-5 py-12 sm:px-8; }
   .auth-card { @apply w-full max-w-md; }
