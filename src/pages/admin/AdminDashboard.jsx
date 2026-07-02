@@ -50,22 +50,48 @@ function VerifyView({ state }) {
     catch (e) { setErr(e.message); } finally { setBusy(null); }
   }
 
+  const [view, setView] = useState('pending');
   const workers = data || [];
-  // Show the ones needing a decision first, then the rest for oversight.
-  const order = { pending: 0, unverified: 1, verified: 2 };
-  const sorted = [...workers].sort((a, b) => (order[a.verification] ?? 3) - (order[b.verification] ?? 3));
-  const pendingCount = workers.filter((w) => w.verification === 'pending').length;
+  const bucket = (w) => (w.verification === 'verified' ? 'approved'
+    : w.verification === 'pending' ? 'pending'
+      : w.verification === 'rejected' ? 'rejected' : 'unverified');
+  const counts = {
+    all: workers.length,
+    pending: workers.filter((w) => bucket(w) === 'pending').length,
+    approved: workers.filter((w) => bucket(w) === 'approved').length,
+    rejected: workers.filter((w) => bucket(w) === 'rejected').length,
+  };
+  // Within a view, surface the ones needing a decision first.
+  const order = { pending: 0, rejected: 1, unverified: 2, verified: 3 };
+  const shown = (view === 'all' ? workers : workers.filter((w) => bucket(w) === view))
+    .slice().sort((a, b) => (order[a.verification] ?? 4) - (order[b.verification] ?? 4));
+
+  const tabs = [
+    { key: 'pending', label: 'Pending' },
+    { key: 'approved', label: 'Approved' },
+    { key: 'rejected', label: 'Rejected' },
+    { key: 'all', label: 'All' },
+  ];
 
   return (
     <>
       <h1>Verifications</h1>
       <p className="subtitle">
-        Review workers&apos; simulated identity verification. {pendingCount} awaiting a decision — approve, ask them to redo, or reject.
+        Review workers&apos; simulated identity verification — approve, ask them to redo, or reject.
       </p>
+      <div className="subtabs">
+        {tabs.map((t) => (
+          <button key={t.key} type="button" className={`subtab ${view === t.key ? 'subtab--active' : ''}`} onClick={() => setView(t.key)}>
+            {t.label} ({t.key === 'all' ? counts.all : counts[t.key]})
+          </button>
+        ))}
+      </div>
       <ErrorNote message={error || err} />
       {loading ? <Loading /> : workers.length === 0 ? (
         <div className="empty" style={{ marginTop: '0.75rem' }}>No workers yet.</div>
-      ) : sorted.map((w) => (
+      ) : shown.length === 0 ? (
+        <div className="empty" style={{ marginTop: '0.75rem' }}>No {view === 'all' ? '' : view} workers.</div>
+      ) : shown.map((w) => (
         <div className="card" key={w.worker_id}>
           <div className="card-head">
             <div>

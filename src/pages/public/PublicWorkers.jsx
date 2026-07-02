@@ -15,7 +15,7 @@ function stars(r) {
 export default function PublicWorkers() {
   const { user, loading: authLoading } = useAuth();
   const [params] = useSearchParams();
-  const [term, setTerm] = useState('');
+  const [term, setTerm] = useState(params.get('q') || '');
   const [skill, setSkill] = useState(params.get('skill') || '');
   const [sort, setSort] = useState('rating');
   const workers = useAsync(() => getPublicWorkers(), []);

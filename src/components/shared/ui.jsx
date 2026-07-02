@@ -75,6 +75,7 @@ export function TierBadge({ tier }) {
 const VERIFY = {
   verified: { cls: 'badge--done', label: 'Verified' },
   pending: { cls: 'badge--progress', label: 'Pending review' },
+  rejected: { cls: 'badge--rejected', label: 'Rejected' },
   unverified: { cls: 'badge--neutral', label: 'Unverified' },
 };
 export function VerifyBadge({ status }) {

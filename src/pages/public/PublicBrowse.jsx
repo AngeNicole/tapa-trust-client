@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { getPublicWorkers } from '../../api/client.js';
 import { useAsync } from '../../api/hooks.js';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
@@ -44,7 +44,10 @@ function fmt(n) {
 export default function PublicBrowse() {
   const { user, loading: authLoading } = useAuth();
   const notify = useToast();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
+  const [q, setQ] = useState('');
+  const [trade, setTrade] = useState('');
   const workers = useAsync(() => getPublicWorkers(), []);
 
   if (!authLoading && user) return <Navigate to={homePathForRole(user.role)} replace />;
@@ -53,9 +56,17 @@ export default function PublicBrowse() {
   const all = (workers.data || []).filter((w) => w.verification === 'verified');
   const jobsDone = all.reduce((n, w) => n + (w.completedJobs || 0), 0);
   const trades = new Set(all.flatMap((w) => (w.skills || '').split(',').map((s) => s.trim()).filter(Boolean)));
+  const tradeList = [...trades].sort();
   const rated = all.filter((w) => Number(w.rating) > 0);
   const avg = rated.length ? (rated.reduce((s, w) => s + Number(w.rating), 0) / rated.length) : 0;
 
+  const goBrowse = (e) => {
+    e.preventDefault();
+    const p = new URLSearchParams();
+    if (q.trim()) p.set('q', q.trim());
+    if (trade) p.set('skill', trade);
+    navigate(`/workers${p.toString() ? `?${p}` : ''}`);
+  };
   const subscribe = (e) => {
     e.preventDefault();
     if (!email.trim()) return;
@@ -68,42 +79,56 @@ export default function PublicBrowse() {
       {/* hero */}
       <section className="phero">
         <div className="hero-glow" />
-        <span className="hero-eyebrow"><span className="dot" /> Available across Kigali</span>
-        <h1 className="hero-h1">Find trusted skilled workers, <span className="hero-accent">on demand.</span></h1>
-        <p className="hero-sub">Verified plumbers, cleaners, electricians and more — browse, compare and book in a tap. No account needed to look around.</p>
-        <div className="hero-ctas">
-          <Link to="/workers" className="btn-dark btn-xl">Browse workers <span aria-hidden="true">→</span></Link>
-          <Link to="/register" state={{ role: 'worker' }} className="btn-outline btn-xl">Join as a worker</Link>
-        </div>
-        {all.length > 0 && (
-          <div className="hero-proof">
-            <div className="avatar-cluster">
-              {all.slice(0, 5).map((w) => (
-                <Avatar key={w.worker_id} name={w.name} photo={w.photo} className="avatar" style={{ width: 38, height: 38, borderRadius: 999, fontSize: '0.8rem' }} />
-              ))}
-            </div>
-            <span className="meta">{all.length}+ verified workers · {avg.toFixed(1)}★ average</span>
-          </div>
-        )}
+        <div className="phero-grid">
+          <div className="phero-copy">
+            <span className="hero-eyebrow"><span className="pill-new">NEW</span> Connecting you with trusted skilled workers</span>
+            <h1 className="hero-h1">Skilled help you can <span className="hero-accent">trust,</span> on demand.</h1>
+            <p className="hero-lead"><span className="lead-mark">//</span> Every worker is verified and every job is tracked from booking to done — so you always know who is coming and what to expect.</p>
 
-        {/* hero image showcase with floating accent badges */}
-        <div className="hero-show">
-          <div className="hero-show-img">
-            <img src={HERO_IMG} alt="A verified skilled worker on the job in Kigali" loading="eager" onError={hideBroken} />
+            <form className="hero-search" onSubmit={goBrowse}>
+              <label className="hs-field">
+                {Icons.search}
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or skill" aria-label="Search name or skill" />
+              </label>
+              <label className="hs-field hs-select">
+                <select value={trade} onChange={(e) => setTrade(e.target.value)} aria-label="Trade">
+                  <option value="">All trades</option>
+                  {tradeList.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </label>
+              <button className="btn-dark" type="submit">Browse <span aria-hidden="true">→</span></button>
+            </form>
+
+            <div className="hero-metrics">
+              <div className="metric">
+                <div className="metric-n">{all.length}+</div>
+                <div className="metric-l">verified workers</div>
+              </div>
+              {all.length > 0 && (
+                <div className="avatar-cluster">
+                  {all.slice(0, 5).map((w) => (
+                    <Avatar key={w.worker_id} name={w.name} photo={w.photo} className="avatar" style={{ width: 40, height: 40, borderRadius: 999, fontSize: '0.85rem' }} />
+                  ))}
+                </div>
+              )}
+              <div className="hero-rating">
+                <div className="stars-lg">★★★★★</div>
+                <div className="metric-l">{avg > 0 ? `${avg.toFixed(1)} average` : 'Rated by clients'} · verified reviews</div>
+              </div>
+            </div>
           </div>
-          <div className="hero-badge hero-badge-verified">
-            <span className="b-ic acc-green" style={{ background: 'linear-gradient(135deg, var(--a), var(--a2))' }}>{Icons.checkCircle}</span>
-            <span>
-              <span className="b-t">ID verified</span>
-              <span className="b-s">Admin-reviewed</span>
-            </span>
-          </div>
-          <div className="hero-badge hero-badge-rating">
-            <span className="b-ic acc-yellow" style={{ background: 'linear-gradient(135deg, var(--a), var(--a2))' }}>{Icons.check}</span>
-            <span>
-              <span className="b-t">{avg > 0 ? `${avg.toFixed(1)} ★ rating` : 'Rated by clients'}</span>
-              <span className="b-s">{jobsDone}+ jobs completed</span>
-            </span>
+
+          <div className="phero-visual">
+            <div className="pv-frame">
+              <img src={HERO_IMG} alt="A verified skilled worker on the job in Kigali" loading="eager" onError={hideBroken} />
+            </div>
+            <div className="pv-card">
+              <span className="pv-ic">{Icons.checkCircle}</span>
+              <span>
+                <span className="pv-card-t">Find your worker easily</span>
+                <span className="pv-card-s">Verified · Rated · Ready to book</span>
+              </span>
+            </div>
           </div>
         </div>
       </section>
