@@ -113,7 +113,7 @@ export default function PublicBrowse() {
           <div className="stat-big"><span className="n">{fmt(all.length)}<em>+</em></span><span className="l">Verified workers</span></div>
           <div className="stat-big"><span className="n">{trades.size}<em>+</em></span><span className="l">Trades covered</span></div>
           <div className="stat-big"><span className="n">{fmt(jobsDone)}<em>+</em></span><span className="l">Jobs completed</span></div>
-          <div className="stat-big"><span className="n">{avg.toFixed(1)}<em>★</em></span><span className="l">Average rating</span></div>
+          <div className="stat-big"><span className="n">{avg.toFixed(1)}</span><span className="l">Average rating</span></div>
         </div>
       </section>
 

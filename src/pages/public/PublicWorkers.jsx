@@ -37,9 +37,8 @@ export default function PublicWorkers() {
     });
 
   return (
-    <PublicShell>
+    <PublicShell landing>
       <div className="browse-head">
-        <Link to="/" className="pp-back">← Home</Link>
         <h1 className="browse-title">Browse workers</h1>
         <p className="browse-sub">{all.length} verified worker{all.length === 1 ? '' : 's'} available across Kigali.</p>
       </div>

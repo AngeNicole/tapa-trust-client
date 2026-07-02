@@ -15,8 +15,8 @@ export function PublicShell({ children, landing }) {
         {landing && (
           <nav className="public-nav">
             <Link to="/workers">Workers</Link>
-            <a href="#how">How it works</a>
-            <a href="#why">Why us</a>
+            <a href="/#how">How it works</a>
+            <a href="/#why">Why us</a>
           </nav>
         )}
 
