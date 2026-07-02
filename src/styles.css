@@ -1282,6 +1282,27 @@ body {
   }
   .worker-tile:hover { box-shadow: var(--shadow-regular-md); }
 
+  /* ---- dedicated Browse workers page ---- */
+  .browse-head { @apply pt-10 pb-1; }
+  .browse-title { @apply mt-2 font-semibold text-text-strong-950; font-size: clamp(2rem, 4vw, 2.75rem); letter-spacing: -0.02em; }
+  .browse-sub { @apply mt-1 text-paragraph-lg text-text-sub-600; }
+  .filters { @apply mt-7 flex flex-wrap items-center gap-3; }
+  .filters .search { @apply flex-1; min-width: 240px; max-width: 520px; }
+  .filters .select { @apply shrink-0; }
+  .browse-chips { @apply mb-7 mt-3 flex flex-wrap gap-2; }
+  .wgrid { @apply grid gap-5 pb-16 sm:grid-cols-2 lg:grid-cols-3; }
+  .wcard { @apply flex flex-col rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-5 text-inherit no-underline transition-all; }
+  .wcard:hover { @apply -translate-y-1 border-primary-base; box-shadow: var(--shadow-regular-md); }
+  .wcard-top { @apply flex items-center gap-3.5; }
+  .wcard-name { @apply flex flex-wrap items-center gap-2 text-label-lg font-semibold text-text-strong-950; }
+  .wcard-rating { @apply mt-1 flex items-center gap-1.5 text-paragraph-sm text-text-sub-600; }
+  .wcard-rating .stars { color: var(--color-yellow-500); letter-spacing: 0.5px; }
+  .wcard-skills { @apply mt-4 flex flex-wrap gap-1.5; }
+  .wcard-skill { @apply rounded-lg bg-bg-weak-50 px-2.5 py-1 text-label-xs font-medium text-text-sub-600; }
+  .wcard-foot { @apply mt-auto flex items-center gap-1 pt-4 text-label-sm font-medium text-primary-base; }
+  .wcard-foot .arrow { transition: transform 0.15s ease; }
+  .wcard:hover .wcard-foot .arrow { transform: translateX(4px); }
+
   /* ---- public hero (.phero — distinct from the dashboard .hero banner) ---- */
   .phero { @apply relative overflow-hidden pb-10 pt-16 text-center sm:pt-24; scroll-margin-top: 80px; }
   .hero-glow {
