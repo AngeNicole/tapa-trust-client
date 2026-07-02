@@ -83,6 +83,18 @@ export function VerifyBadge({ status }) {
   return <span className={`badge ${v.cls}`}>{v.label}</span>;
 }
 
+// Elapsed time between check-in and check-out — the platform tracks this, so
+// surface it once a job has both timestamps. Returns e.g. "1h 30m" or "45m".
+export function duration(startTs, endTs) {
+  if (!startTs || !endTs) return null;
+  const ms = new Date(endTs).getTime() - new Date(startTs).getTime();
+  if (!Number.isFinite(ms) || ms <= 0) return null;
+  const mins = Math.max(1, Math.round(ms / 60000));
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h ? `${h}h ${m}m` : `${m}m`;
+}
+
 export function Loading({ label = 'Loading…' }) {
   return <div className="empty" style={{ marginTop: '0.75rem' }}>{label}</div>;
 }

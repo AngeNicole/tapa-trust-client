@@ -14,7 +14,7 @@ import {
   checkoutBooking,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, rwf, monthLabel } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, rwf, monthLabel, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
@@ -340,7 +340,7 @@ function BookingsView({ state }) {
           <div className="card-head">
             <div>
               <div className="card-title">{b.taskTitle}</div>
-              <div className="meta">Requested by {b.requesterName}</div>
+              <div className="meta">Requested by {b.requesterName}{duration(b.startTs, b.endTs) && <> · ⏱ {duration(b.startTs, b.endTs)} on the job</>}</div>
             </div>
             <div className="row"><StatusBadge status={b.status} /><PaymentBadge payment={b.payment} /></div>
           </div>
