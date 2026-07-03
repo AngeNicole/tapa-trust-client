@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { getAdminUsers, getCategories, createCategory, getAllWorkers, verifyWorker, rejectWorker } from '../../api/client.js';
+import { useState, useEffect } from 'react';
+import { getAdminUsers, getCategories, createCategory, getAllWorkers, getWorker, verifyWorker, rejectWorker } from '../../api/client.js';
 import { useAsync } from '../../api/hooks.js';
-import { Loading, ErrorNote, VerifyBadge } from '../../components/shared/ui.jsx';
+import { Loading, ErrorNote, VerifyBadge, EmptyState, Avatar } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 
@@ -30,25 +30,8 @@ export default function AdminDashboard() {
 
 function VerifyView({ state }) {
   const { data, loading, error, reload } = state;
-  const [err, setErr] = useState('');
-  const [busy, setBusy] = useState(null);
   const [view, setView] = useState('all');
-  const [menuFor, setMenuFor] = useState(null);          // worker_id whose ⋯ menu is open
-  const [modal, setModal] = useState(null);              // { workerId, name, mode: 'redo'|'reject' }
-  const [note, setNote] = useState('');
-
-  async function approve(workerId) {
-    setErr(''); setBusy(workerId); setMenuFor(null);
-    try { await verifyWorker(workerId); reload(); } catch (e) { setErr(e.message); } finally { setBusy(null); }
-  }
-  function openModal(w, mode) { setErr(''); setNote(''); setMenuFor(null); setModal({ workerId: w.worker_id, name: w.name, mode }); }
-  async function submitModal() {
-    if (!modal) return;
-    if (modal.mode === 'redo' && !note.trim()) { setErr('Tell the worker what to fix before asking them to redo.'); return; }
-    setErr(''); setBusy(modal.workerId);
-    try { await rejectWorker(modal.workerId, note.trim()); setModal(null); setNote(''); reload(); }
-    catch (e) { setErr(e.message); } finally { setBusy(null); }
-  }
+  const [reviewing, setReviewing] = useState(null); // the worker row being reviewed
 
   // Only real, engaged workers: those with a verification record. Never-submitted
   // (unverified) accounts — the test/dummy noise — are hidden entirely.
@@ -74,7 +57,7 @@ function VerifyView({ state }) {
   return (
     <>
       <h1>Verifications</h1>
-      <p className="subtitle">Review workers&apos; simulated identity verification — approve, ask them to redo, or reject.</p>
+      <p className="subtitle">Review each worker&apos;s profile before you approve, ask them to redo, or reject.</p>
       <div className="subtabs">
         {tabs.map((t) => (
           <button key={t.key} type="button" className={`subtab ${view === t.key ? 'subtab--active' : ''}`} onClick={() => setView(t.key)}>
@@ -82,14 +65,14 @@ function VerifyView({ state }) {
           </button>
         ))}
       </div>
-      <ErrorNote message={error || err} />
+      <ErrorNote message={error} />
       {loading ? <Loading /> : shown.length === 0 ? (
-        <div className="empty" style={{ marginTop: '0.75rem' }}>No {view === 'all' ? '' : view} workers.</div>
+        <EmptyState icon={Icons.check} title={`No ${view === 'all' ? '' : view} workers`} hint="Workers appear here once they submit their identity verification." />
       ) : (
-        <div className="card" style={{ overflow: 'visible' }}>
+        <div className="card">
           <div style={{ overflowX: 'auto' }}>
             <table className="tbl">
-              <thead><tr><th>Name</th><th>Availability</th><th>Status</th><th style={{ width: 48 }}></th></tr></thead>
+              <thead><tr><th>Name</th><th>Availability</th><th>Status</th><th style={{ width: 96 }}></th></tr></thead>
               <tbody>
                 {shown.map((w) => (
                   <tr key={w.worker_id}>
@@ -100,36 +83,8 @@ function VerifyView({ state }) {
                       </span>
                     </td>
                     <td><VerifyBadge status={w.verification} /></td>
-                    <td>
-                      <div className="menu-wrap">
-                        <button
-                          type="button"
-                          className="menu-trigger"
-                          disabled={busy === w.worker_id}
-                          aria-label="Actions"
-                          onClick={() => setMenuFor(menuFor === w.worker_id ? null : w.worker_id)}
-                        >
-                          {Icons.dots}
-                        </button>
-                        {menuFor === w.worker_id && (
-                          <>
-                            <div className="menu-backdrop" onClick={() => setMenuFor(null)} />
-                            <div className="menu-pop">
-                              {w.verification !== 'verified' && (
-                                <button type="button" className="menu-item" onClick={() => approve(w.worker_id)}>Approve</button>
-                              )}
-                              {w.verification !== 'verified' && (
-                                <button type="button" className="menu-item" onClick={() => openModal(w, 'redo')}>Request redo…</button>
-                              )}
-                              {w.verification !== 'rejected' && (
-                                <button type="button" className="menu-item menu-item--danger" onClick={() => openModal(w, 'reject')}>
-                                  {w.verification === 'verified' ? 'Revoke / reject…' : 'Reject…'}
-                                </button>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
+                    <td style={{ textAlign: 'right' }}>
+                      <button type="button" className="btn-secondary" onClick={() => setReviewing(w)}>Review</button>
                     </td>
                   </tr>
                 ))}
@@ -139,28 +94,114 @@ function VerifyView({ state }) {
         </div>
       )}
 
-      {modal && (
-        <div className="modal-overlay" onClick={() => setModal(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-title">{modal.mode === 'redo' ? `Ask ${modal.name} to redo` : `Reject ${modal.name}`}</div>
-            <p className="meta" style={{ margin: '0.25rem 0 0.75rem' }}>
-              {modal.mode === 'redo' ? 'Explain what is missing so they can fix it and resubmit.' : 'Optionally add a reason. The worker returns to unverified and can resubmit.'}
-            </p>
-            <textarea
-              className="input" rows={4} autoFocus value={note} onChange={(e) => setNote(e.target.value)}
-              placeholder={modal.mode === 'redo' ? 'e.g. The ID photo is blurry — please re-upload a clear one.' : 'e.g. Document does not match the profile name.'}
-            />
-            {err && <div className="form-error" style={{ marginTop: '0.5rem' }}>{err}</div>}
-            <div className="row" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
-              <button className="btn-secondary" onClick={() => setModal(null)}>Cancel</button>
-              <button className={modal.mode === 'redo' ? 'btn-primary' : 'btn-danger'} disabled={busy === modal.workerId} onClick={submitModal}>
-                {busy === modal.workerId ? 'Sending…' : modal.mode === 'redo' ? 'Send back to redo' : 'Confirm rejection'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {reviewing && (
+        <ReviewModal
+          worker={reviewing}
+          onClose={() => setReviewing(null)}
+          onDone={() => { setReviewing(null); reload(); }}
+        />
       )}
     </>
+  );
+}
+
+// Opens a worker's full profile so the admin sees what they submitted (skills,
+// bio, education, certifications, photo, track record) before deciding.
+function ReviewModal({ worker, onClose, onDone }) {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [mode, setMode] = useState('view'); // view | redo | reject
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    getWorker(worker.worker_id)
+      .then((p) => { if (alive) setProfile(p); })
+      .catch((e) => { if (alive) setErr(e.message); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [worker.worker_id]);
+
+  async function approve() {
+    setBusy(true); setErr('');
+    try { await verifyWorker(worker.worker_id); onDone(); } catch (e) { setErr(e.message); setBusy(false); }
+  }
+  async function sendBack() {
+    if (mode === 'redo' && !note.trim()) { setErr('Tell the worker what to fix before asking them to redo.'); return; }
+    setBusy(true); setErr('');
+    try { await rejectWorker(worker.worker_id, note.trim()); onDone(); } catch (e) { setErr(e.message); setBusy(false); }
+  }
+
+  const skills = (profile?.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
+  const certs = (profile?.certifications || '').split(/[\n;,]/).map((s) => s.trim()).filter(Boolean);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal review-modal" onClick={(e) => e.stopPropagation()}>
+        {loading ? <Loading /> : (
+          <>
+            <div className="review-id">
+              <Avatar name={worker.name} photo={profile?.photo} className="avatar" style={{ width: 52, height: 52, borderRadius: 14, fontSize: '1.1rem' }} />
+              <div style={{ minWidth: 0 }}>
+                <div className="review-name">{worker.name}</div>
+                <div className="row" style={{ gap: '0.5rem', marginTop: 4 }}>
+                  <VerifyBadge status={worker.verification} />
+                  <span className="meta">{(Number(profile?.rating) || 0).toFixed(1)}★ · {profile?.taskHistory?.length || 0} jobs</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="review-sec">
+              <h4>Skills</h4>
+              {skills.length ? <div className="review-chips">{skills.map((s) => <span className="chip" key={s}>{s}</span>)}</div> : <p className="meta">None listed.</p>}
+            </div>
+            <div className="review-sec">
+              <h4>About</h4>
+              <p>{profile?.bio || <span className="meta">No bio provided.</span>}</p>
+            </div>
+            <div className="review-sec">
+              <h4>Education</h4>
+              <p>{profile?.education || <span className="meta">Not provided.</span>}</p>
+            </div>
+            <div className="review-sec">
+              <h4>Certifications</h4>
+              {certs.length ? <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>{certs.map((c) => <li key={c} className="review-sec-li"><p style={{ display: 'inline' }}>{c}</p></li>)}</ul> : <p className="meta">Not provided.</p>}
+            </div>
+            <div className="review-sec">
+              <h4>Submitted evidence</h4>
+              <p className="meta">Simulated ID document on file (Tier-1 mock — no real ID stored).</p>
+            </div>
+
+            {err && <div className="form-error" style={{ marginTop: '0.75rem' }}>{err}</div>}
+
+            {mode === 'view' ? (
+              <div className="review-actions">
+                {worker.verification !== 'verified' && <button className="btn-secondary" disabled={busy} onClick={() => { setErr(''); setMode('redo'); }}>Request redo</button>}
+                {worker.verification !== 'rejected' && <button className="btn-danger" disabled={busy} onClick={() => { setErr(''); setMode('reject'); }}>{worker.verification === 'verified' ? 'Revoke' : 'Reject'}</button>}
+                {worker.verification !== 'verified' && <button className="btn-primary" disabled={busy} onClick={approve}>{busy ? 'Approving…' : 'Approve'}</button>}
+                {worker.verification === 'verified' && <button className="btn-secondary" onClick={onClose}>Close</button>}
+              </div>
+            ) : (
+              <>
+                <div style={{ marginTop: '0.75rem' }}>
+                  <label className="review-label">{mode === 'redo' ? 'What should the worker fix and resubmit?' : 'Reason for rejection (optional)'}</label>
+                  <textarea className="input" rows={3} autoFocus value={note} onChange={(e) => setNote(e.target.value)}
+                    placeholder={mode === 'redo' ? 'e.g. The ID photo is blurry — please re-upload a clear one.' : 'e.g. Document does not match the profile name.'} style={{ width: '100%' }} />
+                </div>
+                <div className="review-actions">
+                  <button className="btn-secondary" disabled={busy} onClick={() => { setMode('view'); setNote(''); setErr(''); }}>Back</button>
+                  <button className={mode === 'redo' ? 'btn-primary' : 'btn-danger'} disabled={busy} onClick={sendBack}>
+                    {busy ? 'Sending…' : mode === 'redo' ? 'Send back to redo' : 'Confirm rejection'}
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 

@@ -14,7 +14,7 @@ import {
   checkoutBooking,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, rwf, monthLabel, duration } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, EmptyState, rwf, monthLabel, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Hero } from '../../components/Hero.jsx';
@@ -27,8 +27,6 @@ function initials(name = '') {
   const p = name.trim().split(/\s+/);
   return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'U';
 }
-// Stable, simulated payout amount per booking (no earnings API in Tier-1).
-const simAmount = (id) => 8000 + ((Number(id) * 37) % 6) * 3000;
 
 export default function WorkerDashboard() {
   const { user } = useAuth();
@@ -334,9 +332,11 @@ function BookingsView({ state }) {
         </button>
       </div>
       {loading ? <Loading /> : bookings.length === 0 ? (
-        <div className="empty" style={{ marginTop: '0.75rem' }}>
-          {view === 'active' ? 'No active jobs. New jobs from requesters show up here.' : 'No completed jobs yet.'}
-        </div>
+        <EmptyState
+          icon={Icons.calendar}
+          title={view === 'active' ? 'No active jobs' : 'No completed jobs yet'}
+          hint={view === 'active' ? 'When a requester books you, the job shows up here to accept and track.' : 'Finished jobs and their reviews will appear here.'}
+        />
       ) : bookings.map((b) => (
         <div className="card" key={b.booking_id}>
           <div className="card-head">
@@ -365,32 +365,37 @@ function BookingsView({ state }) {
 }
 
 function EarningsView() {
-  const { data, loading, error } = useAsync(async () => {
-    const me = await getMyWorkerProfile();
-    const [history, bookings] = await Promise.all([getWorkerHistory(me.worker_id), getBookings()]);
-    return { history, bookings };
-  }, []);
+  const { data, loading, error } = useAsync(async () => ({ bookings: await getBookings() }), []);
 
   if (loading) return <><h1>Earnings</h1><Loading /></>;
   if (error) return <><h1>Earnings</h1><ErrorNote message={error} /></>;
 
-  const released = (data.history || []).map((h) => ({
-    id: `INV-${1000 + h.booking_id}`,
-    date: String(h.date).slice(0, 10),
-    task: h.taskTitle,
-    amount: simAmount(h.booking_id),
-    status: 'released',
-  }));
-  const pending = (data.bookings || [])
-    .filter((b) => b.status !== 'completed')
-    .map((b) => ({
-      id: `INV-${1000 + b.booking_id}`,
-      date: '—',
-      task: b.taskTitle,
-      amount: simAmount(b.booking_id),
-      status: 'pending',
-    }));
+  // Real earnings come from the price agreed in chat. A completed booking is a
+  // released payout; an in-flight booking with an agreed price is pending.
+  const bookings = data.bookings || [];
+  const amountOf = (b) => Number(b.agreedPrice) || 0;
+  const released = bookings
+    .filter((b) => b.status === 'completed' && amountOf(b) > 0)
+    .map((b) => ({ id: `INV-${1000 + b.booking_id}`, date: b.endTs ? String(b.endTs).slice(0, 10) : '—', task: b.taskTitle, amount: amountOf(b), status: 'released' }));
+  const pending = bookings
+    .filter((b) => b.status !== 'completed' && amountOf(b) > 0)
+    .map((b) => ({ id: `INV-${1000 + b.booking_id}`, date: '—', task: b.taskTitle, amount: amountOf(b), status: 'pending' }));
   const invoices = [...pending, ...released];
+
+  // Nothing agreed or earned yet → a clean empty state, not a wall of zeros.
+  if (invoices.length === 0) {
+    return (
+      <>
+        <h1>Earnings</h1>
+        <p className="subtitle">Your wallet, payouts and invoices.</p>
+        <EmptyState
+          icon={Icons.wallet}
+          title="No earnings yet"
+          hint="Agree a price with a requester in chat and complete the job — your payouts and invoices will show up here."
+        />
+      </>
+    );
+  }
 
   const relTotal = released.reduce((a, e) => a + e.amount, 0);
   const penTotal = pending.reduce((a, e) => a + e.amount, 0);
@@ -406,7 +411,7 @@ function EarningsView() {
   return (
     <>
       <h1>Earnings</h1>
-      <p className="subtitle">Your wallet, payout history and invoices (amounts simulated).</p>
+      <p className="subtitle">Your wallet, payout history and invoices — from prices agreed in chat (payouts simulated).</p>
 
       <div className="wallet" style={{ marginTop: '0.75rem' }}>
         <div className="wallet-label">Available balance</div>
