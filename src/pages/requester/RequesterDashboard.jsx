@@ -14,12 +14,11 @@ import {
   rebookWorker,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, TierBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, duration, rwf } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, TierBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, duration, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
-import { MapCard } from '../../components/MapCard.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 
@@ -168,18 +167,14 @@ function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
       <p className="subtitle">Browse available workers, open a profile, and book — no task to post.</p>
       <ErrorNote message={err} />
 
-      <div style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}>
-        <MapCard title="Workers in your area" location="Kigali, Rwanda" height={200} />
-      </div>
-
-      <form className="row" onSubmit={(e) => { e.preventDefault(); setSkill(term.trim()); }} style={{ marginBottom: '1rem' }}>
+      <form className="row" onSubmit={(e) => { e.preventDefault(); setSkill(term.trim()); }} style={{ marginTop: '1rem', marginBottom: '1rem' }}>
         <input className="input" style={{ flex: 1, minWidth: '180px' }} value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Search a skill, e.g. Plumbing" />
         <button className="btn-primary" type="submit">Search</button>
         {skill && <button type="button" className="btn-secondary" onClick={() => { setTerm(''); setSkill(''); }}>Clear</button>}
       </form>
 
       {workers.loading ? <Loading /> : workers.error ? <ErrorNote message={workers.error} /> : list.length === 0 ? (
-        <div className="empty">No available workers{skill ? ` for “${skill}”` : ''} right now.</div>
+        <EmptyState icon={Icons.search} title={skill ? `No workers for “${skill}”` : 'No available workers yet'} hint="Try a different skill, or check back soon as more workers get verified." />
       ) : (
         <div className="grid2">
           {list.map((w) => (
@@ -284,7 +279,7 @@ function BookingsView({ state, bookings, onReview }) {
       <p className="subtitle">Track each job from accepted through to completion.</p>
       <ErrorNote message={error} />
       {loading ? <Loading /> : bookings.length === 0 ? (
-        <div className="empty" style={{ marginTop: '0.75rem' }}>No active bookings. Find a worker to book one.</div>
+        <EmptyState icon={Icons.calendar} title="No active bookings" hint="Find a worker and book them — your active jobs will track here." />
       ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} />)}
     </>
   );
@@ -298,7 +293,7 @@ function HistoryView({ state, bookings, onReview }) {
       <p className="subtitle">Completed jobs, reviews and one-tap rebooking.</p>
       <ErrorNote message={error} />
       {loading ? <Loading /> : bookings.length === 0 ? (
-        <div className="empty" style={{ marginTop: '0.75rem' }}>No completed jobs yet.</div>
+        <EmptyState icon={Icons.clock} title="No completed jobs yet" hint="Once a job is confirmed complete, it moves here with its review and a one-tap rebook." />
       ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} />)}
     </>
   );
@@ -392,7 +387,7 @@ function SavedView({ state, onRebook }) {
       <p className="subtitle">Your preferred workers — rebook any of them in one tap.</p>
       <ErrorNote message={error || err} />
       {loading ? <Loading /> : saved.length === 0 ? (
-        <div className="empty" style={{ marginTop: '0.75rem' }}>No saved workers yet. Tap “Save” on a worker in Find workers.</div>
+        <EmptyState icon={Icons.bookmark} title="No saved workers yet" hint="Tap “Save” on a worker in Find workers to keep them here for one-tap rebooking." />
       ) : saved.map((w) => (
         <div className="card" key={w.worker_id}>
           <div className="card-head">

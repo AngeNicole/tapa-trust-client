@@ -99,6 +99,18 @@ export function Loading({ label = 'Loading…' }) {
   return <div className="empty" style={{ marginTop: '0.75rem' }}>{label}</div>;
 }
 
+// Modern empty state: icon tile + title + hint + optional action, on a dashed card.
+export function EmptyState({ icon, title, hint, action }) {
+  return (
+    <div className="empty-state">
+      {icon && <span className="empty-ic">{icon}</span>}
+      <div className="empty-title">{title}</div>
+      {hint && <p className="empty-hint">{hint}</p>}
+      {action}
+    </div>
+  );
+}
+
 export function ErrorNote({ message }) {
   if (!message) return null;
   return <div className="form-error" style={{ marginTop: '0.75rem' }}>{message}</div>;
