@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
 import { resumeAfterAuth, getPendingBooking } from '../../api/pendingBooking.js';
 import PasswordInput from '../../components/PasswordInput.jsx';
+import AuthLayout from '../../components/AuthLayout.jsx';
 
 export default function Login() {
   const { login } = useAuth();
@@ -36,12 +37,15 @@ export default function Login() {
   }
 
   return (
-    <div className="page">
-      <h1>Log in</h1>
-      {getPendingBooking() != null && (
-        <p className="subtitle">Log in as a requester to finish booking the worker you selected.</p>
-      )}
-
+    <AuthLayout
+      title="Welcome back"
+      subtitle={getPendingBooking() != null
+        ? 'Log in as a requester to finish booking the worker you selected.'
+        : 'Log in to manage your bookings and jobs.'}
+      altText="New here?"
+      altTo="/register"
+      altLabel="Create an account"
+    >
       <form className="form" onSubmit={onSubmit}>
         <label>
           Email
@@ -67,10 +71,6 @@ export default function Login() {
           {submitting ? 'Logging in...' : 'Log in'}
         </button>
       </form>
-
-      <p className="note">
-        New here? <Link to="/register">Create an account</Link>
-      </p>
-    </div>
+    </AuthLayout>
   );
 }

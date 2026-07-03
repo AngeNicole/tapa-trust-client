@@ -14,8 +14,9 @@ import {
   rebookWorker,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, TierBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, TierBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, duration, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { useChat } from '../../context/ChatContext.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
 import { MapCard } from '../../components/MapCard.jsx';
@@ -304,8 +305,10 @@ function HistoryView({ state, bookings, onReview }) {
 }
 
 function BookingCard({ b, reload, onReview }) {
+  const { openChat } = useChat();
   const [err, setErr] = useState('');
   const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
+  const canChat = !['completed', 'cancelled'].includes(b.status);
   // Confirm completion, then suggest a review via the popup (handled by parent).
   async function complete() {
     setErr('');
@@ -316,13 +319,17 @@ function BookingCard({ b, reload, onReview }) {
       <div className="card-head">
         <div>
           <div className="card-title">{b.taskTitle}</div>
-          <div className="meta">Worker: {b.workerName}</div>
+          <div className="meta">Worker: {b.workerName}{duration(b.startTs, b.endTs) && <> · ⏱ {duration(b.startTs, b.endTs)} on the job</>}</div>
         </div>
-        <div className="row"><StatusBadge status={b.status} /><PaymentBadge payment={b.payment} /></div>
+        <div className="row">
+          {b.agreedPrice != null && <span className="badge badge--done">{rwf(b.agreedPrice)} agreed</span>}
+          <StatusBadge status={b.status} /><PaymentBadge payment={b.payment} />
+        </div>
       </div>
       <ErrorNote message={err} />
       <div className="actions">
         {b.status === 'pending' && <span className="meta">Waiting for {b.workerName} to accept.</span>}
+        {canChat && <button className="btn-secondary btn-icon" onClick={() => openChat(b)}>{Icons.chat} {b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>}
         {b.status === 'accepted' && !b.checkedIn && <span className="meta">Accepted — waiting for {b.workerName} to check in.</span>}
         {b.status === 'accepted' && b.checkedIn && !b.startConfirmed && <button className="btn-primary" onClick={() => act(confirmStart(b.booking_id))}>Confirm start</button>}
         {b.status === 'in_progress' && !b.checkedOut && <span className="meta">Worker on the job — waiting for check out.</span>}

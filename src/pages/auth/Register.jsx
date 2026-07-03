@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
 import { resumeAfterAuth } from '../../api/pendingBooking.js';
 import PasswordInput from '../../components/PasswordInput.jsx';
+import AuthLayout from '../../components/AuthLayout.jsx';
 
 // A strong password: at least 8 characters with an uppercase letter, a
 // lowercase letter, a number, and a special character.
@@ -70,12 +71,15 @@ export default function Register() {
   }
 
   return (
-    <div className="page">
-      <h1>Create your account</h1>
-      {bookingFlow && (
-        <p className="subtitle">Create a requester account to finish booking the worker you selected.</p>
-      )}
-
+    <AuthLayout
+      title="Create your account"
+      subtitle={bookingFlow
+        ? 'Create a requester account to finish booking the worker you selected.'
+        : 'Set up your account in under a minute.'}
+      altText="Already have an account?"
+      altTo="/login"
+      altLabel="Log in"
+    >
       <form className="form" onSubmit={onSubmit}>
         {!bookingFlow && (
           <label>
@@ -148,10 +152,6 @@ export default function Register() {
           {submitting ? 'Creating account...' : 'Create account'}
         </button>
       </form>
-
-      <p className="note">
-        Already have an account? <Link to="/login">Log in</Link>
-      </p>
-    </div>
+    </AuthLayout>
   );
 }

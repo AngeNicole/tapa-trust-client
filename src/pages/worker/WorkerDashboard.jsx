@@ -14,8 +14,9 @@ import {
   checkoutBooking,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, rwf, monthLabel } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, rwf, monthLabel, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { useChat } from '../../context/ChatContext.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
 import { useToast } from '../../components/Toast.jsx';
@@ -309,6 +310,7 @@ function TaskHistory({ workerId }) {
 }
 
 function BookingsView({ state }) {
+  const { openChat } = useChat();
   const { data, loading, error, reload } = state;
   const [err, setErr] = useState('');
   const [view, setView] = useState('active');
@@ -340,11 +342,15 @@ function BookingsView({ state }) {
           <div className="card-head">
             <div>
               <div className="card-title">{b.taskTitle}</div>
-              <div className="meta">Requested by {b.requesterName}</div>
+              <div className="meta">Requested by {b.requesterName}{duration(b.startTs, b.endTs) && <> · ⏱ {duration(b.startTs, b.endTs)} on the job</>}</div>
             </div>
-            <div className="row"><StatusBadge status={b.status} /><PaymentBadge payment={b.payment} /></div>
+            <div className="row">
+              {b.agreedPrice != null && <span className="badge badge--done">{rwf(b.agreedPrice)} agreed</span>}
+              <StatusBadge status={b.status} /><PaymentBadge payment={b.payment} />
+            </div>
           </div>
           <div className="actions">
+            {b.status !== 'completed' && b.status !== 'cancelled' && <button className="btn-secondary btn-icon" onClick={() => openChat(b)}>{Icons.chat} {b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>}
             {b.status === 'pending' && <button className="btn-primary" onClick={() => act(acceptBooking(b.booking_id))}>Accept job</button>}
             {b.status === 'accepted' && !b.checkedIn && <button className="btn-primary" onClick={() => act(checkinBooking(b.booking_id))}>Check in</button>}
             {b.status === 'accepted' && b.checkedIn && <span className="meta">Checked in — waiting for requester to confirm start.</span>}

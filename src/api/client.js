@@ -120,6 +120,9 @@ export function bookWorker(workerId) {
 export function getBookings() {
   return apiFetch('/bookings');
 }
+export function getBooking(id) {
+  return apiFetch(`/bookings/${id}`);
+}
 const bookingAction = (id, action) => apiFetch(`/bookings/${id}/${action}`, { method: 'POST' });
 export const acceptBooking = (id) => bookingAction(id, 'accept');
 export const checkinBooking = (id) => bookingAction(id, 'checkin');
@@ -131,6 +134,17 @@ export function getPaymentStatus(id) {
 }
 export function rebookWorker(workerId) {
   return apiFetch(`/bookings/rebook/${workerId}`, { method: 'POST' });
+}
+
+// --- booking chat / price agreement ---
+export function getBookingMessages(bookingId) {
+  return apiFetch(`/bookings/${bookingId}/messages`);
+}
+export function sendBookingMessage(bookingId, { body, amount } = {}) {
+  return apiFetch(`/bookings/${bookingId}/messages`, { method: 'POST', body: JSON.stringify({ body: body || null, amount: amount ?? null }) });
+}
+export function agreeBookingPrice(bookingId, amount) {
+  return apiFetch(`/bookings/${bookingId}/agree-price`, { method: 'POST', body: JSON.stringify({ amount }) });
 }
 
 // --- reviews ---
@@ -163,4 +177,9 @@ export function getAdminUsers() {
 }
 export function verifyWorker(workerId) {
   return apiFetch(`/admin/workers/${workerId}/verify`, { method: 'POST' });
+}
+// Reject (or send back for redo): returns the worker to unverified and stores an
+// optional note the worker sees; they can fix what was missing and resubmit.
+export function rejectWorker(workerId, note) {
+  return apiFetch(`/admin/workers/${workerId}/reject`, { method: 'POST', body: JSON.stringify({ note: note || null }) });
 }

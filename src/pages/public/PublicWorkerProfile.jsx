@@ -4,9 +4,21 @@ import { getPublicWorker, getPublicWorkerHistory, bookWorker } from '../../api/c
 import { useAsync } from '../../api/hooks.js';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { setPendingBooking } from '../../api/pendingBooking.js';
-import { Avatar, Stars, VerifyBadge, Loading, ErrorNote } from '../../components/shared/ui.jsx';
+import { Loading, ErrorNote } from '../../components/shared/ui.jsx';
 import { PublicShell } from '../../components/PublicShell.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
+
+function initials(name = '') {
+  const p = name.trim().split(/\s+/);
+  return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'U';
+}
+function stars(rating) {
+  const full = Math.round(Number(rating) || 0);
+  return '★'.repeat(full) + '☆'.repeat(Math.max(0, 5 - full));
+}
+function splitList(s) {
+  return (s || '').split(/[\n;,]+/).map((x) => x.trim()).filter(Boolean);
+}
 
 export default function PublicWorkerProfile() {
   const { id } = useParams();
@@ -19,8 +31,6 @@ export default function PublicWorkerProfile() {
 
   async function book() {
     setErr('');
-    // Logged-out → remember this worker, send to requester register/login;
-    // the booking resumes automatically after auth.
     if (!user) {
       setPendingBooking(id);
       navigate('/register', { state: { book: Number(id) } });
@@ -35,52 +45,97 @@ export default function PublicWorkerProfile() {
   }
 
   const jobs = history.data || [];
+  const certs = w ? splitList(w.certifications) : [];
 
   return (
     <PublicShell>
-      <Link to="/" className="btn-ghost" style={{ paddingLeft: 0, textDecoration: 'none' }}>← Back to workers</Link>
+      <div className="pp-wrap">
+      <Link to="/" className="pp-back">← Back to workers</Link>
       {loading ? <Loading /> : error ? <ErrorNote message={error} /> : (
-        <>
-          <div className="card" style={{ marginTop: '0.5rem' }}>
-            <div className="card-head">
-              <div className="row" style={{ gap: '0.85rem', alignItems: 'center', flexWrap: 'nowrap' }}>
-                <Avatar name={w.name} photo={w.photo} />
-                <div>
-                  <div className="row" style={{ gap: '0.5rem' }}>
-                    <span className="card-title">{w.name}</span>
-                    <VerifyBadge status={w.verification} />
-                  </div>
-                  <div className="stars-row"><Stars rating={Number(w.rating) || 0} /></div>
-                  <div className="meta" style={{ marginTop: '0.35rem' }}>{w.completedJobs || 0} completed jobs</div>
+        <div className="pp-grid">
+          {/* left identity card */}
+          <aside className="pp-side">
+            <div className="pp-card pp-id">
+              <div className="pp-photo">
+                {w.photo ? <img src={w.photo} alt={w.name} /> : initials(w.name)}
+              </div>
+              <div className="pp-id-body">
+                <div className="pp-name">{w.name}</div>
+                <div className="pp-rating">
+                  <span className="pp-stars">{stars(w.rating)}</span>
+                  <span className="pp-mono">{(Number(w.rating) || 0).toFixed(1)} · {w.completedJobs || 0} reviews</span>
                 </div>
+                <div className="pp-badges">
+                  {w.verification === 'verified'
+                    ? <span className="pp-pill-green">{Icons.checkCircle} Verified</span>
+                    : <span className="pp-pill-muted">{w.verification === 'pending' ? 'Verification pending' : 'Unverified'}</span>}
+                </div>
+
+                <hr className="pp-div" />
+
+                <div className="pp-stat"><span>Jobs completed</span><strong>{w.completedJobs || 0}</strong></div>
+
+                <button className="pp-book" onClick={book} disabled={busy}>
+                  {busy ? 'Booking…' : 'Book this Worker'}
+                </button>
+                {!user && <p className="pp-note">You'll be asked to sign in to book</p>}
+                <ErrorNote message={err} />
               </div>
             </div>
-            {w.skills && <div className="meta" style={{ marginTop: '0.75rem' }}><strong>Skills:</strong> {w.skills}</div>}
-            {w.bio && <p className="meta" style={{ marginTop: '0.35rem' }}>{w.bio}</p>}
-            {w.education && <div className="meta" style={{ marginTop: '0.5rem' }}><strong>Education:</strong> {w.education}</div>}
-            {w.certifications && <div className="meta" style={{ marginTop: '0.25rem' }}><strong>Certifications:</strong> {w.certifications}</div>}
-            <ErrorNote message={err} />
-            <div className="actions">
-              <button className="btn-primary" onClick={book} disabled={busy}>{busy ? 'Booking…' : 'Book this worker'}</button>
-              {!user && <span className="meta">You'll create a quick requester account to confirm.</span>}
-            </div>
-          </div>
+          </aside>
 
-          <div className="card">
-            <div className="card-title" style={{ marginBottom: '0.75rem' }}>Track record</div>
-            {history.loading ? <span className="meta">Loading…</span> : jobs.length === 0 ? (
-              <div className="history-empty">{Icons.check}No completed jobs yet</div>
-            ) : (
-              jobs.map((h, i) => (
-                <div className="row" key={i} style={{ justifyContent: 'space-between', padding: '0.5rem 0' }}>
-                  <span className="meta">{h.taskTitle} · {String(h.date).slice(0, 10)}</span>
-                  {h.rating != null && <span className="badge badge--star">Reviewed {h.rating}★</span>}
-                </div>
-              ))
+          {/* right detail cards */}
+          <div className="pp-main" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {w.bio && (
+              <section className="pp-card">
+                <div className="pp-h">About</div>
+                <p className="pp-text">{w.bio}</p>
+              </section>
             )}
+
+            {w.skills && (
+              <section className="pp-card">
+                <div className="pp-h">Skills</div>
+                <div className="pp-skills">
+                  {splitList(w.skills).map((s) => <span className="pp-skill" key={s}>{s}</span>)}
+                </div>
+              </section>
+            )}
+
+            {w.education && (
+              <section className="pp-card">
+                <div className="pp-h">{Icons.graduation} Education</div>
+                <p className="pp-text">{w.education}</p>
+              </section>
+            )}
+
+            {certs.length > 0 && (
+              <section className="pp-card">
+                <div className="pp-h">{Icons.certificate} Certifications</div>
+                {certs.map((c) => <div className="pp-cert" key={c}>{Icons.checkCircle} {c}</div>)}
+              </section>
+            )}
+
+            <section className="pp-card">
+              <div className="pp-h">Recent Jobs</div>
+              {history.loading ? <span className="pp-mono">Loading…</span> : jobs.length === 0 ? (
+                <p className="pp-text">No completed jobs yet.</p>
+              ) : (
+                jobs.map((h, i) => (
+                  <div className="pp-job" key={i}>
+                    <div>
+                      <div className="pp-job-title">{h.taskTitle}</div>
+                      <div className="pp-job-meta">{String(h.date).slice(0, 10)}{h.comment ? ` · ${h.comment}` : ''}</div>
+                    </div>
+                    {h.rating != null && <div className="pp-job-stars">{'★'.repeat(h.rating)}</div>}
+                  </div>
+                ))
+              )}
+            </section>
           </div>
-        </>
+        </div>
       )}
+      </div>
     </PublicShell>
   );
 }
