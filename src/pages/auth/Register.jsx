@@ -62,7 +62,9 @@ export default function Register() {
     try {
       const user = await register(form);
       const resumePath = await resumeAfterAuth(user);
-      navigate(resumePath || homePathForRole(user.role), { replace: true });
+      // New workers go straight into guided ID verification before the dashboard.
+      const dest = resumePath || (user.role === 'worker' ? '/worker/onboarding' : homePathForRole(user.role));
+      navigate(dest, { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {

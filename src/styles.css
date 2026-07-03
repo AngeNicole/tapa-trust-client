@@ -1256,6 +1256,39 @@ body {
   .auth-alt { @apply mt-7 text-center text-paragraph-sm text-text-sub-600; }
   .auth-alt a { @apply font-medium text-primary-base no-underline hover:underline; }
 
+  /* ---- worker verification onboarding (guided, simulated) ---- */
+  .onb { @apply min-h-screen w-full bg-bg-weak-50; }
+  .onb-head { @apply flex items-center justify-between border-b border-stroke-soft-200 bg-bg-white-0 px-5 py-4 sm:px-8; }
+  .onb-skip { @apply cursor-pointer bg-transparent text-label-sm font-medium text-text-sub-600 transition-colors hover:text-text-strong-950; }
+  .onb-body { @apply mx-auto flex max-w-2xl flex-col gap-6 px-5 py-8 sm:py-12; }
+  .onb-steps { @apply flex flex-wrap items-center justify-center gap-x-3 gap-y-2; }
+  .onb-step { @apply flex items-center gap-2 text-label-sm text-text-soft-400; }
+  .onb-step-dot { @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-stroke-sub-300 text-label-xs font-semibold; }
+  .onb-step-dot svg { @apply h-4 w-4; }
+  .onb-step.is-active { @apply text-text-strong-950; }
+  .onb-step.is-active .onb-step-dot { @apply border-primary-base bg-primary-base text-static-white; }
+  .onb-step.is-done .onb-step-dot { @apply border-green-500 bg-green-50 text-green-700; }
+  .onb-step-label { @apply hidden sm:inline; }
+  .onb-card { @apply rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-6 sm:p-8; }
+  .onb-title { @apply text-title-h5 font-semibold text-text-strong-950; }
+  .onb-sub { @apply mt-1 text-paragraph-sm text-text-sub-600; }
+  .onb-pane { @apply mt-6; }
+  .onb-h { @apply mb-1 text-label-lg font-semibold text-text-strong-950; }
+  .onb-drop { @apply mt-3 flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-stroke-sub-300 bg-bg-weak-50 px-6 py-10 text-center text-paragraph-sm text-text-sub-600 transition-colors hover:border-primary-base; }
+  .onb-drop-ic { @apply flex h-12 w-12 items-center justify-center rounded-2xl bg-bg-white-0 text-primary-base; box-shadow: var(--shadow-regular-sm); }
+  .onb-drop-ic svg { @apply h-6 w-6; }
+  .onb-drop-name { @apply font-medium text-text-strong-950; }
+  .onb-cam { @apply mx-auto mt-3 flex items-center justify-center overflow-hidden rounded-full border-4 border-stroke-soft-200 bg-neutral-950; width: 240px; height: 240px; }
+  .onb-cam video, .onb-cam img { @apply h-full w-full object-cover; }
+  .onb-cam-sim { @apply flex flex-col items-center gap-2 text-static-white; }
+  .onb-cam-sim svg { @apply h-10 w-10; }
+  .onb-review { @apply mt-3 flex flex-col; list-style: none; padding: 0; }
+  .onb-review li { @apply flex items-center justify-between gap-4 border-b border-stroke-soft-200 py-2.5 text-paragraph-sm; }
+  .onb-review li:last-child { @apply border-0; }
+  .onb-review li span { @apply text-text-sub-600; }
+  .onb-review li b { @apply text-right font-medium text-text-strong-950; }
+  .onb-actions { @apply mt-6 flex items-center justify-between; }
+
   /* ---- demo dashboards ---- */
   .wide {
     @apply mx-auto max-w-3xl px-5 py-8;

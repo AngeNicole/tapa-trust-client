@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
   getMyWorkerProfile,
@@ -98,46 +99,23 @@ function AvailabilityToggle({ me, reload }) {
   );
 }
 
-function VerificationCard({ status, reload }) {
-  const [fileName, setFileName] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState('');
-  async function submit(e) {
-    e.preventDefault();
-    if (!fileName) return;
-    setBusy(true); setErr('');
-    // Simulated: the document is not stored — we send the filename as the marker.
-    try { await submitVerification({ document: fileName }); reload(); } catch (e2) { setErr(e2.message); } finally { setBusy(false); }
-  }
+function VerificationCard({ status }) {
   return (
     <div className="card">
       <div className="card-head" style={{ marginBottom: '0.4rem' }}>
         <div className="card-title">Identity verification</div>
         <VerifyBadge status={status} />
       </div>
-      <p className="meta">Simulated verification — upload a mock ID document. No real ID is checked and the file isn't stored; an admin reviews and approves it. You can skip this and finish it later.</p>
-      {status === 'verified' && <p className="meta" style={{ marginTop: '0.5rem' }}>You're verified. ✓</p>}
-      {status === 'pending' && <p className="meta" style={{ marginTop: '0.5rem' }}>Your document is pending admin review.</p>}
-      {status === 'unverified' && (
-        <form onSubmit={submit} style={{ marginTop: '0.6rem' }}>
-          <div className="row">
-            <label className="btn-secondary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-              {Icons.upload} Choose document
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                style={{ display: 'none' }}
-                onChange={(e) => setFileName(e.target.files?.[0]?.name || '')}
-              />
-            </label>
-            <span className="meta">{fileName || 'No file selected — Simulated verification'}</span>
-            <button className="btn-primary" type="submit" disabled={busy || !fileName}>
-              {busy ? 'Submitting…' : 'Submit document'}
-            </button>
-          </div>
-        </form>
+      <p className="meta">Simulated verification — no real ID is checked or stored; an admin reviews and approves it.</p>
+      {status === 'verified' && <p className="meta" style={{ marginTop: '0.5rem' }}>You&apos;re verified and visible in Browse. ✓</p>}
+      {status === 'pending' && <p className="meta" style={{ marginTop: '0.5rem' }}>Your submission is pending admin review.</p>}
+      {(status === 'unverified' || status === 'rejected') && (
+        <div style={{ marginTop: '0.6rem' }}>
+          {status === 'rejected' && <p className="meta" style={{ marginBottom: '0.5rem', color: 'var(--color-red-700)' }}>Your verification was rejected — please review the feedback and resubmit.</p>}
+          <Link to="/worker/onboarding" className="btn-primary btn-icon" style={{ textDecoration: 'none', display: 'inline-flex' }}>{Icons.checkCircle} Verify with guided steps</Link>
+          <p className="meta" style={{ marginTop: '0.5rem' }}>Upload your ID, do a quick face scan, and add your skills, education and certifications.</p>
+        </div>
       )}
-      <ErrorNote message={err} />
     </div>
   );
 }
