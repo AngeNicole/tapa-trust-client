@@ -10,6 +10,7 @@ import Login from './pages/auth/Login.jsx';
 import Register from './pages/auth/Register.jsx';
 import RequesterDashboard from './pages/requester/RequesterDashboard.jsx';
 import WorkerDashboard from './pages/worker/WorkerDashboard.jsx';
+import WorkerOnboarding from './pages/worker/WorkerOnboarding.jsx';
 import AdminDashboard from './pages/admin/AdminDashboard.jsx';
 
 function NotFound() {
@@ -53,6 +54,7 @@ export default function AppRoutes() {
 
       <Route path="/requester" element={area(['requester'], RequesterDashboard)} />
       <Route path="/worker" element={area(['worker'], WorkerDashboard)} />
+      <Route path="/worker/onboarding" element={<ProtectedRoute><RoleGate roles={['worker']}><WorkerOnboarding /></RoleGate></ProtectedRoute>} />
       <Route path="/admin" element={area(['admin'], AdminDashboard)} />
 
       <Route path="*" element={<NotFound />} />
