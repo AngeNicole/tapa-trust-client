@@ -32,117 +32,134 @@ function VerifyView({ state }) {
   const { data, loading, error, reload } = state;
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(null);
-  const [panel, setPanel] = useState(null); // { workerId, mode: 'redo' | 'reject' }
+  const [view, setView] = useState('all');
+  const [menuFor, setMenuFor] = useState(null);          // worker_id whose ⋯ menu is open
+  const [modal, setModal] = useState(null);              // { workerId, name, mode: 'redo'|'reject' }
   const [note, setNote] = useState('');
 
-  function openPanel(workerId, mode) {
-    setErr(''); setNote(''); setPanel({ workerId, mode });
-  }
   async function approve(workerId) {
-    setErr(''); setBusy(workerId);
+    setErr(''); setBusy(workerId); setMenuFor(null);
     try { await verifyWorker(workerId); reload(); } catch (e) { setErr(e.message); } finally { setBusy(null); }
   }
-  async function sendBack() {
-    if (!panel) return;
-    if (panel.mode === 'redo' && !note.trim()) { setErr('Tell the worker what to fix before asking them to redo.'); return; }
-    setErr(''); setBusy(panel.workerId);
-    try { await rejectWorker(panel.workerId, note.trim()); setPanel(null); setNote(''); reload(); }
+  function openModal(w, mode) { setErr(''); setNote(''); setMenuFor(null); setModal({ workerId: w.worker_id, name: w.name, mode }); }
+  async function submitModal() {
+    if (!modal) return;
+    if (modal.mode === 'redo' && !note.trim()) { setErr('Tell the worker what to fix before asking them to redo.'); return; }
+    setErr(''); setBusy(modal.workerId);
+    try { await rejectWorker(modal.workerId, note.trim()); setModal(null); setNote(''); reload(); }
     catch (e) { setErr(e.message); } finally { setBusy(null); }
   }
 
-  const [view, setView] = useState('pending');
-  const workers = data || [];
-  const bucket = (w) => (w.verification === 'verified' ? 'approved'
-    : w.verification === 'pending' ? 'pending'
-      : w.verification === 'rejected' ? 'rejected' : 'unverified');
+  // Only real, engaged workers: those with a verification record. Never-submitted
+  // (unverified) accounts — the test/dummy noise — are hidden entirely.
+  const workers = (data || []).filter((w) => w.verification !== 'unverified');
+  const bucket = (w) => (w.verification === 'verified' ? 'approved' : w.verification); // pending | approved | rejected
   const counts = {
     all: workers.length,
     pending: workers.filter((w) => bucket(w) === 'pending').length,
     approved: workers.filter((w) => bucket(w) === 'approved').length,
     rejected: workers.filter((w) => bucket(w) === 'rejected').length,
   };
-  // Within a view, surface the ones needing a decision first.
-  const order = { pending: 0, rejected: 1, unverified: 2, verified: 3 };
+  const order = { pending: 0, rejected: 1, verified: 2 };
   const shown = (view === 'all' ? workers : workers.filter((w) => bucket(w) === view))
-    .slice().sort((a, b) => (order[a.verification] ?? 4) - (order[b.verification] ?? 4));
+    .slice().sort((a, b) => (order[a.verification] ?? 3) - (order[b.verification] ?? 3));
 
   const tabs = [
+    { key: 'all', label: 'All' },
     { key: 'pending', label: 'Pending' },
     { key: 'approved', label: 'Approved' },
     { key: 'rejected', label: 'Rejected' },
-    { key: 'all', label: 'All' },
   ];
 
   return (
     <>
       <h1>Verifications</h1>
-      <p className="subtitle">
-        Review workers&apos; simulated identity verification — approve, ask them to redo, or reject.
-      </p>
+      <p className="subtitle">Review workers&apos; simulated identity verification — approve, ask them to redo, or reject.</p>
       <div className="subtabs">
         {tabs.map((t) => (
           <button key={t.key} type="button" className={`subtab ${view === t.key ? 'subtab--active' : ''}`} onClick={() => setView(t.key)}>
-            {t.label} ({t.key === 'all' ? counts.all : counts[t.key]})
+            {t.label} ({counts[t.key]})
           </button>
         ))}
       </div>
       <ErrorNote message={error || err} />
-      {loading ? <Loading /> : workers.length === 0 ? (
-        <div className="empty" style={{ marginTop: '0.75rem' }}>No workers yet.</div>
-      ) : shown.length === 0 ? (
+      {loading ? <Loading /> : shown.length === 0 ? (
         <div className="empty" style={{ marginTop: '0.75rem' }}>No {view === 'all' ? '' : view} workers.</div>
-      ) : shown.map((w) => (
-        <div className="card" key={w.worker_id}>
-          <div className="card-head">
-            <div>
-              <div className="card-title">{w.name}</div>
-              <div className="meta">{w.skills || 'No skills listed yet'} · {w.is_available ? 'Available' : 'Unavailable'}</div>
-            </div>
-            <div className="row">
-              <VerifyBadge status={w.verification} />
-              {w.verification !== 'verified' && (
-                <>
-                  <button className="btn-primary" disabled={busy === w.worker_id} onClick={() => approve(w.worker_id)}>
-                    {busy === w.worker_id && !panel ? 'Approving…' : 'Approve'}
-                  </button>
-                  <button className="btn-secondary" disabled={busy === w.worker_id} onClick={() => openPanel(w.worker_id, 'redo')}>
-                    Request redo
-                  </button>
-                  <button className="btn-danger" disabled={busy === w.worker_id} onClick={() => openPanel(w.worker_id, 'reject')}>
-                    Reject
-                  </button>
-                </>
-              )}
+      ) : (
+        <div className="card" style={{ overflow: 'visible' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="tbl">
+              <thead><tr><th>Name</th><th>Availability</th><th>Status</th><th style={{ width: 48 }}></th></tr></thead>
+              <tbody>
+                {shown.map((w) => (
+                  <tr key={w.worker_id}>
+                    <td>{w.name}</td>
+                    <td>
+                      <span className={`badge ${w.is_available ? 'badge--done' : 'badge--neutral'}`}>
+                        {w.is_available ? 'Available' : 'Unavailable'}
+                      </span>
+                    </td>
+                    <td><VerifyBadge status={w.verification} /></td>
+                    <td>
+                      <div className="menu-wrap">
+                        <button
+                          type="button"
+                          className="menu-trigger"
+                          disabled={busy === w.worker_id}
+                          aria-label="Actions"
+                          onClick={() => setMenuFor(menuFor === w.worker_id ? null : w.worker_id)}
+                        >
+                          {Icons.dots}
+                        </button>
+                        {menuFor === w.worker_id && (
+                          <>
+                            <div className="menu-backdrop" onClick={() => setMenuFor(null)} />
+                            <div className="menu-pop">
+                              {w.verification !== 'verified' && (
+                                <button type="button" className="menu-item" onClick={() => approve(w.worker_id)}>Approve</button>
+                              )}
+                              {w.verification !== 'verified' && (
+                                <button type="button" className="menu-item" onClick={() => openModal(w, 'redo')}>Request redo…</button>
+                              )}
+                              {w.verification !== 'rejected' && (
+                                <button type="button" className="menu-item menu-item--danger" onClick={() => openModal(w, 'reject')}>
+                                  {w.verification === 'verified' ? 'Revoke / reject…' : 'Reject…'}
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {modal && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-title">{modal.mode === 'redo' ? `Ask ${modal.name} to redo` : `Reject ${modal.name}`}</div>
+            <p className="meta" style={{ margin: '0.25rem 0 0.75rem' }}>
+              {modal.mode === 'redo' ? 'Explain what is missing so they can fix it and resubmit.' : 'Optionally add a reason. The worker returns to unverified and can resubmit.'}
+            </p>
+            <textarea
+              className="input" rows={4} autoFocus value={note} onChange={(e) => setNote(e.target.value)}
+              placeholder={modal.mode === 'redo' ? 'e.g. The ID photo is blurry — please re-upload a clear one.' : 'e.g. Document does not match the profile name.'}
+            />
+            {err && <div className="form-error" style={{ marginTop: '0.5rem' }}>{err}</div>}
+            <div className="row" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => setModal(null)}>Cancel</button>
+              <button className={modal.mode === 'redo' ? 'btn-primary' : 'btn-danger'} disabled={busy === modal.workerId} onClick={submitModal}>
+                {busy === modal.workerId ? 'Sending…' : modal.mode === 'redo' ? 'Send back to redo' : 'Confirm rejection'}
+              </button>
             </div>
           </div>
-
-          {panel && panel.workerId === w.worker_id && (
-            <div className="review-panel">
-              <label className="review-label">
-                {panel.mode === 'redo' ? 'What should the worker fix and resubmit?' : 'Reason for rejection (optional)'}
-              </label>
-              <textarea
-                className="input"
-                rows={3}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder={panel.mode === 'redo'
-                  ? 'e.g. The ID photo is blurry — please re-upload a clear one.'
-                  : 'e.g. Submitted document does not match the profile name.'}
-              />
-              <div className="row" style={{ marginTop: '0.5rem' }}>
-                <button className={panel.mode === 'redo' ? 'btn-primary' : 'btn-danger'} disabled={busy === w.worker_id} onClick={sendBack}>
-                  {busy === w.worker_id ? 'Sending…' : panel.mode === 'redo' ? 'Send back to redo' : 'Confirm rejection'}
-                </button>
-                <button className="btn-secondary" disabled={busy === w.worker_id} onClick={() => { setPanel(null); setNote(''); setErr(''); }}>
-                  Cancel
-                </button>
-              </div>
-              <p className="note" style={{ marginTop: '0.5rem' }}>The worker returns to unverified, sees your note, and can resubmit.</p>
-            </div>
-          )}
         </div>
-      ))}
+      )}
     </>
   );
 }

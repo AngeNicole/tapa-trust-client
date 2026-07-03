@@ -1175,11 +1175,23 @@ body {
   .btn-danger {
     @apply cursor-pointer rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-label-sm font-medium text-red-700 transition-colors hover:bg-red-100 disabled:cursor-default disabled:opacity-60;
   }
+  .btn-icon { @apply inline-flex items-center gap-1.5; }
+  .btn-icon svg { @apply h-4 w-4; }
 
   /* admin verification review panel */
   .review-panel { @apply mt-4 rounded-xl border border-stroke-soft-200 bg-bg-weak-50 p-4; }
   .review-label { @apply mb-1.5 block text-label-sm font-medium text-text-strong-950; }
   .review-panel textarea { @apply w-full resize-y; }
+  .modal textarea.input { @apply w-full resize-y; }
+
+  /* row actions — three-dots menu */
+  .menu-wrap { @apply relative flex justify-end; }
+  .menu-trigger { @apply inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-text-sub-600 transition-colors hover:bg-bg-weak-50 hover:text-text-strong-950 disabled:opacity-50; }
+  .menu-trigger svg { @apply h-5 w-5; }
+  .menu-backdrop { @apply fixed inset-0 z-40; }
+  .menu-pop { @apply absolute right-0 top-full z-50 mt-1 flex min-w-[168px] flex-col rounded-xl border border-stroke-soft-200 bg-bg-white-0 p-1; box-shadow: var(--shadow-regular-md); }
+  .menu-item { @apply cursor-pointer rounded-lg px-3 py-2 text-left text-label-sm font-medium text-text-strong-950 transition-colors hover:bg-bg-weak-50; }
+  .menu-item--danger { @apply text-red-700 hover:bg-red-50; }
 
   .form-error {
     @apply rounded-lg bg-red-50 px-3 py-2.5 text-paragraph-sm text-red-700;
@@ -1299,24 +1311,53 @@ body {
   }
   .modal-title { @apply text-title-h6 font-semibold text-text-strong-950; }
 
-  /* booking chat + price agreement */
-  .chat-modal { @apply flex max-h-[85vh] flex-col; }
-  .chat-head { @apply mb-3 flex items-start justify-between gap-3; }
-  .chat-agreed { @apply mb-3 rounded-xl border border-stroke-soft-200 bg-bg-weak-50 px-3 py-2 text-label-sm text-text-sub-600; }
+  /* booking chat — right-side drawer (Instagram-style) */
+  .drawer-scrim { @apply fixed inset-0 z-50 flex justify-end; background: rgba(14, 18, 27, 0.45); animation: fade-in 0.15s ease-out; }
+  .chat-drawer {
+    @apply flex h-full w-full max-w-[420px] flex-col bg-bg-white-0;
+    box-shadow: -20px 0 60px -20px rgba(20, 24, 40, 0.35);
+    animation: drawer-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
+  @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  .chat-dhead { @apply flex items-center gap-3 border-b border-stroke-soft-200 px-4 py-3; }
+  .chat-dhead-info { @apply min-w-0 flex-1; }
+  .chat-dhead-name { @apply truncate text-label-md font-semibold text-text-strong-950; }
+  .chat-dhead-sub { @apply truncate text-label-xs text-text-sub-600; }
+  .chat-icon-btn { @apply inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full text-text-sub-600 no-underline transition-colors hover:bg-bg-weak-50 hover:text-text-strong-950; }
+  .chat-icon-btn svg { @apply h-5 w-5; }
+  .chat-icon-btn.is-disabled { @apply cursor-not-allowed opacity-40 hover:bg-transparent; }
+
+  .chat-agreed { @apply mx-4 mt-3 shrink-0 rounded-xl border border-stroke-soft-200 bg-bg-weak-50 px-3 py-2 text-label-sm text-text-sub-600; }
   .chat-agreed.is-set { @apply border-green-200 bg-green-50 text-green-700; }
-  .chat-thread { @apply flex flex-1 flex-col gap-2 overflow-y-auto rounded-2xl border border-stroke-soft-200 bg-bg-weak-50 p-3; min-height: 220px; }
+
+  .chat-thread { @apply flex flex-1 flex-col gap-2 overflow-y-auto p-4; }
+  .chat-empty { @apply m-auto flex flex-col items-center gap-2 text-center text-paragraph-sm text-text-soft-400; }
+  .chat-empty svg { @apply h-8 w-8; }
   .chat-msg { @apply flex justify-start; }
   .chat-msg--me { @apply justify-end; }
-  .chat-bubble { @apply max-w-[80%] rounded-2xl border border-stroke-soft-200 bg-bg-white-0 px-3.5 py-2 text-paragraph-sm text-text-strong-950; }
-  .chat-msg--me .chat-bubble { @apply border-transparent bg-primary-base text-static-white; }
+  .chat-bubble { @apply max-w-[82%] rounded-2xl rounded-bl-md border border-stroke-soft-200 bg-bg-white-0 px-3.5 py-2 text-paragraph-sm text-text-strong-950; }
+  .chat-msg--me .chat-bubble { @apply rounded-bl-2xl rounded-br-md border-transparent bg-primary-base text-static-white; }
   .chat-who { @apply mb-0.5 text-label-xs font-semibold text-text-sub-600; }
-  .chat-price { @apply mt-1 flex items-center gap-2 text-label-md font-semibold; }
-  .chat-msg--me .chat-price { @apply text-static-white; }
-  .chat-offer { @apply mt-3 flex items-center gap-2 rounded-xl border border-stroke-soft-200 p-1.5; }
-  .chat-offer-label { @apply pl-2 text-label-sm font-medium text-text-sub-600; }
+  .chat-body { @apply whitespace-pre-wrap break-words; }
+  .chat-time { @apply mt-1 text-right text-[0.65rem] text-text-soft-400; }
+  .chat-msg--me .chat-time { color: rgba(255, 255, 255, 0.7); }
+  .chat-offer-chip { @apply mt-1.5 flex flex-col gap-2 rounded-xl bg-bg-weak-50 px-3 py-2; }
+  .chat-msg--me .chat-offer-chip { background: rgba(255, 255, 255, 0.16); }
+  .chat-offer-amt { @apply text-label-lg font-bold text-text-strong-950; }
+  .chat-msg--me .chat-offer-amt { @apply text-static-white; }
+  .chat-offer-acts { @apply flex gap-2; }
+  .chat-mini-btn { @apply cursor-pointer rounded-lg border border-stroke-soft-200 bg-bg-white-0 px-2.5 py-1 text-label-xs font-semibold text-text-strong-950 transition-colors hover:bg-bg-weak-50 disabled:opacity-50; }
+  .chat-mini-btn.is-accept { @apply border-transparent bg-primary-base text-static-white hover:bg-primary-darker; }
+
+  .chat-offer { @apply mx-4 mt-2 flex shrink-0 items-center gap-2 rounded-xl border border-stroke-soft-200 p-1.5; }
+  .chat-offer-label { @apply pl-2 text-label-sm font-semibold text-text-sub-600; }
   .chat-offer input { @apply w-full min-w-0 flex-1 bg-transparent px-1 py-1.5 text-paragraph-sm text-text-strong-950 outline-none; }
-  .chat-composer { @apply mt-2 flex items-center gap-2; }
-  .chat-composer input { @apply min-w-0 flex-1 rounded-xl border border-stroke-soft-200 bg-bg-white-0 px-3 py-2.5 text-paragraph-sm text-text-strong-950 outline-none transition-colors focus:border-primary-base; }
+  .chat-composer { @apply m-4 mt-2 flex shrink-0 items-center gap-2; }
+  .chat-composer input { @apply min-w-0 flex-1 rounded-full border border-stroke-soft-200 bg-bg-white-0 px-4 py-2.5 text-paragraph-sm text-text-strong-950 outline-none transition-colors focus:border-primary-base; }
+  .chat-send { @apply inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-base text-static-white transition-transform hover:scale-105 disabled:opacity-50; }
+  .chat-send svg { @apply h-5 w-5; }
 
   .star-pick { @apply flex gap-1.5; }
   .star-pick button {
@@ -1795,7 +1836,10 @@ body {
   .notif-item:last-child { @apply border-0; }
   .notif-item--unread { @apply bg-bg-weak-50 font-medium text-text-strong-950; }
   .notif-item .activity-dot { @apply mt-1.5; }
+  .notif-chat-ic { @apply mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center text-primary-base; }
+  .notif-chat-ic svg { @apply h-4 w-4; }
   .notif-msg { @apply flex-1; }
+  .notif-open { @apply shrink-0 self-center text-label-xs font-semibold text-primary-base; }
   .top-user { @apply flex shrink-0 items-center gap-2.5; }
   .avatar-sm {
     @apply flex h-9 w-9 items-center justify-center rounded-full text-label-sm font-semibold text-static-white;

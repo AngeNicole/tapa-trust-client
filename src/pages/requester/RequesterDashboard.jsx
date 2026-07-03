@@ -16,7 +16,7 @@ import {
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, TierBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, duration, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
-import BookingChat from '../../components/BookingChat.jsx';
+import { useChat } from '../../context/ChatContext.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
 import { MapCard } from '../../components/MapCard.jsx';
@@ -305,9 +305,8 @@ function HistoryView({ state, bookings, onReview }) {
 }
 
 function BookingCard({ b, reload, onReview }) {
-  const { user } = useAuth();
+  const { openChat } = useChat();
   const [err, setErr] = useState('');
-  const [chat, setChat] = useState(false);
   const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
   const canChat = !['completed', 'cancelled'].includes(b.status);
   // Confirm completion, then suggest a review via the popup (handled by parent).
@@ -330,7 +329,7 @@ function BookingCard({ b, reload, onReview }) {
       <ErrorNote message={err} />
       <div className="actions">
         {b.status === 'pending' && <span className="meta">Waiting for {b.workerName} to accept.</span>}
-        {canChat && <button className="btn-secondary" onClick={() => setChat(true)}>{b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>}
+        {canChat && <button className="btn-secondary btn-icon" onClick={() => openChat(b)}>{Icons.chat} {b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>}
         {b.status === 'accepted' && !b.checkedIn && <span className="meta">Accepted — waiting for {b.workerName} to check in.</span>}
         {b.status === 'accepted' && b.checkedIn && !b.startConfirmed && <button className="btn-primary" onClick={() => act(confirmStart(b.booking_id))}>Confirm start</button>}
         {b.status === 'in_progress' && !b.checkedOut && <span className="meta">Worker on the job — waiting for check out.</span>}
@@ -344,7 +343,6 @@ function BookingCard({ b, reload, onReview }) {
           </div>
         )}
       </div>
-      {chat && <BookingChat booking={b} me={user} onClose={() => setChat(false)} onAgreed={() => reload()} />}
     </div>
   );
 }

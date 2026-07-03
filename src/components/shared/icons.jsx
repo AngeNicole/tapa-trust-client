@@ -27,6 +27,11 @@ import {
   DeviceMobile,
   Truck,
   Quotes,
+  ChatCircle,
+  Phone,
+  X,
+  DotsThree,
+  PaperPlaneTilt,
 } from '@phosphor-icons/react';
 
 const w = 'regular';
@@ -58,4 +63,9 @@ export const Icons = {
   device: <DeviceMobile weight={w} />,
   truck: <Truck weight={w} />,
   quote: <Quotes weight="fill" />,
+  chat: <ChatCircle weight={w} />,
+  phone: <Phone weight="fill" />,
+  close: <X weight="bold" />,
+  dots: <DotsThree weight="bold" />,
+  send: <PaperPlaneTilt weight="fill" />,
 };

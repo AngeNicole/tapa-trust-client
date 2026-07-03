@@ -120,6 +120,9 @@ export function bookWorker(workerId) {
 export function getBookings() {
   return apiFetch('/bookings');
 }
+export function getBooking(id) {
+  return apiFetch(`/bookings/${id}`);
+}
 const bookingAction = (id, action) => apiFetch(`/bookings/${id}/${action}`, { method: 'POST' });
 export const acceptBooking = (id) => bookingAction(id, 'accept');
 export const checkinBooking = (id) => bookingAction(id, 'checkin');

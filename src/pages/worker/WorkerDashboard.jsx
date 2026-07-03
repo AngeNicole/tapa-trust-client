@@ -16,7 +16,7 @@ import {
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, rwf, monthLabel, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
-import BookingChat from '../../components/BookingChat.jsx';
+import { useChat } from '../../context/ChatContext.jsx';
 import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
 import { useToast } from '../../components/Toast.jsx';
@@ -310,11 +310,10 @@ function TaskHistory({ workerId }) {
 }
 
 function BookingsView({ state }) {
-  const { user } = useAuth();
+  const { openChat } = useChat();
   const { data, loading, error, reload } = state;
   const [err, setErr] = useState('');
   const [view, setView] = useState('active');
-  const [chatFor, setChatFor] = useState(null);
   const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
   const all = data || [];
   const activeJobs = all.filter((b) => b.status !== 'completed');
@@ -351,7 +350,7 @@ function BookingsView({ state }) {
             </div>
           </div>
           <div className="actions">
-            {b.status !== 'completed' && b.status !== 'cancelled' && <button className="btn-secondary" onClick={() => setChatFor(b.booking_id)}>{b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>}
+            {b.status !== 'completed' && b.status !== 'cancelled' && <button className="btn-secondary btn-icon" onClick={() => openChat(b)}>{Icons.chat} {b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>}
             {b.status === 'pending' && <button className="btn-primary" onClick={() => act(acceptBooking(b.booking_id))}>Accept job</button>}
             {b.status === 'accepted' && !b.checkedIn && <button className="btn-primary" onClick={() => act(checkinBooking(b.booking_id))}>Check in</button>}
             {b.status === 'accepted' && b.checkedIn && <span className="meta">Checked in — waiting for requester to confirm start.</span>}
@@ -359,7 +358,6 @@ function BookingsView({ state }) {
             {b.status === 'in_progress' && b.checkedOut && <span className="meta">Checked out — waiting for requester to confirm completion.</span>}
             {b.status === 'completed' && <span className="meta">Job complete. {b.review ? `Reviewed ${b.review.rating}★.` : 'Awaiting review.'}</span>}
           </div>
-          {chatFor === b.booking_id && <BookingChat booking={b} me={user} onClose={() => setChatFor(null)} onAgreed={() => reload()} />}
         </div>
       ))}
     </>
