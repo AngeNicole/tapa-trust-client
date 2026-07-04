@@ -1177,6 +1177,7 @@ body {
   }
   .btn-icon { @apply inline-flex items-center gap-1.5; }
   .btn-icon svg { @apply h-4 w-4; }
+  .btn-secondary.is-saved { @apply border-primary-base text-primary-base; }
 
   /* admin verification review panel */
   .review-panel { @apply mt-4 rounded-xl border border-stroke-soft-200 bg-bg-weak-50 p-4; }
@@ -1402,6 +1403,25 @@ body {
   .chat-offer-acts { @apply flex gap-2; }
   .chat-mini-btn { @apply cursor-pointer rounded-lg border border-stroke-soft-200 bg-bg-white-0 px-2.5 py-1 text-label-xs font-semibold text-text-strong-950 transition-colors hover:bg-bg-weak-50 disabled:opacity-50; }
   .chat-mini-btn.is-accept { @apply border-transparent bg-primary-base text-static-white hover:bg-primary-darker; }
+  .chat-mini-btn.is-decline { @apply border-red-200 bg-red-50 text-red-700 hover:bg-red-100; }
+  .chat-accepted { @apply inline-flex items-center rounded-lg bg-green-100 px-2 py-1 text-label-xs font-bold text-green-700; }
+
+  /* declined offer (red) + shared location card */
+  .chat-decline { @apply flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-label-sm font-semibold text-red-700; }
+  .chat-decline svg { @apply h-4 w-4; }
+  .chat-msg--me .chat-decline { background: rgba(255, 255, 255, 0.18); @apply text-static-white; }
+  .chat-loc { @apply flex items-center gap-2.5 rounded-xl bg-bg-weak-50 px-3 py-2 no-underline; }
+  .chat-msg--me .chat-loc { background: rgba(255, 255, 255, 0.16); }
+  .chat-loc-ic { @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-base text-static-white; }
+  .chat-loc-ic svg { @apply h-5 w-5; }
+  .chat-loc-t { @apply block text-label-sm font-semibold text-text-strong-950; }
+  .chat-msg--me .chat-loc-t { @apply text-static-white; }
+  .chat-loc-s { @apply block text-label-xs text-text-sub-600; }
+  .chat-msg--me .chat-loc-s { color: rgba(255, 255, 255, 0.8); }
+
+  .chat-share { @apply mx-4 mt-2 flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-stroke-soft-200 bg-bg-white-0 px-3 py-2 text-label-sm font-medium text-text-strong-950 transition-colors hover:border-primary-base disabled:opacity-50; }
+  .chat-share svg { @apply h-4 w-4 text-primary-base; }
+  .chat-share span { @apply text-label-xs font-normal text-text-sub-600; }
 
   .chat-offer { @apply mx-4 mt-2 flex shrink-0 items-center gap-2 rounded-xl border border-stroke-soft-200 p-1.5; }
   .chat-offer-label { @apply pl-2 text-label-sm font-semibold text-text-sub-600; }
