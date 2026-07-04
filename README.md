@@ -16,7 +16,7 @@ This repository is the **React web client**. It talks to the **TaPa Trust API**
 | | |
 | --- | --- |
 | 🎬 **Demo video (5 min)** | ⬜ _REPLACE WITH VIDEO LINK_ |
-| 🌐 **Live app (client)** | ⬜ _REPLACE WITH DEPLOYED VERCEL URL_ (e.g. `https://tapa-trust.vercel.app`) |
+| 🌐 **Live app (client)** | **https://tapa-trust-client.vercel.app** |
 | 🔌 **Live API** | `https://tapa-trust-server.onrender.com` · health: `GET /api/health` |
 | 💻 **Client repo** | https://github.com/AngeNicole/tapa-trust-client |
 | 🗄️ **Server repo** | https://github.com/AngeNicole/tapa-trust-server |
@@ -190,6 +190,10 @@ and this client on **Vercel**.
 3. Deploy, then copy the URL into the **Links** table above and into the server's `CLIENT_ORIGIN`.
 4. **Verify:** open the deployed URL, confirm the browse page loads real workers and that
    login/booking/chat work end-to-end against the live API.
+
+> ✅ **Deployed & verified.** Client live at **https://tapa-trust-client.vercel.app**, talking to the
+> live API at `https://tapa-trust-server.onrender.com/api`. CORS on the server is locked to the
+> Vercel origin. All client↔API contract checks pass in production.
 
 ---
 
