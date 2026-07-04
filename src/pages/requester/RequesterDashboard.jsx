@@ -67,7 +67,7 @@ export default function RequesterDashboard() {
         />
       )}
       {tab === 'bookings' && <BookingsView state={bookings} bookings={active} onReview={setReviewBooking} />}
-      {tab === 'history' && <HistoryView state={bookings} bookings={history} onReview={setReviewBooking} />}
+      {tab === 'history' && <HistoryView state={bookings} bookings={history} onReview={setReviewBooking} savedIds={(saved.data || []).map((w) => w.worker_id)} onSavedChange={() => saved.reload()} />}
       {tab === 'saved' && <SavedView state={saved} onRebook={afterBook} />}
       {tab === 'profile' && (
         <>
@@ -285,7 +285,7 @@ function BookingsView({ state, bookings, onReview }) {
   );
 }
 
-function HistoryView({ state, bookings, onReview }) {
+function HistoryView({ state, bookings, onReview, savedIds = [], onSavedChange }) {
   const { loading, error, reload } = state;
   return (
     <>
@@ -294,16 +294,22 @@ function HistoryView({ state, bookings, onReview }) {
       <ErrorNote message={error} />
       {loading ? <Loading /> : bookings.length === 0 ? (
         <EmptyState icon={Icons.clock} title="No completed jobs yet" hint="Once a job is confirmed complete, it moves here with its review and a one-tap rebook." />
-      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} />)}
+      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} savedIds={savedIds} onSavedChange={onSavedChange} />)}
     </>
   );
 }
 
-function BookingCard({ b, reload, onReview }) {
+function BookingCard({ b, reload, onReview, savedIds, onSavedChange }) {
   const { openChat } = useChat();
   const [err, setErr] = useState('');
   const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
   const canChat = !['completed', 'cancelled'].includes(b.status);
+  const canSave = Array.isArray(savedIds); // save toggle only where the parent wires it (History)
+  const isSaved = canSave && savedIds.includes(b.worker_id);
+  async function toggleSave() {
+    setErr('');
+    try { await (isSaved ? unsaveWorker(b.worker_id) : saveWorker(b.worker_id)); onSavedChange?.(); } catch (e) { setErr(e.message); }
+  }
   // Confirm completion, then suggest a review via the popup (handled by parent).
   async function complete() {
     setErr('');
@@ -336,6 +342,11 @@ function BookingCard({ b, reload, onReview }) {
             {b.review.comment && <span className="meta">“{b.review.comment}”</span>}
             <button className="btn-mini" onClick={() => act(rebookWorker(b.worker_id))}>Rebook {b.workerName}</button>
           </div>
+        )}
+        {canSave && (
+          <button type="button" className={`btn-secondary btn-icon ${isSaved ? 'is-saved' : ''}`} onClick={toggleSave}>
+            {Icons.bookmark} {isSaved ? 'Saved' : 'Save worker'}
+          </button>
         )}
       </div>
     </div>
