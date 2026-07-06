@@ -593,8 +593,9 @@
 }
 
 /* Dark Mode Support - Tailwind v4.1 CSS Variables */
+/* Follow the OS only when the user hasn't made an explicit choice (.light/.dark). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light):not(.dark) {
     --color-bg-strong-950: var(--color-neutral-0);
     --color-bg-surface-800: var(--color-neutral-200);
     --color-bg-sub-300: var(--color-neutral-600);

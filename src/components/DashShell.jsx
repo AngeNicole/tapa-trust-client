@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Icons } from './shared/icons.jsx';
 import { NotificationsBell } from './NotificationsBell.jsx';
+import { ThemeToggle } from './ThemeToggle.jsx';
 
 function initials(name = '') {
   const p = name.trim().split(/\s+/);
@@ -69,7 +70,7 @@ export function DashShell({ items, active, onSelect, children, rightRail }) {
             {Icons.search}
             <input type="text" placeholder="Search…" aria-label="Search" />
           </label>
-          <button type="button" className="icon-btn" aria-label="Messages">{Icons.mail}</button>
+          <ThemeToggle />
           <NotificationsBell />
           <span className="top-divider" />
           <div className="top-user">
