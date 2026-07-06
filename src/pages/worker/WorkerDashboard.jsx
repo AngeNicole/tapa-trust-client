@@ -29,6 +29,10 @@ function initials(name = '') {
   return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'U';
 }
 
+// Check-in is allowed once escrow is held. Old backend has no `escrow` field →
+// don't block (so behaviour is unchanged until escrow ships).
+const escrowReady = (b) => !b.escrow || ['held', 'released'].includes(b.escrow.status);
+
 export default function WorkerDashboard() {
   const { user } = useAuth();
   const [tab, setTab] = useState('profile');
@@ -330,7 +334,9 @@ function BookingsView({ state }) {
           <div className="actions">
             {b.status !== 'completed' && b.status !== 'cancelled' && <button className="btn-secondary btn-icon" onClick={() => openChat(b)}>{Icons.chat} {b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>}
             {b.status === 'pending' && <button className="btn-primary" onClick={() => act(acceptBooking(b.booking_id))}>Accept job</button>}
-            {b.status === 'accepted' && !b.checkedIn && <button className="btn-primary" onClick={() => act(checkinBooking(b.booking_id))}>Check in</button>}
+            {/* Once escrow is required, check-in only unlocks after the requester deposits. */}
+            {b.status === 'accepted' && !b.checkedIn && escrowReady(b) && <button className="btn-primary" onClick={() => act(checkinBooking(b.booking_id))}>Check in</button>}
+            {b.status === 'accepted' && !b.checkedIn && !escrowReady(b) && <span className="meta">Sign the agreement in chat — you can check in once the requester deposits to escrow.</span>}
             {b.status === 'accepted' && b.checkedIn && <span className="meta">Checked in — waiting for requester to confirm start.</span>}
             {b.status === 'in_progress' && !b.checkedOut && <button className="btn-primary" onClick={() => act(checkoutBooking(b.booking_id))}>Check out</button>}
             {b.status === 'in_progress' && b.checkedOut && <span className="meta">Checked out — waiting for requester to confirm completion.</span>}
