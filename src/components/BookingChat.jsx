@@ -35,11 +35,13 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
   const jobDone = ['completed', 'cancelled'].includes(booking.status);
 
   const load = useCallback(async () => {
+    // Background poll — stay silent on transient failures (don't flash an error
+    // on the other party's screen while they're just reading the thread).
     try {
       const data = await getBookingMessages(booking.booking_id);
       setMessages(data.messages || []);
       setAgreed(data.agreedPrice ?? null);
-    } catch (e) { setErr(e.message); }
+    } catch { /* ignore transient poll errors */ }
   }, [booking.booking_id]);
 
   // Load on open, then poll so the other party's messages appear live.
@@ -58,18 +60,16 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
     try { await sendBookingMessage(booking.booking_id, payload); await load(); }
     catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
-  async function sendText(e) {
+  // One composer: a message is always required; attach a price to make it an offer.
+  async function sendCombined(e) {
     e.preventDefault();
-    if (!text.trim()) return;
-    const body = text; setText('');
-    await send({ body });
-  }
-  async function sendOffer(e) {
-    e.preventDefault();
-    const n = Number(offer);
-    if (!Number.isFinite(n) || n <= 0) { setErr('Enter a price greater than zero.'); return; }
-    setOffer('');
-    await send({ amount: n });
+    if (!text.trim()) { setErr('Type a message.'); return; }
+    const hasPrice = offer !== '' && offer != null;
+    const n = hasPrice ? Number(offer) : null;
+    if (hasPrice && (!Number.isFinite(n) || n <= 0)) { setErr('Enter a valid price, or leave it empty.'); return; }
+    const body = text.trim();
+    setText(''); setOffer('');
+    await send({ body, amount: n });
   }
   async function accept(amount) {
     setErr(''); setBusy(true);
@@ -176,17 +176,15 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
         {err && <div className="form-error" style={{ margin: '0 1rem' }}>{err}</div>}
 
         {!jobDone && (
-          <form className="chat-offer" onSubmit={sendOffer}>
-            <span className="chat-offer-label">RWF</span>
-            <input ref={offerRef} type="number" min="1" value={offer} onChange={(e) => setOffer(e.target.value)} placeholder="Propose / counter a price" />
-            <button className="btn-secondary" type="submit" disabled={busy}>Send offer</button>
+          <form className="chat-composer" onSubmit={sendCombined}>
+            <label className="chat-amount"><span>RWF</span>
+              <input ref={offerRef} type="number" min="1" value={offer} onChange={(e) => setOffer(e.target.value)} placeholder="Price" aria-label="Offer amount (optional)" />
+            </label>
+            <input className="chat-text" value={text} onChange={(e) => setText(e.target.value)} placeholder={offer ? 'Add a note for this offer…' : `Message ${otherName}…`} />
+            <button className="chat-send" type="submit" disabled={busy || !text.trim()} aria-label="Send" title={offer ? 'Send offer' : 'Send message'}>{Icons.send}</button>
           </form>
         )}
-
-        <form className="chat-composer" onSubmit={sendText}>
-          <input value={text} onChange={(e) => setText(e.target.value)} placeholder={`Message ${otherName}…`} />
-          <button className="chat-send" type="submit" disabled={busy || !text.trim()} aria-label="Send">{Icons.send}</button>
-        </form>
+        {jobDone && <div className="chat-composer"><span className="meta" style={{ padding: '0.25rem 0' }}>This job is {booking.status}. Chat is read-only.</span></div>}
       </aside>
     </div>
   );

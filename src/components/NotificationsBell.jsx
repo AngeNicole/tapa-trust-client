@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { getNotifications, markNotificationRead } from '../api/client.js';
 import { useAsync } from '../api/hooks.js';
 import { useChat } from '../context/ChatContext.jsx';
@@ -14,6 +14,19 @@ export function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const items = data || [];
   const unread = items.filter((n) => !n.read).length;
+
+  // When a new price offer lands, pop the chat open on its own so the other
+  // party sees the suggested price immediately. (Only fires for offers that
+  // arrive after this session's first poll, so it never re-opens old ones.)
+  const seenOffers = useRef(null);
+  useEffect(() => {
+    if (!data) return;
+    const offers = data.filter((n) => n.type === 'offer' && n.bookingId != null);
+    if (seenOffers.current === null) { seenOffers.current = new Set(offers.map((o) => o.notif_id)); return; }
+    const fresh = offers.filter((o) => !o.read && !seenOffers.current.has(o.notif_id));
+    fresh.forEach((o) => seenOffers.current.add(o.notif_id));
+    if (fresh.length) openChat(fresh[0].bookingId);
+  }, [data, openChat]);
 
   async function openItem(n) {
     if (!n.read) {

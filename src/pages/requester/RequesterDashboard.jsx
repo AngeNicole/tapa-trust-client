@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import {
   getWorkers,
@@ -29,17 +30,28 @@ function initials(name = '') {
 
 export default function RequesterDashboard() {
   const { user } = useAuth();
-  // Browse workers is the requester's home — no task to post first.
-  const [tab, setTab] = useState('hire');
+  const [params] = useSearchParams();
+  const TABS = ['hire', 'bookings', 'history', 'saved', 'profile'];
+  // Browse workers is the requester's home — unless we arrived from a resumed
+  // booking (?tab=bookings), which lands them on their new booking instead.
+  const [tab, setTab] = useState(TABS.includes(params.get('tab')) ? params.get('tab') : 'hire');
   const [reviewBooking, setReviewBooking] = useState(null); // booking awaiting a review prompt
   const notify = useToast();
   const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
   useBookingAlerts(bookings.data, 'requester', notify);
   const saved = useAsync(() => getSavedWorkers(), []);
 
+  // Just resumed a booking after signup/login → confirm it landed.
+  useEffect(() => {
+    if (params.get('booked') === '1') notify('Booking requested — waiting for the worker to accept.');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const all = bookings.data || [];
   const active = all.filter((b) => b.status !== 'completed');
   const history = all.filter((b) => b.status === 'completed');
+  // Workers the requester already has an in-flight booking with — used to
+  // disable Book/Rebook so the same worker can't be double-booked.
+  const bookedIds = [...new Set(all.filter((b) => !['completed', 'cancelled'].includes(b.status)).map((b) => b.worker_id))];
 
   const items = [
     { key: 'hire', label: 'Find workers', icon: Icons.briefcase },
@@ -62,13 +74,14 @@ export default function RequesterDashboard() {
       {tab === 'hire' && (
         <HireView
           savedIds={(saved.data || []).map((w) => w.worker_id)}
+          bookedIds={bookedIds}
           onBooked={afterBook}
           onSavedChange={() => saved.reload()}
         />
       )}
       {tab === 'bookings' && <BookingsView state={bookings} bookings={active} onReview={setReviewBooking} />}
-      {tab === 'history' && <HistoryView state={bookings} bookings={history} onReview={setReviewBooking} savedIds={(saved.data || []).map((w) => w.worker_id)} onSavedChange={() => saved.reload()} />}
-      {tab === 'saved' && <SavedView state={saved} onRebook={afterBook} />}
+      {tab === 'history' && <HistoryView state={bookings} bookings={history} onReview={setReviewBooking} savedIds={(saved.data || []).map((w) => w.worker_id)} bookedIds={bookedIds} onSavedChange={() => saved.reload()} />}
+      {tab === 'saved' && <SavedView state={saved} bookedIds={bookedIds} onRebook={afterBook} />}
       {tab === 'profile' && (
         <>
           <div style={{ marginBottom: '1.25rem' }}>
@@ -129,13 +142,14 @@ function ProfileView({ user, bookings, saved }) {
 }
 
 // ── Find workers: browse → open a worker profile → Book ──────────────────
-function HireView({ savedIds, onBooked, onSavedChange }) {
+function HireView({ savedIds, bookedIds = [], onBooked, onSavedChange }) {
   const [selected, setSelected] = useState(null); // worker_id being viewed
   if (selected) {
     return (
       <WorkerProfilePanel
         workerId={selected}
         saved={savedIds.includes(selected)}
+        alreadyBooked={bookedIds.includes(selected)}
         onBack={() => setSelected(null)}
         onBooked={onBooked}
         onSavedChange={onSavedChange}
@@ -159,12 +173,13 @@ function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
     } catch (e) { setErr(e.message); }
   }
 
-  const list = workers.data || [];
+  // Same set as the public Browse: only admin-verified workers surface.
+  const list = (workers.data || []).filter((w) => w.verification === 'verified');
 
   return (
     <>
       <h1>Find workers</h1>
-      <p className="subtitle">Browse available workers, open a profile, and book — no task to post.</p>
+      <p className="subtitle">Browse verified workers, open a profile, and book — no task to post.</p>
       <ErrorNote message={err} />
 
       <form className="row" onSubmit={(e) => { e.preventDefault(); setSkill(term.trim()); }} style={{ marginTop: '1rem', marginBottom: '1rem' }}>
@@ -206,12 +221,13 @@ function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
   );
 }
 
-function WorkerProfilePanel({ workerId, saved, onBack, onBooked, onSavedChange }) {
+function WorkerProfilePanel({ workerId, saved, alreadyBooked, onBack, onBooked, onSavedChange }) {
   const { data: w, loading, error } = useAsync(() => getWorker(workerId), [workerId]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
   async function book() {
+    if (alreadyBooked) return;
     setBusy(true); setErr('');
     try { await bookWorker(workerId); onBooked?.(); } catch (e) { setErr(e.message); setBusy(false); }
   }
@@ -246,9 +262,12 @@ function WorkerProfilePanel({ workerId, saved, onBack, onBooked, onSavedChange }
             {w.bio && <p className="meta" style={{ marginTop: '0.35rem' }}>{w.bio}</p>}
             <ErrorNote message={err} />
             <div className="actions">
-              <button className="btn-primary" onClick={book} disabled={busy}>{busy ? 'Booking…' : 'Book this worker'}</button>
+              <button className="btn-primary" onClick={book} disabled={busy || alreadyBooked}>
+                {alreadyBooked ? 'Already booked — in progress' : busy ? 'Booking…' : 'Book this worker'}
+              </button>
               <button className="btn-secondary" onClick={toggleSave}>{saved ? '★ Saved' : '☆ Save'}</button>
             </div>
+            {alreadyBooked && <p className="meta" style={{ marginTop: '0.35rem' }}>You have an active job with this worker. You can rebook once it&apos;s done.</p>}
           </div>
 
           <div className="card">
@@ -285,7 +304,7 @@ function BookingsView({ state, bookings, onReview }) {
   );
 }
 
-function HistoryView({ state, bookings, onReview, savedIds = [], onSavedChange }) {
+function HistoryView({ state, bookings, onReview, savedIds = [], bookedIds = [], onSavedChange }) {
   const { loading, error, reload } = state;
   return (
     <>
@@ -294,16 +313,17 @@ function HistoryView({ state, bookings, onReview, savedIds = [], onSavedChange }
       <ErrorNote message={error} />
       {loading ? <Loading /> : bookings.length === 0 ? (
         <EmptyState icon={Icons.clock} title="No completed jobs yet" hint="Once a job is confirmed complete, it moves here with its review and a one-tap rebook." />
-      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} savedIds={savedIds} onSavedChange={onSavedChange} />)}
+      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} savedIds={savedIds} bookedIds={bookedIds} onSavedChange={onSavedChange} />)}
     </>
   );
 }
 
-function BookingCard({ b, reload, onReview, savedIds, onSavedChange }) {
+function BookingCard({ b, reload, onReview, savedIds, bookedIds = [], onSavedChange }) {
   const { openChat } = useChat();
   const [err, setErr] = useState('');
   const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
   const canChat = !['completed', 'cancelled'].includes(b.status);
+  const hasActive = bookedIds.includes(b.worker_id); // an in-flight job with this worker → block rebook
   const canSave = Array.isArray(savedIds); // save toggle only where the parent wires it (History)
   const isSaved = canSave && savedIds.includes(b.worker_id);
   async function toggleSave() {
@@ -340,7 +360,9 @@ function BookingCard({ b, reload, onReview, savedIds, onSavedChange }) {
           <div className="row">
             <span className="badge badge--star">Reviewed {b.review.rating}★</span>
             {b.review.comment && <span className="meta">“{b.review.comment}”</span>}
-            <button className="btn-mini" onClick={() => act(rebookWorker(b.worker_id))}>Rebook {b.workerName}</button>
+            {hasActive
+              ? <button className="btn-mini" disabled title="You already have an active job with this worker">Booked</button>
+              : <button className="btn-mini" onClick={() => act(rebookWorker(b.worker_id))}>Rebook {b.workerName}</button>}
           </div>
         )}
         {canSave && (
@@ -387,7 +409,7 @@ function ReviewModal({ workerName, onSubmit, onClose }) {
   );
 }
 
-function SavedView({ state, onRebook }) {
+function SavedView({ state, bookedIds = [], onRebook }) {
   const { data, loading, error, reload } = state;
   const [err, setErr] = useState('');
   const act = async (p, after) => { setErr(''); try { await p; after?.(); } catch (e) { setErr(e.message); } };
@@ -408,7 +430,9 @@ function SavedView({ state, onRebook }) {
             </div>
             <div className="row">
               <button className="btn-secondary" onClick={() => act(unsaveWorker(w.worker_id), reload)}>Remove</button>
-              <button className="btn-primary" onClick={() => act(rebookWorker(w.worker_id), onRebook)}>Rebook</button>
+              {bookedIds.includes(w.worker_id)
+                ? <button className="btn-primary" disabled title="You already have an active job with this worker">Booked</button>
+                : <button className="btn-primary" onClick={() => act(rebookWorker(w.worker_id), onRebook)}>Rebook</button>}
             </div>
           </div>
         </div>
