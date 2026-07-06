@@ -54,7 +54,9 @@ const STATUS = {
 const PAYMENT = {
   pending: { cls: 'badge--neutral', label: 'Payment: pending' },
   confirmed: { cls: 'badge--info', label: 'Payment: confirmed' },
+  held: { cls: 'badge--info', label: 'In escrow' },
   released: { cls: 'badge--done', label: 'Payment: released' },
+  refunded: { cls: 'badge--neutral', label: 'Refunded' },
 };
 
 export function StatusBadge({ status }) {
