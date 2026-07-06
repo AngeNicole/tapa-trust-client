@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Icons } from './shared/icons.jsx';
+import { ThemeToggle } from './ThemeToggle.jsx';
 
 // Public marketing chrome: sticky navbar (logo, section links on the landing,
 // Log in + Join CTAs). Distinct from the dashboard sidebar shell.
@@ -21,6 +22,7 @@ export function PublicShell({ children, landing }) {
         )}
 
         <div className="public-actions">
+          <ThemeToggle />
           <Link to="/login" className="public-link">Log in</Link>
           <Link to="/register" state={{ role: 'worker' }} className="btn-dark">Join as a worker</Link>
         </div>

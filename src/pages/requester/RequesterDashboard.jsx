@@ -15,7 +15,7 @@ import {
   rebookWorker,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, TierBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, duration, rwf } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, duration, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Hero } from '../../components/Hero.jsx';
@@ -205,7 +205,6 @@ function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
                 <Stars rating={Number(w.rating) || 0} />
               </div>
               <div className="row" style={{ marginTop: '0.6rem' }}>
-                <TierBadge tier={w.tier} />
                 <VerifyBadge status={w.verification} />
                 <span className="meta">{w.completedJobs || 0} jobs done</span>
               </div>
@@ -248,7 +247,6 @@ function WorkerProfilePanel({ workerId, saved, alreadyBooked, onBack, onBooked, 
                 <div>
                   <div className="row" style={{ gap: '0.5rem' }}>
                     <span className="card-title">{w.name}</span>
-                    <TierBadge tier={w.tier} />
                     <VerifyBadge status={w.verification} />
                   </div>
                   <div className="stars-row"><Stars rating={Number(w.rating) || 0} /></div>
