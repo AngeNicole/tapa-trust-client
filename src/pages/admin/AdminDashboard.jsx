@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAdminUsers, getCategories, createCategory, getAllWorkers, getWorker, verifyWorker, rejectWorker } from '../../api/client.js';
+import { getAdminUsers, getCategories, createCategory, updateCategory, deleteCategory, getAllWorkers, getWorker, verifyWorker, rejectWorker } from '../../api/client.js';
 import { useAsync } from '../../api/hooks.js';
 import { Loading, ErrorNote, VerifyBadge, EmptyState, Avatar } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
@@ -250,39 +250,110 @@ function UsersView({ state }) {
 }
 
 function CategoriesView({ state }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [view, setView] = useState('all');
+  const [menuFor, setMenuFor] = useState(null);
+  const [modal, setModal] = useState(null); // { mode:'create'|'edit', cat? }
+  const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
-  async function addCategory(e) {
-    e.preventDefault();
-    setErr('');
-    if (!name.trim()) return;
-    try {
-      await createCategory({ name: name.trim(), description: description.trim() });
-      setName(''); setDescription('');
-      state.reload();
-    } catch (e2) { setErr(e2.message); }
+  const all = state.data || [];
+  const statusOf = (c) => c.status || 'active';
+  const counts = { all: all.length, active: all.filter((c) => statusOf(c) === 'active').length, archived: all.filter((c) => statusOf(c) === 'archived').length };
+  const shown = view === 'all' ? all : all.filter((c) => statusOf(c) === view);
+  const tabs = [{ key: 'all', label: 'All' }, { key: 'active', label: 'Active' }, { key: 'archived', label: 'Archived' }];
+
+  async function run(p) {
+    setBusy(true); setErr('');
+    try { await p; setModal(null); setMenuFor(null); state.reload(); }
+    catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
+  const archive = (c) => run(updateCategory(c.category_id, { status: statusOf(c) === 'archived' ? 'active' : 'archived' }));
+  const remove = (c) => { if (window.confirm(`Delete “${c.name}”? This can't be undone.`)) run(deleteCategory(c.category_id)); };
 
   return (
     <>
       <h1>Skill categories</h1>
       <p className="subtitle">The service categories workers list skills under.</p>
-      <div className="card" style={{ marginTop: '0.75rem' }}>
-        {state.loading ? <span className="meta">Loading…</span> : (
-          <div className="row">
-            {(state.data || []).map((c) => <span className="badge badge--neutral" key={c.category_id}>{c.name}</span>)}
-          </div>
-        )}
-        <div className="divider" />
-        <form className="row" onSubmit={addCategory} style={{ width: '100%' }}>
-          <input className="input" style={{ flex: 1, minWidth: '160px' }} value={name} onChange={(e) => setName(e.target.value)} placeholder="New category name" />
-          <input className="input" style={{ flex: 1, minWidth: '160px' }} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" />
-          <button className="btn-primary" type="submit">Add</button>
-        </form>
-        <ErrorNote message={err} />
+      <div className="subtabs">
+        {tabs.map((t) => (
+          <button key={t.key} type="button" className={`subtab ${view === t.key ? 'subtab--active' : ''}`} onClick={() => setView(t.key)}>
+            {t.label} ({counts[t.key]})
+          </button>
+        ))}
+        <button type="button" className="btn-primary" style={{ marginLeft: 'auto' }} onClick={() => { setErr(''); setModal({ mode: 'create' }); }}>+ New category</button>
       </div>
+      <ErrorNote message={state.error || err} />
+      {state.loading ? <Loading /> : shown.length === 0 ? (
+        <EmptyState icon={Icons.briefcase} title={`No ${view === 'all' ? '' : view} categories`} hint="Create a category workers can list their skills under." />
+      ) : (
+        <div className="card">
+          <div style={{ overflowX: 'auto' }}>
+            <table className="tbl">
+              <thead><tr><th>Name</th><th>Description</th><th>Status</th><th style={{ width: 48 }}></th></tr></thead>
+              <tbody>
+                {shown.map((c) => (
+                  <tr key={c.category_id}>
+                    <td style={{ fontWeight: 600 }}>{c.name}</td>
+                    <td className="meta">{c.description || '—'}</td>
+                    <td><span className={`badge ${statusOf(c) === 'archived' ? 'badge--neutral' : 'badge--done'}`}>{statusOf(c) === 'archived' ? 'Archived' : 'Active'}</span></td>
+                    <td>
+                      <div className="menu-wrap">
+                        <button type="button" className="menu-trigger" disabled={busy} aria-label="Actions" onClick={() => setMenuFor(menuFor === c.category_id ? null : c.category_id)}>{Icons.dots}</button>
+                        {menuFor === c.category_id && (
+                          <>
+                            <div className="menu-backdrop" onClick={() => setMenuFor(null)} />
+                            <div className="menu-pop">
+                              <button type="button" className="menu-item" onClick={() => { setErr(''); setMenuFor(null); setModal({ mode: 'edit', cat: c }); }}>Edit…</button>
+                              <button type="button" className="menu-item" onClick={() => archive(c)}>{statusOf(c) === 'archived' ? 'Restore' : 'Archive'}</button>
+                              <button type="button" className="menu-item menu-item--danger" onClick={() => remove(c)}>Delete</button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {modal && (
+        <CategoryModal
+          mode={modal.mode}
+          cat={modal.cat}
+          busy={busy}
+          err={err}
+          onClose={() => { setModal(null); setErr(''); }}
+          onSave={(payload) => run(modal.mode === 'create' ? createCategory(payload) : updateCategory(modal.cat.category_id, payload))}
+        />
+      )}
     </>
+  );
+}
+
+function CategoryModal({ mode, cat, busy, err, onClose, onSave }) {
+  const [name, setName] = useState(cat?.name || '');
+  const [description, setDescription] = useState(cat?.description || '');
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-title">{mode === 'create' ? 'New category' : `Edit ${cat.name}`}</div>
+        <label className="field-label" style={{ marginTop: '0.75rem' }}>Name
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Plumbing" style={{ width: '100%' }} autoFocus />
+        </label>
+        <label className="field-label" style={{ marginTop: '0.6rem' }}>Description
+          <input className="input" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Short description (optional)" style={{ width: '100%' }} />
+        </label>
+        {err && <div className="form-error" style={{ marginTop: '0.5rem' }}>{err}</div>}
+        <div className="row" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
+          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" disabled={busy || !name.trim()} onClick={() => onSave({ name: name.trim(), description: description.trim() })}>
+            {busy ? 'Saving…' : mode === 'create' ? 'Create' : 'Save changes'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
