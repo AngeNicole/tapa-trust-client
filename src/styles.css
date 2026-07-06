@@ -1424,6 +1424,18 @@ body {
   .chat-share svg { @apply h-4 w-4 text-primary-base; }
   .chat-share span { @apply text-label-xs font-normal text-text-sub-600; }
 
+  /* agreement + escrow panel (inside the chat drawer) */
+  .chat-agreement { @apply mx-4 mt-2 flex shrink-0 flex-col gap-2 rounded-2xl border border-stroke-soft-200 bg-bg-weak-50 p-3; }
+  .chat-agreement .btn-icon svg { @apply h-4 w-4; }
+  .chat-ag-card { @apply flex flex-col gap-2 rounded-xl border border-stroke-soft-200 bg-bg-white-0 p-3; }
+  .chat-ag-row { @apply flex items-center justify-between text-label-sm text-text-sub-600; }
+  .chat-ag-row b { @apply text-label-lg font-bold text-text-strong-950; }
+  .chat-ag-sigs { @apply flex flex-col gap-1 border-t border-stroke-soft-200 pt-2 text-label-xs text-text-soft-400; }
+  .chat-ag-sigs .is-signed { @apply font-medium text-green-700; }
+  .chat-escrow { @apply rounded-lg bg-green-50 px-2.5 py-1.5 text-label-sm font-semibold text-green-700; }
+  .chat-escrow.is-released { @apply bg-primary-lighter text-primary-dark; }
+  .chat-quit { @apply cursor-pointer self-center bg-transparent text-label-xs font-medium text-red-700 hover:underline; }
+
   .chat-composer { @apply m-4 mt-2 flex shrink-0 items-center gap-2; }
   .chat-amount { @apply flex shrink-0 items-center gap-1 rounded-full border border-stroke-soft-200 bg-bg-white-0 pl-3 transition-colors; }
   .chat-amount span { @apply text-label-xs font-semibold text-text-sub-600; }

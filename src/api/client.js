@@ -147,6 +147,22 @@ export function agreeBookingPrice(bookingId, amount) {
   return apiFetch(`/bookings/${bookingId}/agree-price`, { method: 'POST', body: JSON.stringify({ amount }) });
 }
 
+// --- agreement, escrow & decline (see AGREEMENTS_ESCROW_SPEC.md) ---
+// Client is ready ahead of the backend; the UI stays hidden until BookingView
+// returns `agreement`/`escrow` fields, then these endpoints are used.
+export function finalizeAgreement(bookingId, { amount, signature }) {
+  return apiFetch(`/bookings/${bookingId}/agreement`, { method: 'POST', body: JSON.stringify({ amount, signature }) });
+}
+export function signAgreement(bookingId, signature) {
+  return apiFetch(`/bookings/${bookingId}/agreement/sign`, { method: 'POST', body: JSON.stringify({ signature }) });
+}
+export function depositEscrow(bookingId) {
+  return apiFetch(`/bookings/${bookingId}/escrow/deposit`, { method: 'POST' });
+}
+export function declineBooking(bookingId, reason) {
+  return apiFetch(`/bookings/${bookingId}/decline`, { method: 'POST', body: JSON.stringify({ reason: reason || null }) });
+}
+
 // --- reviews ---
 export function createReview(payload) {
   return apiFetch('/reviews', { method: 'POST', body: JSON.stringify(payload) });

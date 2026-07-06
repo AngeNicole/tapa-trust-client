@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { getBookingMessages, sendBookingMessage, agreeBookingPrice } from '../api/client.js';
+import {
+  getBookingMessages, sendBookingMessage, agreeBookingPrice,
+  finalizeAgreement, signAgreement, depositEscrow, declineBooking,
+} from '../api/client.js';
 import { rwf, Avatar } from './shared/ui.jsx';
 import { Icons } from './shared/icons.jsx';
 
@@ -26,13 +29,51 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
   const [offer, setOffer] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  // Live booking (agreement/escrow/status change as the deal progresses).
+  const [bk, setBk] = useState(booking);
+  useEffect(() => setBk(booking), [booking]);
+  const [signModal, setSignModal] = useState(null); // 'finalize' | 'sign' | null
+  const [declineOpen, setDeclineOpen] = useState(false);
+  const [sigName, setSigName] = useState(me?.name || '');
+  const [sigPrice, setSigPrice] = useState('');
+  const [reason, setReason] = useState('');
   const threadRef = useRef(null);
   const offerRef = useRef(null);
   const myId = me?.user_id;
   const iAmWorker = me?.role === 'worker';
-  const otherName = iAmWorker ? booking.requesterName : booking.workerName;
-  const otherPhone = iAmWorker ? booking.requesterPhone : booking.workerPhone;
-  const jobDone = ['completed', 'cancelled'].includes(booking.status);
+  const otherName = iAmWorker ? bk.requesterName : bk.workerName;
+  const otherPhone = iAmWorker ? bk.requesterPhone : bk.workerPhone;
+  const jobDone = ['completed', 'cancelled'].includes(bk.status);
+  // Agreement/escrow UI only appears once the backend returns these fields.
+  const ag = bk.agreement;
+  const escrow = bk.escrow;
+  const dealEnabled = bk && ('agreement' in bk || 'escrow' in bk);
+
+  function refresh(updated) { if (updated) { setBk(updated); onAgreed?.(updated); } }
+  async function doFinalize() {
+    const n = Number(sigPrice);
+    if (!Number.isFinite(n) || n <= 0) { setErr('Enter the agreed price.'); return; }
+    if (!sigName.trim()) { setErr('Type your full name to sign.'); return; }
+    setBusy(true); setErr('');
+    try { refresh(await finalizeAgreement(bk.booking_id, { amount: n, signature: sigName.trim() })); setSignModal(null); }
+    catch (e) { setErr(e.message); } finally { setBusy(false); }
+  }
+  async function doSign() {
+    if (!sigName.trim()) { setErr('Type your full name to sign.'); return; }
+    setBusy(true); setErr('');
+    try { refresh(await signAgreement(bk.booking_id, sigName.trim())); setSignModal(null); }
+    catch (e) { setErr(e.message); } finally { setBusy(false); }
+  }
+  async function doDeposit() {
+    setBusy(true); setErr('');
+    try { refresh(await depositEscrow(bk.booking_id)); }
+    catch (e) { setErr(e.message); } finally { setBusy(false); }
+  }
+  async function doDecline() {
+    setBusy(true); setErr('');
+    try { refresh(await declineBooking(bk.booking_id, reason.trim())); setDeclineOpen(false); }
+    catch (e) { setErr(e.message); } finally { setBusy(false); }
+  }
 
   const load = useCallback(async () => {
     // Background poll — stay silent on transient failures (don't flash an error
@@ -123,6 +164,39 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
           </button>
         )}
 
+        {dealEnabled && !jobDone && (
+          <div className="chat-agreement">
+            {!ag && agreed != null && !iAmWorker && (
+              <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setSigPrice(String(agreed || '')); setSigName(me?.name || ''); setErr(''); setSignModal('finalize'); }}>
+                {Icons.checkCircle} Finalize agreement
+              </button>
+            )}
+            {!ag && agreed != null && iAmWorker && <span className="meta">Waiting for the requester to finalize the agreement.</span>}
+            {!ag && agreed == null && <span className="meta">Agree a price, then finalize the agreement here.</span>}
+
+            {ag && (
+              <div className="chat-ag-card">
+                <div className="chat-ag-row"><span>Agreement</span><b>{rwf(ag.agreedPrice)}</b></div>
+                <div className="chat-ag-sigs">
+                  <span className={ag.requesterSigned ? 'is-signed' : ''}>{ag.requesterSigned ? '✓' : '○'} Requester{ag.requesterSignature ? ` · ${ag.requesterSignature}` : ''}</span>
+                  <span className={ag.workerSigned ? 'is-signed' : ''}>{ag.workerSigned ? '✓' : '○'} Worker{ag.workerSignature ? ` · ${ag.workerSignature}` : ''}</span>
+                </div>
+                {ag.status === 'proposed' && iAmWorker && !ag.workerSigned && (
+                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setSigName(me?.name || ''); setErr(''); setSignModal('sign'); }}>Review &amp; sign</button>
+                )}
+                {ag.status === 'proposed' && !iAmWorker && <span className="meta">Waiting for the worker to sign.</span>}
+                {ag.status === 'signed' && escrow?.status === 'held' && <span className="chat-escrow is-held">✓ Deposit held in escrow · {rwf(escrow.amount)}</span>}
+                {ag.status === 'signed' && escrow?.status === 'released' && <span className="chat-escrow is-released">✓ Payment released · {rwf(escrow.amount)}</span>}
+                {ag.status === 'signed' && escrow?.status !== 'held' && escrow?.status !== 'released' && !iAmWorker && (
+                  <button className="btn-primary" style={{ width: '100%' }} onClick={doDeposit} disabled={busy}>{busy ? 'Depositing…' : `Deposit ${rwf(ag.agreedPrice)} to escrow`}</button>
+                )}
+                {ag.status === 'signed' && escrow?.status !== 'held' && escrow?.status !== 'released' && iAmWorker && <span className="meta">Signed ✓ — waiting for the requester&apos;s escrow deposit.</span>}
+              </div>
+            )}
+            <button type="button" className="chat-quit" onClick={() => { setReason(''); setErr(''); setDeclineOpen(true); }}>Quit booking</button>
+          </div>
+        )}
+
         <div className="chat-thread" ref={threadRef}>
           {messages.length === 0 ? (
             <div className="chat-empty">{Icons.chat}<span>Say hello and agree on a price.</span></div>
@@ -184,7 +258,50 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
             <button className="chat-send" type="submit" disabled={busy || !text.trim()} aria-label="Send" title={offer ? 'Send offer' : 'Send message'}>{Icons.send}</button>
           </form>
         )}
-        {jobDone && <div className="chat-composer"><span className="meta" style={{ padding: '0.25rem 0' }}>This job is {booking.status}. Chat is read-only.</span></div>}
+        {jobDone && <div className="chat-composer"><span className="meta" style={{ padding: '0.25rem 0' }}>This job is {bk.status}. Chat is read-only.</span></div>}
+
+        {signModal && (
+          <div className="modal-overlay" onClick={() => setSignModal(null)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-title">{signModal === 'finalize' ? 'Finalize agreement' : 'Review & sign'}</div>
+              <p className="meta" style={{ margin: '0.25rem 0 0.75rem' }}>
+                {signModal === 'finalize'
+                  ? 'Confirm the agreed price and sign — the worker signs next, then you deposit to escrow.'
+                  : `Sign to accept the job at ${rwf(ag?.agreedPrice)}. Payment is held in escrow until you both confirm completion.`}
+              </p>
+              {signModal === 'finalize' && (
+                <label className="field-label">Agreed price (RWF)
+                  <input className="input" type="number" min="1" value={sigPrice} onChange={(e) => setSigPrice(e.target.value)} style={{ width: '100%' }} />
+                </label>
+              )}
+              <label className="field-label" style={{ marginTop: '0.6rem' }}>Type your full name to sign
+                <input className="input" value={sigName} onChange={(e) => setSigName(e.target.value)} placeholder="Full name" style={{ width: '100%' }} autoFocus />
+              </label>
+              {err && <div className="form-error" style={{ marginTop: '0.5rem' }}>{err}</div>}
+              <div className="row" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
+                <button className="btn-secondary" onClick={() => setSignModal(null)}>Cancel</button>
+                <button className="btn-primary" disabled={busy} onClick={signModal === 'finalize' ? doFinalize : doSign}>
+                  {busy ? 'Signing…' : 'Sign agreement'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {declineOpen && (
+          <div className="modal-overlay" onClick={() => setDeclineOpen(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-title">Quit this booking?</div>
+              <p className="meta" style={{ margin: '0.25rem 0 0.75rem' }}>The other party is notified with your reason. Any escrow deposit is refunded.</p>
+              <textarea className="input" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Reason (optional) — e.g. couldn't agree on a price" style={{ width: '100%' }} autoFocus />
+              {err && <div className="form-error" style={{ marginTop: '0.5rem' }}>{err}</div>}
+              <div className="row" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
+                <button className="btn-secondary" onClick={() => setDeclineOpen(false)}>Keep booking</button>
+                <button className="btn-danger" disabled={busy} onClick={doDecline}>{busy ? 'Quitting…' : 'Quit booking'}</button>
+              </div>
+            </div>
+          </div>
+        )}
       </aside>
     </div>
   );
