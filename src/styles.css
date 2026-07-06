@@ -1423,11 +1423,12 @@ body {
   .chat-share svg { @apply h-4 w-4 text-primary-base; }
   .chat-share span { @apply text-label-xs font-normal text-text-sub-600; }
 
-  .chat-offer { @apply mx-4 mt-2 flex shrink-0 items-center gap-2 rounded-xl border border-stroke-soft-200 p-1.5; }
-  .chat-offer-label { @apply pl-2 text-label-sm font-semibold text-text-sub-600; }
-  .chat-offer input { @apply w-full min-w-0 flex-1 bg-transparent px-1 py-1.5 text-paragraph-sm text-text-strong-950 outline-none; }
   .chat-composer { @apply m-4 mt-2 flex shrink-0 items-center gap-2; }
-  .chat-composer input { @apply min-w-0 flex-1 rounded-full border border-stroke-soft-200 bg-bg-white-0 px-4 py-2.5 text-paragraph-sm text-text-strong-950 outline-none transition-colors focus:border-primary-base; }
+  .chat-amount { @apply flex shrink-0 items-center gap-1 rounded-full border border-stroke-soft-200 bg-bg-white-0 pl-3 transition-colors; }
+  .chat-amount span { @apply text-label-xs font-semibold text-text-sub-600; }
+  .chat-amount input { @apply w-14 bg-transparent py-2.5 pr-2 text-paragraph-sm text-text-strong-950 outline-none; border: 0; }
+  .chat-amount:focus-within { @apply border-primary-base; }
+  .chat-text { @apply min-w-0 flex-1 rounded-full border border-stroke-soft-200 bg-bg-white-0 px-4 py-2.5 text-paragraph-sm text-text-strong-950 outline-none transition-colors focus:border-primary-base; }
   .chat-send { @apply inline-flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-primary-base text-static-white transition-transform hover:scale-105 disabled:opacity-50; }
   .chat-send svg { @apply h-5 w-5; }
 
