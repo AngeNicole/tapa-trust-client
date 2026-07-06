@@ -67,6 +67,14 @@ export function getCategories() {
 export function createCategory(payload) {
   return apiFetch('/admin/categories', { method: 'POST', body: JSON.stringify(payload) });
 }
+// Edit (name/description) + archive/restore (status) via one PATCH; plus delete.
+// Endpoints pending on the backend (status column already exists).
+export function updateCategory(id, payload) {
+  return apiFetch(`/admin/categories/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+}
+export function deleteCategory(id) {
+  return apiFetch(`/admin/categories/${id}`, { method: 'DELETE' });
+}
 
 // --- public (unauthenticated) browse ---
 // Powers the logged-out landing + worker profile. Narrow public projection.
