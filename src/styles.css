@@ -1368,7 +1368,7 @@ body {
   /* booking chat — right-side drawer (Instagram-style) */
   .drawer-scrim { @apply fixed inset-0 z-50 flex justify-end; background: rgba(14, 18, 27, 0.45); animation: fade-in 0.15s ease-out; }
   .chat-drawer {
-    @apply flex h-full w-full max-w-[420px] flex-col bg-bg-white-0;
+    @apply flex h-full w-full max-w-[540px] flex-col bg-bg-white-0;
     box-shadow: -20px 0 60px -20px rgba(20, 24, 40, 0.35);
     animation: drawer-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   }
@@ -1430,8 +1430,17 @@ body {
   .chat-ag-card { @apply flex flex-col gap-2 rounded-xl border border-stroke-soft-200 bg-bg-white-0 p-3; }
   .chat-ag-row { @apply flex items-center justify-between text-label-sm text-text-sub-600; }
   .chat-ag-row b { @apply text-label-lg font-bold text-text-strong-950; }
-  .chat-ag-sigs { @apply flex flex-col gap-1 border-t border-stroke-soft-200 pt-2 text-label-xs text-text-soft-400; }
-  .chat-ag-sigs .is-signed { @apply font-medium text-green-700; }
+  .chat-ag-sigs { @apply flex flex-col gap-2 border-t border-stroke-soft-200 pt-2 text-label-xs text-text-soft-400; }
+  .chat-sig { @apply flex items-center justify-between gap-2; }
+  .chat-sig.is-signed { @apply font-medium text-green-700; }
+  .chat-sig-img { @apply h-8 rounded border border-stroke-soft-200 bg-bg-white-0; }
+  .chat-sig-name { @apply not-italic text-text-strong-950; }
+
+  /* drawable signature pad */
+  .sigpad { @apply mt-1 overflow-hidden rounded-xl border border-stroke-soft-200 bg-bg-weak-50; }
+  .sigpad-canvas { @apply block w-full cursor-crosshair bg-bg-white-0; touch-action: none; }
+  .sigpad-foot { @apply flex items-center justify-between border-t border-stroke-soft-200 px-3 py-1.5; }
+  .sigpad-clear { @apply cursor-pointer bg-transparent text-label-xs font-medium text-primary-base hover:underline; }
   .chat-escrow { @apply rounded-lg bg-green-50 px-2.5 py-1.5 text-label-sm font-semibold text-green-700; }
   .chat-escrow.is-released { @apply bg-primary-lighter text-primary-dark; }
   .chat-quit { @apply cursor-pointer self-center bg-transparent text-label-xs font-medium text-red-700 hover:underline; }
@@ -1527,13 +1536,13 @@ body {
   .hero-lead { @apply relative mx-auto mt-5 flex max-w-xl gap-2 text-paragraph-lg text-text-sub-600 lg:mx-0; }
   .lead-mark { @apply shrink-0 font-bold text-primary-base; }
 
-  .hero-search { @apply relative mx-auto mt-8 flex max-w-xl flex-col gap-2 rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-2 sm:flex-row sm:items-center lg:mx-0; box-shadow: var(--shadow-regular-md); }
-  .hs-field { @apply flex flex-1 items-center gap-2 rounded-xl px-3 text-paragraph-sm text-text-soft-400; }
+  .hero-search { @apply relative mx-auto mt-8 flex max-w-2xl flex-col gap-2 rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-2 sm:flex-row sm:items-center lg:mx-0; box-shadow: var(--shadow-regular-md); }
+  .hs-field { @apply flex flex-1 items-center gap-2 rounded-xl px-3 text-paragraph-sm text-text-soft-400; min-width: 0; }
   .hs-field svg { @apply h-4 w-4 shrink-0; }
-  .hs-field input { @apply w-full bg-transparent py-2.5 text-text-strong-950 outline-none; }
+  .hs-field input { @apply w-full min-w-0 bg-transparent py-2.5 text-text-strong-950 outline-none; }
   .hs-field.hs-select { @apply border-l border-stroke-soft-200 px-0 pl-3 sm:flex-none; }
   .hs-field select { @apply w-full cursor-pointer bg-transparent py-2.5 pr-6 text-text-strong-950 outline-none; }
-  .hero-search .btn-dark { @apply justify-center px-6 py-3 sm:shrink-0; }
+  .hero-search .btn-dark { @apply shrink-0 justify-center px-6 py-3; }
 
   .hero-metrics { @apply relative mt-9 flex flex-wrap items-center justify-center gap-x-7 gap-y-4 lg:justify-start; }
   .metric-n { @apply text-title-h4 font-semibold text-text-strong-950; letter-spacing: -0.02em; }

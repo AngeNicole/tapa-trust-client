@@ -32,18 +32,25 @@ export default function RequesterDashboard() {
   const { user } = useAuth();
   const [params] = useSearchParams();
   const TABS = ['hire', 'bookings', 'history', 'saved', 'profile'];
-  // Browse workers is the requester's home — unless we arrived from a resumed
-  // booking (?tab=bookings), which lands them on their new booking instead.
-  const [tab, setTab] = useState(TABS.includes(params.get('tab')) ? params.get('tab') : 'hire');
+  // Land on Bookings if arriving from a resumed booking — via ?tab=bookings OR
+  // the sessionStorage flag (which survives the PublicOnly redirect that strips
+  // the query after signup).
+  const resumedBooking = (() => { try { return sessionStorage.getItem('tapa_after_book') === '1'; } catch { return false; } })();
+  const initialTab = resumedBooking || params.get('tab') === 'bookings' ? 'bookings' : (TABS.includes(params.get('tab')) ? params.get('tab') : 'hire');
+  const [tab, setTab] = useState(initialTab);
   const [reviewBooking, setReviewBooking] = useState(null); // booking awaiting a review prompt
   const notify = useToast();
   const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
   useBookingAlerts(bookings.data, 'requester', notify);
   const saved = useAsync(() => getSavedWorkers(), []);
 
-  // Just resumed a booking after signup/login → confirm it landed.
+  // Just resumed a booking after signup/login → land on Bookings + confirm.
   useEffect(() => {
-    if (params.get('booked') === '1') notify('Booking requested — waiting for the worker to accept.');
+    if (resumedBooking || params.get('booked') === '1') {
+      setTab('bookings');
+      notify('Booking placed — waiting for the worker to accept. Track it here.');
+      try { sessionStorage.removeItem('tapa_after_book'); } catch { /* ignore */ }
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const all = bookings.data || [];
