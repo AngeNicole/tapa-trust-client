@@ -38,6 +38,9 @@ import {
   ShieldCheck,
   ThumbsUp,
   ThumbsDown,
+  SquaresFour,
+  IdentificationCard,
+  Camera,
 } from '@phosphor-icons/react';
 
 const w = 'regular';
@@ -80,4 +83,7 @@ export const Icons = {
   shield: <ShieldCheck weight={w} />,
   thumbsUp: <ThumbsUp weight={w} />,
   thumbsDown: <ThumbsDown weight={w} />,
+  grid: <SquaresFour weight={w} />,
+  idCard: <IdentificationCard weight={w} />,
+  camera: <Camera weight={w} />,
 };

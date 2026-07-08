@@ -54,7 +54,13 @@ export default function PublicWorkerProfile() {
     <PublicShell>
       <div className="pp-wrap">
       <Link to="/" className="pp-back">← Back to workers</Link>
-      {loading ? <Loading /> : error ? <ErrorNote message={error} /> : (
+      {loading ? <Loading /> : error ? <ErrorNote message={error} /> : w.verification !== 'verified' ? (
+        <div className="pp-card" style={{ textAlign: 'center', padding: '2.5rem 1.5rem' }}>
+          <div className="pp-h" style={{ justifyContent: 'center' }}>{Icons.shield} Not available yet</div>
+          <p className="pp-text" style={{ marginTop: '0.5rem' }}>This worker&apos;s profile appears once an admin has verified their identity. Please check back soon.</p>
+          <Link to="/" className="pp-book" style={{ display: 'inline-flex', width: 'auto', marginTop: '1rem', textDecoration: 'none' }}>Browse verified workers</Link>
+        </div>
+      ) : (
         <div className="pp-grid">
           {/* left identity card */}
           <aside className="pp-side">
