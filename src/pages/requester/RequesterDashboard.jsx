@@ -13,12 +13,13 @@ import {
   saveWorker,
   unsaveWorker,
   rebookWorker,
+  updateMe,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, WorkTracker, duration, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { Settings } from '../../components/Settings.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
-import { Hero } from '../../components/Hero.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
@@ -65,7 +66,7 @@ export default function RequesterDashboard() {
     { key: 'bookings', label: 'Bookings', icon: Icons.calendar, count: active.length },
     { key: 'history', label: 'History', icon: Icons.clock, count: history.length },
     { key: 'saved', label: 'Saved workers', icon: Icons.bookmark, count: (saved.data || []).length },
-    { key: 'profile', label: 'Profile', icon: Icons.user },
+    { key: 'profile', label: 'Settings', icon: Icons.settings },
   ];
 
   const afterBook = () => { bookings.reload(); setTab('bookings'); notify('Booking requested — waiting for the worker to accept.'); };
@@ -89,19 +90,7 @@ export default function RequesterDashboard() {
       {tab === 'bookings' && <BookingsView state={bookings} bookings={active} onReview={setReviewBooking} />}
       {tab === 'history' && <HistoryView state={bookings} bookings={history} onReview={setReviewBooking} savedIds={(saved.data || []).map((w) => w.worker_id)} bookedIds={bookedIds} onSavedChange={() => saved.reload()} />}
       {tab === 'saved' && <SavedView state={saved} bookedIds={bookedIds} onRebook={afterBook} />}
-      {tab === 'profile' && (
-        <>
-          <div style={{ marginBottom: '1.25rem' }}>
-            <Hero
-              kicker="TaPa Trust"
-              title="Find trusted help, fast."
-              ctaLabel="Browse workers"
-              onCta={() => setTab('hire')}
-            />
-          </div>
-          <ProfileView user={user} bookings={all} saved={saved.data || []} />
-        </>
-      )}
+      {tab === 'profile' && <Settings profileTab={<ProfileView user={user} bookings={all} saved={saved.data || []} />} />}
     </DashShell>
     {reviewBooking && (
       <ReviewModal
@@ -119,24 +108,47 @@ export default function RequesterDashboard() {
 }
 
 function ProfileView({ user, bookings, saved }) {
+  const { refreshUser } = useAuth();
   const active = bookings.filter((b) => b.status !== 'completed').length;
   const completed = bookings.filter((b) => b.status === 'completed').length;
+  const [name, setName] = useState(user.name || '');
+  const [phone, setPhone] = useState(user.phone || '');
+  const [location, setLocation] = useState(user.location || '');
+  const [saved2, setSaved2] = useState(false);
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  async function save(e) {
+    e.preventDefault();
+    setErr(''); setBusy(true);
+    try { await updateMe({ name, phone, location }); await refreshUser(); setSaved2(true); setTimeout(() => setSaved2(false), 1500); }
+    catch (e2) { setErr(e2.message); } finally { setBusy(false); }
+  }
   return (
     <>
-      <h1>Your profile</h1>
-      <p className="subtitle">Your account and activity at a glance.</p>
-      <div className="card" style={{ marginTop: '0.75rem' }}>
-        <div className="row" style={{ alignItems: 'center', gap: '1rem', flexWrap: 'nowrap' }}>
-          <div className="avatar">{initials(user.name)}</div>
-          <div>
-            <div className="row" style={{ gap: '0.6rem' }}>
-              <span className="card-title">{user.name}</span>
-              <span className="badge badge--primary">Requester</span>
+      <div className="card">
+        <div className="card-head" style={{ alignItems: 'center' }}>
+          <div className="row" style={{ alignItems: 'center', gap: '1rem', flexWrap: 'nowrap' }}>
+            <div className="avatar">{initials(user.name)}</div>
+            <div>
+              <div className="row" style={{ gap: '0.6rem' }}><span className="card-title">{user.name}</span><span className="badge badge--primary">Requester</span></div>
+              <div className="meta" style={{ marginTop: '0.35rem' }}>{user.email}</div>
             </div>
-            <span className="pin">{Icons.pin}{user.location || 'Location not set'}</span>
-            <div className="meta" style={{ marginTop: '0.35rem' }}>{user.email}</div>
           </div>
         </div>
+        <div className="divider" />
+        <form className="form" onSubmit={save} style={{ maxWidth: '100%' }}>
+          <div className="grid2">
+            <label>Full name<input value={name} onChange={(e) => setName(e.target.value)} /></label>
+            <label>Phone<input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07…" /></label>
+            <label>Location<input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Kigali, Kimironko" /></label>
+          </div>
+          <ErrorNote message={err} />
+          <div className="row" style={{ justifyContent: 'flex-end' }}>
+            {saved2 && <span className="badge badge--done">Saved</span>}
+            <button className="btn-primary" type="submit" disabled={busy}>{busy ? 'Saving…' : 'Save details'}</button>
+          </div>
+        </form>
       </div>
       <div className="grid2">
         <div className="card"><div className="stat-num">{bookings.length}</div><div className="meta">Total bookings</div></div>

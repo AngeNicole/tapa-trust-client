@@ -18,7 +18,7 @@ import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, EmptyState, WorkTracker, rwf, monthLabel, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
-import { Hero } from '../../components/Hero.jsx';
+import { Settings } from '../../components/Settings.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
@@ -35,16 +35,16 @@ const escrowReady = (b) => !b.escrow || ['held', 'released'].includes(b.escrow.s
 
 export default function WorkerDashboard() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('profile');
+  const [tab, setTab] = useState('bookings');
   const notify = useToast();
   const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
   useBookingAlerts(bookings.data, 'worker', notify);
   const count = bookings.data?.length || 0;
 
   const items = [
-    { key: 'profile', label: 'Profile', icon: Icons.user },
     { key: 'bookings', label: 'My bookings', icon: Icons.calendar, count },
     { key: 'earnings', label: 'Earnings', icon: Icons.wallet },
+    { key: 'profile', label: 'Settings', icon: Icons.settings },
   ];
 
   return (
@@ -54,30 +54,18 @@ export default function WorkerDashboard() {
       onSelect={setTab}
       rightRail={<StatsRail user={user} bookings={bookings.data || []} role="worker" />}
     >
-      {tab === 'profile' && (
-        <>
-          <div style={{ marginBottom: '1.25rem' }}>
-            <Hero
-              kicker="TaPa Trust"
-              title="Get hired and grow your reputation."
-              ctaLabel="View my bookings"
-              onCta={() => setTab('bookings')}
-            />
-          </div>
-          <ProfileView user={user} />
-        </>
-      )}
+      {tab === 'profile' && <Settings profileTab={<ProfileView user={user} embedded />} />}
       {tab === 'bookings' && <BookingsView state={bookings} />}
       {tab === 'earnings' && <EarningsView />}
     </DashShell>
   );
 }
 
-function ProfileView({ user }) {
+function ProfileView({ user, embedded }) {
   const { data: me, loading, error, reload } = useAsync(() => getMyWorkerProfile(), []);
-  if (loading) return <><h1>Your profile</h1><Loading /></>;
-  if (error) return <><h1>Your profile</h1><ErrorNote message={error} /></>;
-  return <ProfileEditor user={user} me={me} reload={reload} />;
+  if (loading) return <Loading />;
+  if (error) return <ErrorNote message={error} />;
+  return <ProfileEditor user={user} me={me} reload={reload} embedded={embedded} />;
 }
 
 function AvailabilityToggle({ me, reload }) {
@@ -124,11 +112,10 @@ function VerificationCard({ status }) {
   );
 }
 
-function ProfileEditor({ user, me, reload }) {
+function ProfileEditor({ user, me, reload, embedded }) {
   return (
     <>
-      <h1>Your profile</h1>
-      <p className="subtitle">This is what requesters see when they consider you for a task.</p>
+      {!embedded && <><h1>Your profile</h1><p className="subtitle">This is what requesters see when they consider you for a task.</p></>}
 
       <div className="card" style={{ marginTop: '0.75rem' }}>
         <div className="card-head" style={{ alignItems: 'center' }}>
