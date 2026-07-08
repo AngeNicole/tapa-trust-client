@@ -1,4 +1,5 @@
 // Small presentational helpers shared by the demo dashboards.
+import { Icons } from './icons.jsx';
 
 function initials(name = '') {
   const p = name.trim().split(/\s+/);
@@ -101,10 +102,57 @@ export function Loading({ label = 'Loading…' }) {
   return <div className="empty" style={{ marginTop: '0.75rem' }}>{label}</div>;
 }
 
+// Escrow status banner — makes the money flow unmistakable to BOTH parties:
+// funds are held on payment, and released only once the job is confirmed done.
+// role tailors the wording ("released to you" vs "to the worker").
+export function EscrowBanner({ b, role }) {
+  const status = b.escrow?.status || b.payment;
+  const amount = b.agreedPrice ?? b.escrow?.amount;
+  if (!amount || !['held', 'released', 'refunded'].includes(status)) return null;
+  const isWorker = role === 'worker';
+
+  if (status === 'held') {
+    return (
+      <div className="escrow-banner is-held">
+        <span className="escrow-ic">{Icons.shield}</span>
+        <div>
+          <div className="escrow-title">{rwf(amount)} held in escrow</div>
+          <div className="escrow-sub">
+            {isWorker
+              ? 'The requester has paid. The money is held safely and released to you once you both confirm the job is done.'
+              : 'You’ve paid. The money is held safely — it’s released to the worker only after you both confirm the job is done.'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (status === 'released') {
+    return (
+      <div className="escrow-banner is-released">
+        <span className="escrow-ic">{Icons.checkCircle}</span>
+        <div>
+          <div className="escrow-title">{rwf(amount)} {isWorker ? 'released to you' : 'released to the worker'}</div>
+          <div className="escrow-sub">Both sides confirmed the job is complete, so the escrow has been released. {isWorker ? 'It’s in your earnings.' : 'Thanks for using TaPa Trust.'}</div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="escrow-banner is-refunded">
+      <span className="escrow-ic">{Icons.wallet}</span>
+      <div>
+        <div className="escrow-title">{rwf(amount)} refunded</div>
+        <div className="escrow-sub">The booking was cancelled, so the escrow was returned to the requester.</div>
+      </div>
+    </div>
+  );
+}
+
 // "Track work" — the post-payment work phase (check-in → completion), shown as a
 // labelled block with a compact stepper, separate from booking + payment (which
-// live in the chat). `children` are the role-specific action buttons.
-export function WorkTracker({ b, children }) {
+// live in the chat). `children` are the role-specific action buttons. The escrow
+// banner sits on top so both parties always see the held → released money flow.
+export function WorkTracker({ b, role, children }) {
   const steps = [
     { label: 'Checked in', done: b.checkedIn },
     { label: 'Start confirmed', done: b.startConfirmed },
@@ -113,6 +161,7 @@ export function WorkTracker({ b, children }) {
   ];
   return (
     <div className="track-work">
+      <EscrowBanner b={b} role={role} />
       <div className="track-work-head">Track work</div>
       <div className="track-steps">
         {steps.map((s) => (

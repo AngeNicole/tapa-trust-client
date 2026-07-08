@@ -377,7 +377,7 @@ function BookingsView({ state }) {
             {b.status === 'accepted' && !b.checkedIn && !escrowReady(b) && <span className="meta">Agree &amp; sign in chat — you can check in once the requester pays.</span>}
           </div>
           {['accepted', 'in_progress', 'completed'].includes(b.status) && escrowReady(b) && (
-            <WorkTracker b={b}>
+            <WorkTracker b={b} role="worker">
               {b.status === 'accepted' && !b.checkedIn && <button className="btn-primary" onClick={() => act(checkinBooking(b.booking_id))}>Check in</button>}
               {b.status === 'accepted' && b.checkedIn && <span className="meta">Checked in — waiting for requester to confirm start.</span>}
               {b.status === 'in_progress' && !b.checkedOut && <button className="btn-primary" onClick={() => act(checkoutBooking(b.booking_id))}>Check out</button>}
