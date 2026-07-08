@@ -21,7 +21,7 @@ import { DashShell } from '../../components/DashShell.jsx';
 import { Settings } from '../../components/Settings.jsx';
 import { MessagesView } from '../../components/MessagesView.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
-import { StatsRail } from '../../components/StatsRail.jsx';
+import { Analytics, bookingActivity } from '../../components/shared/Analytics.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 
@@ -33,12 +33,12 @@ function initials(name = '') {
 export default function RequesterDashboard() {
   const { user } = useAuth();
   const [params] = useSearchParams();
-  const TABS = ['hire', 'bookings', 'messages', 'history', 'saved', 'profile'];
+  const TABS = ['overview', 'hire', 'bookings', 'messages', 'history', 'saved', 'profile'];
   // Land on Bookings if arriving from a resumed booking — via ?tab=bookings OR
   // the sessionStorage flag (which survives the PublicOnly redirect that strips
   // the query after signup).
   const resumedBooking = (() => { try { return sessionStorage.getItem('tapa_after_book') === '1'; } catch { return false; } })();
-  const initialTab = resumedBooking || params.get('tab') === 'bookings' ? 'bookings' : (TABS.includes(params.get('tab')) ? params.get('tab') : 'hire');
+  const initialTab = resumedBooking || params.get('tab') === 'bookings' ? 'bookings' : (TABS.includes(params.get('tab')) ? params.get('tab') : 'overview');
   const [tab, setTab] = useState(initialTab);
   const [reviewBooking, setReviewBooking] = useState(null); // booking awaiting a review prompt
   const notify = useToast();
@@ -63,6 +63,7 @@ export default function RequesterDashboard() {
   const bookedIds = [...new Set(all.filter((b) => !['completed', 'cancelled'].includes(b.status)).map((b) => b.worker_id))];
 
   const items = [
+    { key: 'overview', label: 'Dashboard', icon: Icons.grid || Icons.spark },
     { key: 'hire', label: 'Find workers', icon: Icons.briefcase },
     { key: 'bookings', label: 'Bookings', icon: Icons.calendar, count: active.length },
     { key: 'history', label: 'History', icon: Icons.clock, count: history.length },
@@ -75,12 +76,8 @@ export default function RequesterDashboard() {
 
   return (
     <>
-    <DashShell
-      items={items}
-      active={tab}
-      onSelect={setTab}
-      rightRail={<StatsRail user={user} bookings={all} role="requester" />}
-    >
+    <DashShell items={items} active={tab} onSelect={setTab}>
+      {tab === 'overview' && <OverviewView user={user} bookings={all} savedCount={(saved.data || []).length} />}
       {tab === 'hire' && (
         <HireView
           savedIds={(saved.data || []).map((w) => w.worker_id)}
@@ -107,6 +104,37 @@ export default function RequesterDashboard() {
       />
     )}
     </>
+  );
+}
+
+function OverviewView({ user, bookings, savedCount }) {
+  const amountOf = (b) => Number(b.agreedPrice) || 0;
+  const active = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status)).length;
+  const completed = bookings.filter((b) => b.status === 'completed').length;
+  const spent = bookings.filter((b) => b.status === 'completed').reduce((a, b) => a + amountOf(b), 0);
+  const first = (user?.name || '').split(/\s+/)[0] || 'there';
+
+  const buckets = [
+    { label: 'Pending', value: bookings.filter((b) => b.status === 'pending').length },
+    { label: 'Accepted', value: bookings.filter((b) => b.status === 'accepted').length },
+    { label: 'Active', value: bookings.filter((b) => b.status === 'in_progress').length },
+    { label: 'Done', value: completed },
+  ];
+
+  return (
+    <Analytics
+      title={`Welcome, ${first}`}
+      subtitle="Your bookings at a glance — track every job through to done."
+      kpis={[
+        { icon: Icons.calendar, value: bookings.length, label: 'Total bookings' },
+        { icon: Icons.clock, value: active, label: 'Active' },
+        { icon: Icons.checkCircle, value: completed, label: 'Completed' },
+        { icon: Icons.wallet, value: rwf(spent), label: 'Total spent' },
+        { icon: Icons.bookmark, value: savedCount, label: 'Saved workers' },
+      ]}
+      chart={{ title: 'Bookings by stage', data: buckets, format: (v) => v }}
+      activity={bookingActivity(bookings, 'requester')}
+    />
   );
 }
 

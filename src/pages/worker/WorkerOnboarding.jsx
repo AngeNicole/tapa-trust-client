@@ -4,11 +4,12 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { getMyWorkerProfile, getCategories, updateMyWorkerProfile, submitVerification } from '../../api/client.js';
 import { ErrorNote } from '../../components/shared/ui.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
+import { fileToDataUrl } from '../../utils/files.js';
 
-// Guided worker verification onboarding (Duolingo-style, simulated): upload ID →
-// face scan → skills → education & certifications → submit for admin review.
-// The ID/face are NOT analysed or stored — this mirrors a real proctored flow.
-const STEPS = ['Identity document', 'Face scan', 'Skills', 'Background', 'Review'];
+// Guided worker verification onboarding: upload ID → capture selfie → skills →
+// certifications → submit for admin review. An admin compares the selfie with
+// the ID to confirm the same person, and previews the uploaded certificates.
+const STEPS = ['Identity document', 'Face scan', 'Skills', 'Certifications', 'Review'];
 
 export default function WorkerOnboarding() {
   const { user } = useAuth();
@@ -18,23 +19,44 @@ export default function WorkerOnboarding() {
   const [submitting, setSubmitting] = useState(false);
 
   // collected data
-  const [idFile, setIdFile] = useState('');
+  const [idDoc, setIdDoc] = useState(null);        // { name, type, dataUrl }
+  const [idBusy, setIdBusy] = useState(false);
   const [selfie, setSelfie] = useState(null);      // dataURL or 'simulated'
   const [skills, setSkills] = useState([]);
   const [customSkill, setCustomSkill] = useState('');
   const [bio, setBio] = useState('');
   const [education, setEducation] = useState('');
-  const [certifications, setCertifications] = useState('');
+  const [certFiles, setCertFiles] = useState([]);  // [{ name, type, dataUrl }]
 
   const cats = useRef([]);
   const [catNames, setCatNames] = useState([]);
   useEffect(() => {
     getMyWorkerProfile().then((me) => {
       setSkills((me.skills || '').split(',').map((s) => s.trim()).filter(Boolean));
-      setBio(me.bio || ''); setEducation(me.education || ''); setCertifications(me.certifications || '');
+      setBio(me.bio || ''); setEducation(me.education || '');
     }).catch(() => {});
     getCategories().then((c) => { cats.current = c; setCatNames(c.map((x) => x.name)); }).catch(() => {});
   }, []);
+
+  async function onIdFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setErr(''); setIdBusy(true);
+    try { setIdDoc(await fileToDataUrl(file)); }
+    catch (e2) { setErr(e2.message); }
+    finally { setIdBusy(false); }
+  }
+  async function onCertFiles(e) {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setErr('');
+    try {
+      const parsed = await Promise.all(files.map((f) => fileToDataUrl(f)));
+      setCertFiles((prev) => [...prev, ...parsed]);
+    } catch (e2) { setErr(e2.message); }
+    e.target.value = ''; // allow re-selecting the same file
+  }
+  const removeCert = (i) => setCertFiles((prev) => prev.filter((_, x) => x !== i));
 
   // ---- camera (face scan) ----
   const videoRef = useRef(null);
@@ -75,7 +97,7 @@ export default function WorkerOnboarding() {
 
   function next() {
     setErr('');
-    if (step === 0 && !idFile) return setErr('Upload a photo of your ID to continue.');
+    if (step === 0 && !idDoc) return setErr('Upload a photo of your ID to continue.');
     if (step === 1 && !selfie) return setErr('Capture (or simulate) your face scan to continue.');
     if (step === 2 && skills.length === 0) return setErr('Add at least one skill.');
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -85,8 +107,17 @@ export default function WorkerOnboarding() {
   async function submit() {
     setErr(''); setSubmitting(true);
     try {
-      await updateMyWorkerProfile({ skills: skills.join(', '), bio, education, certifications });
-      await submitVerification({ document: idFile, faceScan: selfie ? 'captured' : null });
+      // Keep the certificate names on the profile so the public "Certifications"
+      // list still shows them; the actual files go with the verification for the
+      // admin to preview.
+      await updateMyWorkerProfile({ skills: skills.join(', '), bio, education, certifications: certFiles.map((f) => f.name).join('\n') });
+      await submitVerification({
+        document: idDoc?.name || null,          // legacy field (name only)
+        faceScan: selfie ? 'captured' : null,   // legacy field
+        idDocument: idDoc?.dataUrl || null,      // the uploaded ID image/PDF
+        selfie: selfie && selfie !== 'simulated' ? selfie : null,
+        certificationFiles: certFiles,           // [{ name, type, dataUrl }]
+      });
       navigate('/worker', { replace: true });
     } catch (e) { setErr(e.message); setSubmitting(false); }
   }
@@ -110,24 +141,36 @@ export default function WorkerOnboarding() {
 
         <div className="onb-card">
           <div className="onb-title">Verify your identity</div>
-          <p className="onb-sub">Requesters only see verified workers. This is a simulated check — your ID and face scan are not stored or analysed.</p>
+          <p className="onb-sub">Requesters only see admin-approved workers. Upload your ID and take a selfie so an admin can confirm you are the real person behind the profile.</p>
 
           {step === 0 && (
             <div className="onb-pane">
               <h3 className="onb-h">Upload your ID document</h3>
-              <p className="meta">A national ID, passport, or driver&apos;s licence. (Simulated — not stored.)</p>
-              <label className="onb-drop">
-                {idFile ? <><span className="onb-drop-ic">{Icons.checkCircle}</span><span className="onb-drop-name">{idFile}</span><span className="meta">Tap to replace</span></>
-                  : <><span className="onb-drop-ic">{Icons.upload}</span><span>Tap to choose a photo of your ID</span><span className="meta">JPG, PNG or PDF</span></>}
-                <input type="file" accept="image/*,.pdf" hidden onChange={(e) => setIdFile(e.target.files?.[0]?.name || '')} />
+              <p className="meta">A national ID, passport, or driver&apos;s licence.</p>
+              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> an admin compares this document with your selfie to confirm they show the <em>same person</em>. It&apos;s used only for that identity check.</span></div>
+              <label className={`onb-drop ${idBusy ? 'is-busy' : ''}`}>
+                {idBusy ? <span className="meta">Processing…</span>
+                  : idDoc ? (
+                    <>
+                      {idDoc.type?.startsWith('image/')
+                        ? <img className="onb-doc-thumb" src={idDoc.dataUrl} alt="ID preview" />
+                        : <span className="onb-drop-ic">{Icons.idCard}</span>}
+                      <span className="onb-drop-name">{idDoc.name}</span>
+                      <span className="meta">Tap to replace</span>
+                    </>
+                  ) : (
+                    <><span className="onb-drop-ic">{Icons.upload}</span><span>Tap to choose a photo of your ID</span><span className="meta">JPG, PNG or PDF</span></>
+                  )}
+                <input type="file" accept="image/*,.pdf" hidden onChange={onIdFile} />
               </label>
             </div>
           )}
 
           {step === 1 && (
             <div className="onb-pane">
-              <h3 className="onb-h">Face scan</h3>
-              <p className="meta">Center your face in the frame and capture — this confirms the ID belongs to you.</p>
+              <h3 className="onb-h">Take a selfie</h3>
+              <p className="meta">Center your face in the frame and capture.</p>
+              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> an admin compares this selfie with your uploaded ID to check the face matches — this is how requesters know verified workers are real.</span></div>
               <div className="onb-cam">
                 {selfie && selfie !== 'simulated'
                   ? <img src={selfie} alt="Captured selfie" />
@@ -170,7 +213,7 @@ export default function WorkerOnboarding() {
 
           {step === 3 && (
             <div className="onb-pane">
-              <h3 className="onb-h">Experience & qualifications</h3>
+              <h3 className="onb-h">Experience & certifications</h3>
               <div className="form" style={{ maxWidth: '100%' }}>
                 <label>Short bio
                   <textarea className="textarea" rows={2} maxLength={500} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell requesters about your work and experience." />
@@ -178,9 +221,25 @@ export default function WorkerOnboarding() {
                 <label>Education
                   <textarea className="textarea" rows={2} value={education} onChange={(e) => setEducation(e.target.value)} placeholder="e.g. Diploma in Plumbing, IPRC Kigali" />
                 </label>
-                <label>Certifications
-                  <textarea className="textarea" rows={2} value={certifications} onChange={(e) => setCertifications(e.target.value)} placeholder="e.g. Certified Plumber — RP Board (one per line)" />
-                </label>
+                <div>
+                  <span className="field-label">Certificates</span>
+                  <p className="meta" style={{ margin: '0.15rem 0 0.5rem' }}>Upload photos or PDFs of your certificates — an admin previews each one to confirm it&apos;s genuine.</p>
+                  <label className="onb-drop onb-drop--sm">
+                    <span className="onb-drop-ic">{Icons.upload}</span><span>Tap to upload certificates</span><span className="meta">JPG, PNG or PDF · you can add several</span>
+                    <input type="file" accept="image/*,.pdf" multiple hidden onChange={onCertFiles} />
+                  </label>
+                  {certFiles.length > 0 && (
+                    <div className="onb-files">
+                      {certFiles.map((f, i) => (
+                        <div className="onb-file" key={`${f.name}-${i}`}>
+                          {f.type?.startsWith('image/') ? <img src={f.dataUrl} alt="" /> : <span className="onb-file-ic">{Icons.certificate}</span>}
+                          <span className="onb-file-name">{f.name}</span>
+                          <button type="button" className="onb-file-x" onClick={() => removeCert(i)} aria-label={`Remove ${f.name}`}>{Icons.close}</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -189,13 +248,13 @@ export default function WorkerOnboarding() {
             <div className="onb-pane">
               <h3 className="onb-h">Review & submit</h3>
               <ul className="onb-review">
-                <li><span>ID document</span><b>{idFile ? '✓ Uploaded' : '—'}</b></li>
-                <li><span>Face scan</span><b>{selfie ? '✓ Captured' : '—'}</b></li>
+                <li><span>ID document</span><b>{idDoc ? '✓ Uploaded' : '—'}</b></li>
+                <li><span>Selfie</span><b>{selfie ? '✓ Captured' : '—'}</b></li>
                 <li><span>Skills</span><b>{skills.join(', ') || '—'}</b></li>
                 <li><span>Education</span><b>{education || '—'}</b></li>
-                <li><span>Certifications</span><b>{certifications || '—'}</b></li>
+                <li><span>Certificates</span><b>{certFiles.length ? `✓ ${certFiles.length} uploaded` : '—'}</b></li>
               </ul>
-              <p className="meta">An admin will review your submission. You&apos;ll appear in Browse once approved.</p>
+              <p className="meta">An admin will compare your selfie with your ID and review your certificates. You&apos;ll appear in Browse once approved.</p>
             </div>
           )}
 

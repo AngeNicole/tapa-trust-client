@@ -3,10 +3,11 @@ import { getAdminUsers, getCategories, createCategory, updateCategory, deleteCat
 import { useAsync } from '../../api/hooks.js';
 import { Loading, ErrorNote, VerifyBadge, EmptyState, Avatar } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { Analytics } from '../../components/shared/Analytics.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 
 export default function AdminDashboard() {
-  const [tab, setTab] = useState('verify');
+  const [tab, setTab] = useState('overview');
   const users = useAsync(() => getAdminUsers(), []);
   const categories = useAsync(() => getCategories(), []);
   const workers = useAsync(() => getAllWorkers(), []);
@@ -14,6 +15,7 @@ export default function AdminDashboard() {
   const pending = (workers.data || []).filter((w) => w.verification === 'pending').length;
 
   const items = [
+    { key: 'overview', label: 'Dashboard', icon: Icons.grid || Icons.spark },
     { key: 'verify', label: 'Verifications', icon: Icons.check, count: pending },
     { key: 'users', label: 'Users', icon: Icons.user, count: users.data?.length || 0 },
     { key: 'categories', label: 'Categories', icon: Icons.briefcase, count: categories.data?.length || 0 },
@@ -21,10 +23,55 @@ export default function AdminDashboard() {
 
   return (
     <DashShell items={items} active={tab} onSelect={setTab}>
+      {tab === 'overview' && <OverviewView users={users.data || []} workers={workers.data || []} categories={categories.data || []} />}
       {tab === 'verify' && <VerifyView state={workers} />}
       {tab === 'users' && <UsersView state={users} />}
       {tab === 'categories' && <CategoriesView state={categories} />}
     </DashShell>
+  );
+}
+
+function OverviewView({ users, workers, categories }) {
+  const bucketOf = (w) => (w.verification === 'verified' ? 'approved' : w.verification);
+  const engaged = workers.filter((w) => w.verification !== 'unverified');
+  const counts = {
+    pending: engaged.filter((w) => bucketOf(w) === 'pending').length,
+    approved: engaged.filter((w) => bucketOf(w) === 'approved').length,
+    rejected: engaged.filter((w) => bucketOf(w) === 'rejected').length,
+  };
+  const requesters = users.filter((u) => u.role === 'requester').length;
+  const workerUsers = users.filter((u) => u.role === 'worker').length;
+
+  // Recent submissions awaiting or through review → activity feed.
+  const dotFor = (b) => ({ approved: 'completed', pending: 'pending', rejected: 'cancelled' }[b] || 'pending');
+  const activity = [...engaged]
+    .sort((a, b) => (b.worker_id || 0) - (a.worker_id || 0))
+    .slice(0, 7)
+    .map((w) => ({ status: dotFor(bucketOf(w)), label: w.name, sub: `Verification ${bucketOf(w)}` }));
+
+  return (
+    <Analytics
+      title="Admin dashboard"
+      subtitle="Platform health at a glance — oversight only."
+      kpis={[
+        { icon: Icons.user, value: users.length, label: 'Total users' },
+        { icon: Icons.briefcase, value: workerUsers, label: 'Workers' },
+        { icon: Icons.user, value: requesters, label: 'Requesters' },
+        { icon: Icons.check, value: counts.pending, label: 'Pending review' },
+        { icon: Icons.checkCircle, value: counts.approved, label: 'Verified' },
+        { icon: Icons.briefcase, value: categories.length, label: 'Categories' },
+      ]}
+      chart={{
+        title: 'Workers by verification',
+        data: [
+          { label: 'Pending', value: counts.pending },
+          { label: 'Approved', value: counts.approved },
+          { label: 'Rejected', value: counts.rejected },
+        ],
+        format: (v) => v,
+      }}
+      activity={activity}
+    />
   );
 }
 
@@ -136,6 +183,10 @@ function ReviewModal({ worker, onClose, onDone }) {
 
   const skills = (profile?.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
   const certs = (profile?.certifications || '').split(/[\n;,]/).map((s) => s.trim()).filter(Boolean);
+  const certFiles = Array.isArray(profile?.certificationFiles) ? profile.certificationFiles : [];
+  const isImg = (s) => typeof s === 'string' && s.startsWith('data:image');
+  const selfie = profile?.selfie;
+  const idDoc = profile?.idDocument;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -166,12 +217,43 @@ function ReviewModal({ worker, onClose, onDone }) {
               <p>{profile?.education || <span className="meta">Not provided.</span>}</p>
             </div>
             <div className="review-sec">
-              <h4>Certifications</h4>
-              {certs.length ? <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>{certs.map((c) => <li key={c} className="review-sec-li"><p style={{ display: 'inline' }}>{c}</p></li>)}</ul> : <p className="meta">Not provided.</p>}
+              <h4>Identity check</h4>
+              <p className="meta">Compare the selfie with the ID document — they should be the same person.</p>
+              {selfie || idDoc ? (
+                <div className="review-idcheck">
+                  <figure>
+                    <figcaption>{Icons.camera} Selfie</figcaption>
+                    {selfie
+                      ? <a href={selfie} target="_blank" rel="noreferrer"><img src={selfie} alt="Worker selfie" /></a>
+                      : <div className="review-missing">Not provided</div>}
+                  </figure>
+                  <figure>
+                    <figcaption>{Icons.idCard} ID document</figcaption>
+                    {idDoc
+                      ? (isImg(idDoc)
+                        ? <a href={idDoc} target="_blank" rel="noreferrer"><img src={idDoc} alt="ID document" /></a>
+                        : <a className="review-doc-link" href={idDoc} target="_blank" rel="noreferrer">{Icons.idCard} Open document</a>)
+                      : <div className="review-missing">Not provided</div>}
+                  </figure>
+                </div>
+              ) : (
+                <p className="meta">No selfie/ID on file for this worker yet.</p>
+              )}
             </div>
             <div className="review-sec">
-              <h4>Submitted evidence</h4>
-              <p className="meta">Simulated ID document on file (Tier-1 mock — no real ID stored).</p>
+              <h4>Certificates</h4>
+              {certFiles.length ? (
+                <div className="review-certs">
+                  {certFiles.map((f, i) => (
+                    <a className="review-cert" key={`${f.name}-${i}`} href={f.dataUrl} target="_blank" rel="noreferrer" title={f.name}>
+                      {isImg(f.dataUrl) ? <img src={f.dataUrl} alt={f.name} /> : <span className="review-cert-ic">{Icons.certificate}</span>}
+                      <span className="review-cert-name">{f.name}</span>
+                    </a>
+                  ))}
+                </div>
+              ) : certs.length ? (
+                <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>{certs.map((c) => <li key={c} className="review-sec-li"><p style={{ display: 'inline' }}>{c}</p></li>)}</ul>
+              ) : <p className="meta">Not provided.</p>}
             </div>
 
             {err && <div className="form-error" style={{ marginTop: '0.75rem' }}>{err}</div>}

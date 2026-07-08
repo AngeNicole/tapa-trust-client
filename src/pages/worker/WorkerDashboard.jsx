@@ -15,20 +15,49 @@ import {
   checkoutBooking,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, EmptyState, WorkTracker, rwf, monthLabel, duration } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, EmptyState, WorkTracker, rwf, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Settings } from '../../components/Settings.jsx';
 import { MessagesView } from '../../components/MessagesView.jsx';
-import { StatsRail } from '../../components/StatsRail.jsx';
+import { Analytics, bookingActivity } from '../../components/shared/Analytics.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
-import { BarChart, Donut } from '../../components/shared/Charts.jsx';
+import { BarChart } from '../../components/shared/Charts.jsx';
 
 function initials(name = '') {
   const p = name.trim().split(/\s+/);
   return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'U';
 }
+
+const pad = (n) => String(n).padStart(2, '0');
+const dayKey = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+// Released earnings across the current week (Mon–Sun), one bar per day. Days
+// with no completed job stay empty, and upcoming days of the week show blank
+// bars — so the chart always reads as a full 7-day week, never one lonely bar.
+function weekEarnings(bookings) {
+  const amountOf = (b) => Number(b.agreedPrice) || 0;
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setHours(0, 0, 0, 0);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Monday = start of week
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    days.push({ key: dayKey(d), label: `${d.toLocaleDateString('en-US', { weekday: 'short' })} ${d.getDate()}`, value: 0 });
+  }
+  bookings
+    .filter((b) => b.status === 'completed' && amountOf(b) > 0 && b.endTs)
+    .forEach((b) => {
+      const slot = days.find((x) => x.key === dayKey(new Date(b.endTs)));
+      if (slot) slot.value += amountOf(b);
+    });
+  return days.map(({ label, value }) => ({ label, value }));
+}
+
+const earnFmt = (v) => (v >= 1000 ? Math.round(v / 1000) + 'k' : v);
 
 // Check-in is allowed once escrow is held. Old backend has no `escrow` field →
 // don't block (so behaviour is unchanged until escrow ships).
@@ -43,6 +72,7 @@ export default function WorkerDashboard() {
   const count = bookings.data?.length || 0;
 
   const items = [
+    { key: 'overview', label: 'Dashboard', icon: Icons.grid || Icons.spark },
     { key: 'bookings', label: 'My bookings', icon: Icons.calendar, count },
     { key: 'messages', label: 'Messages', icon: Icons.chat },
     { key: 'earnings', label: 'Earnings', icon: Icons.wallet },
@@ -50,17 +80,37 @@ export default function WorkerDashboard() {
   ];
 
   return (
-    <DashShell
-      items={items}
-      active={tab}
-      onSelect={setTab}
-      rightRail={<StatsRail user={user} bookings={bookings.data || []} role="worker" />}
-    >
+    <DashShell items={items} active={tab} onSelect={setTab}>
+      {tab === 'overview' && <OverviewView user={user} bookings={bookings.data || []} />}
       {tab === 'profile' && <Settings profileTab={<ProfileView user={user} embedded />} />}
       {tab === 'bookings' && <BookingsView state={bookings} />}
       {tab === 'messages' && <MessagesView bookings={bookings.data} loading={bookings.loading} />}
       {tab === 'earnings' && <EarningsView />}
     </DashShell>
+  );
+}
+
+function OverviewView({ user, bookings }) {
+  const amountOf = (b) => Number(b.agreedPrice) || 0;
+  const active = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status)).length;
+  const completed = bookings.filter((b) => b.status === 'completed').length;
+  const earned = bookings.filter((b) => b.status === 'completed').reduce((a, b) => a + amountOf(b), 0);
+  const pending = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status) && amountOf(b) > 0).length;
+  const first = (user?.name || '').split(/\s+/)[0] || 'there';
+
+  return (
+    <Analytics
+      title={`Good day, ${first}`}
+      subtitle="Your activity at a glance — keep jobs moving to build trust."
+      kpis={[
+        { icon: Icons.calendar, value: active, label: 'Active jobs' },
+        { icon: Icons.checkCircle, value: completed, label: 'Completed' },
+        { icon: Icons.wallet, value: rwf(earned), label: 'Total earned' },
+        { icon: Icons.clock, value: pending, label: 'Pending payouts' },
+      ]}
+      chart={{ title: 'Earnings this week', note: 'Mon–Sun', data: weekEarnings(bookings), format: earnFmt }}
+      activity={bookingActivity(bookings, 'worker')}
+    />
   );
 }
 
@@ -101,7 +151,7 @@ function VerificationCard({ status }) {
         <div className="card-title">Identity verification</div>
         <VerifyBadge status={status} />
       </div>
-      <p className="meta">Simulated verification — no real ID is checked or stored; an admin reviews and approves it.</p>
+      <p className="meta">An admin confirms your identity by comparing your uploaded ID with your selfie, and reviews your certificates. You appear in Browse only once approved.</p>
       {status === 'verified' && <p className="meta" style={{ marginTop: '0.5rem' }}>You&apos;re verified and visible in Browse. ✓</p>}
       {status === 'pending' && <p className="meta" style={{ marginTop: '0.5rem' }}>Your submission is pending admin review.</p>}
       {(status === 'unverified' || status === 'rejected') && (
@@ -381,10 +431,7 @@ function EarningsView() {
   const thisMonth = new Date().toISOString().slice(0, 7);
   const monthTotal = released.filter((e) => e.date.slice(0, 7) === thisMonth).reduce((a, e) => a + e.amount, 0);
 
-  const byMonth = {};
-  released.forEach((e) => { const m = e.date.slice(0, 7); byMonth[m] = (byMonth[m] || 0) + e.amount; });
-  const months = Object.keys(byMonth).sort().slice(-6);
-  const chartData = months.map((m) => ({ label: monthLabel(m + '-01'), value: byMonth[m] }));
+  const chartData = weekEarnings(bookings);
 
   return (
     <>
@@ -412,11 +459,10 @@ function EarningsView() {
 
       <div className="card">
         <div className="card-head" style={{ marginBottom: '0.75rem' }}>
-          <div className="card-title">Earnings</div>
-          <span className="meta">Last 6 months</span>
+          <div className="card-title">Earnings this week</div>
+          <span className="meta">Mon–Sun</span>
         </div>
-        {chartData.length ? <BarChart data={chartData} format={(v) => (v >= 1000 ? Math.round(v / 1000) + 'k' : v)} />
-          : <span className="meta">Complete a job to see your monthly earnings here.</span>}
+        <BarChart data={chartData} format={earnFmt} />
       </div>
 
       <div className="card">

@@ -10,9 +10,10 @@ function initials(name = '') {
   return ((p[0]?.[0] || '') + (p[1]?.[0] || '')).toUpperCase() || 'U';
 }
 
-// Unified modern shell: brand + grouped sidebar on the left, a top bar
-// (search + icons + user) over the content, and an optional right stats rail.
-export function DashShell({ items, active, onSelect, children, rightRail }) {
+// Unified modern shell: brand + grouped sidebar on the left, and a top bar
+// (search + icons + user) over the content. The content spans the full width —
+// per-role analytics live in a dedicated Dashboard menu, not a right rail.
+export function DashShell({ items, active, onSelect, children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   // Track which menus have been opened so their count badge clears after a view.
@@ -81,7 +82,6 @@ export function DashShell({ items, active, onSelect, children, rightRail }) {
 
         <div className="shell-content">
           <div className="shell-main">{children}</div>
-          {rightRail && <aside className="shell-rail">{rightRail}</aside>}
         </div>
       </div>
     </>
