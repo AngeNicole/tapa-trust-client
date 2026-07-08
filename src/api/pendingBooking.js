@@ -34,8 +34,14 @@ export async function resumeAfterAuth(user) {
     // so the dashboard reliably lands on Bookings and shows the continue prompt.
     try { sessionStorage.setItem('tapa_after_book', '1'); } catch { /* ignore */ }
     return '/requester?tab=bookings&booked=1';
-  } catch {
+  } catch (e) {
     clearPendingBooking();
+    // Already had an active booking with this worker (server 409) → their booking
+    // is already in the dashboard; send them there, not back to the public profile.
+    if (e?.status === 409) {
+      try { sessionStorage.setItem('tapa_after_book', '1'); } catch { /* ignore */ }
+      return '/requester?tab=bookings';
+    }
     return `/workers/${id}`;
   }
 }
