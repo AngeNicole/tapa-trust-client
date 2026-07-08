@@ -52,6 +52,8 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
   const [sig, setSig] = useState('');   // drawn signature (PNG data URL)
   const [sigPrice, setSigPrice] = useState('');
   const [reason, setReason] = useState('');
+  const [payOpen, setPayOpen] = useState(false);
+  const [payMethod, setPayMethod] = useState('MTN MoMo');
   const threadRef = useRef(null);
   const offerRef = useRef(null);
   const myId = me?.user_id;
@@ -79,10 +81,14 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
     try { refresh(await signAgreement(bk.booking_id, sig)); setSignModal(null); setSig(''); }
     catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
-  async function doDeposit() {
+  async function doPay() {
     setBusy(true); setErr('');
-    try { refresh(await depositEscrow(bk.booking_id)); }
-    catch (e) { setErr(e.message); } finally { setBusy(false); }
+    try {
+      const b = await depositEscrow(bk.booking_id);
+      // Record the (simulated) method in the thread so both parties see it.
+      await sendBookingMessage(bk.booking_id, { body: `Paid ${rwf(ag?.agreedPrice)} via ${payMethod} — held in escrow.` }).catch(() => {});
+      refresh(b); setPayOpen(false); await load();
+    } catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
   async function doDecline() {
     setBusy(true); setErr('');
@@ -184,38 +190,51 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
           </button>
         )}
 
-        {dealEnabled && !jobDone && (
-          <div className="chat-agreement">
-            {!ag && agreed != null && !iAmWorker && (
-              <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setSigPrice(String(agreed || '')); setSig(''); setErr(''); setSignModal('finalize'); }}>
-                {Icons.checkCircle} Finalize agreement
-              </button>
-            )}
-            {!ag && agreed != null && iAmWorker && <span className="meta">Waiting for the requester to finalize the agreement.</span>}
-            {!ag && agreed == null && <span className="meta">Agree a price, then finalize the agreement here.</span>}
-
-            {ag && (
-              <div className="chat-ag-card">
-                <div className="chat-ag-row"><span>Agreement</span><b>{rwf(ag.agreedPrice)}</b></div>
-                <div className="chat-ag-sigs">
-                  <Sig label="Requester" signed={ag.requesterSigned} value={ag.requesterSignature} />
-                  <Sig label="Worker" signed={ag.workerSigned} value={ag.workerSignature} />
-                </div>
-                {ag.status === 'proposed' && iAmWorker && !ag.workerSigned && (
-                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setSig(''); setErr(''); setSignModal('sign'); }}>Review &amp; sign</button>
-                )}
-                {ag.status === 'proposed' && !iAmWorker && <span className="meta">Waiting for the worker to sign.</span>}
-                {ag.status === 'signed' && escrow?.status === 'held' && <span className="chat-escrow is-held">✓ Deposit held in escrow · {rwf(escrow.amount)}</span>}
-                {ag.status === 'signed' && escrow?.status === 'released' && <span className="chat-escrow is-released">✓ Payment released · {rwf(escrow.amount)}</span>}
-                {ag.status === 'signed' && escrow?.status !== 'held' && escrow?.status !== 'released' && !iAmWorker && (
-                  <button className="btn-primary" style={{ width: '100%' }} onClick={doDeposit} disabled={busy}>{busy ? 'Depositing…' : `Deposit ${rwf(ag.agreedPrice)} to escrow`}</button>
-                )}
-                {ag.status === 'signed' && escrow?.status !== 'held' && escrow?.status !== 'released' && iAmWorker && <span className="meta">Signed ✓ — waiting for the requester&apos;s escrow deposit.</span>}
+        {dealEnabled && !jobDone && (() => {
+          const paid = escrow?.status === 'held' || escrow?.status === 'released';
+          const stages = [
+            { label: 'Agree', done: !!ag, active: !ag },
+            { label: 'Sign', done: ag?.status === 'signed', active: ag && ag.status !== 'signed' },
+            { label: 'Pay', done: paid, active: ag?.status === 'signed' && !paid },
+          ];
+          return (
+            <div className="chat-agreement">
+              <div className="chat-steps">
+                {stages.map((s) => (
+                  <span key={s.label} className={`chat-step ${s.done ? 'is-done' : s.active ? 'is-active' : ''}`}>
+                    <i>{s.done ? '✓' : ''}</i>{s.label}
+                  </span>
+                ))}
               </div>
-            )}
-            <button type="button" className="chat-quit" onClick={() => { setReason(''); setErr(''); setDeclineOpen(true); }}>Quit booking</button>
-          </div>
-        )}
+
+              {/* Single current action for this step */}
+              {!ag && agreed == null && <p className="chat-step-hint">Agree a price below, then finalize the agreement.</p>}
+              {!ag && agreed != null && !iAmWorker && (
+                <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setSigPrice(String(agreed || '')); setSig(''); setErr(''); setSignModal('finalize'); }}>
+                  {Icons.checkCircle} Finalize agreement · {rwf(agreed)}
+                </button>
+              )}
+              {!ag && agreed != null && iAmWorker && <p className="chat-step-hint">Price agreed — waiting for the requester to finalize.</p>}
+
+              {ag && (
+                <div className="chat-ag-card">
+                  <div className="chat-ag-row"><span>Agreed price</span><b>{rwf(ag.agreedPrice)}</b></div>
+                  <div className="chat-ag-sigs">
+                    <Sig label="Requester" signed={ag.requesterSigned} value={ag.requesterSignature} />
+                    <Sig label="Worker" signed={ag.workerSigned} value={ag.workerSignature} />
+                  </div>
+                  {ag.status === 'proposed' && iAmWorker && <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setSig(''); setErr(''); setSignModal('sign'); }}>Review &amp; sign</button>}
+                  {ag.status === 'proposed' && !iAmWorker && <p className="chat-step-hint">Signed — waiting for the worker to sign.</p>}
+                  {ag.status === 'signed' && !paid && !iAmWorker && <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setErr(''); setPayOpen(true); }}>Pay {rwf(ag.agreedPrice)}</button>}
+                  {ag.status === 'signed' && !paid && iAmWorker && <p className="chat-step-hint">Both signed — waiting for the requester to pay.</p>}
+                  {escrow?.status === 'held' && <div className="chat-escrow is-held">✓ Paid · held in escrow. Work can begin — track it in Bookings.</div>}
+                  {escrow?.status === 'released' && <div className="chat-escrow is-released">✓ Payment released to the worker.</div>}
+                </div>
+              )}
+              <button type="button" className="chat-quit" onClick={() => { setReason(''); setErr(''); setDeclineOpen(true); }}>Quit booking</button>
+            </div>
+          );
+        })()}
 
         <div className="chat-thread" ref={threadRef}>
           {messages.length === 0 ? (
@@ -317,6 +336,32 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
               <div className="row" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
                 <button className="btn-secondary" onClick={() => setDeclineOpen(false)}>Keep booking</button>
                 <button className="btn-danger" disabled={busy} onClick={doDecline}>{busy ? 'Quitting…' : 'Quit booking'}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {payOpen && (
+          <div className="modal-overlay" onClick={() => setPayOpen(false)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-title">Pay {rwf(ag?.agreedPrice)}</div>
+              <p className="meta" style={{ margin: '0.25rem 0 0.75rem' }}>Choose how to pay. Funds are held in escrow and released to the worker only when you both confirm the job is done. (Simulated — no real charge.)</p>
+              <div className="pay-methods">
+                {[
+                  { id: 'MTN MoMo', label: 'MTN Mobile Money', sub: 'Pay with your MoMo number' },
+                  { id: 'Airtel Money', label: 'Airtel Money', sub: 'Pay with Airtel Money' },
+                  { id: 'Card', label: 'Card', sub: 'Visa / Mastercard' },
+                ].map((m) => (
+                  <button key={m.id} type="button" className={`pay-method ${payMethod === m.id ? 'is-sel' : ''}`} onClick={() => setPayMethod(m.id)}>
+                    <span className="pay-radio" />
+                    <span><span className="pay-method-t">{m.label}</span><span className="pay-method-s">{m.sub}</span></span>
+                  </button>
+                ))}
+              </div>
+              {err && <div className="form-error" style={{ marginTop: '0.5rem' }}>{err}</div>}
+              <div className="row" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
+                <button className="btn-secondary" onClick={() => setPayOpen(false)}>Cancel</button>
+                <button className="btn-primary" disabled={busy} onClick={doPay}>{busy ? 'Paying…' : `Pay ${rwf(ag?.agreedPrice)}`}</button>
               </div>
             </div>
           </div>

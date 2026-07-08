@@ -15,7 +15,7 @@ import {
   rebookWorker,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, duration, rwf } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, WorkTracker, duration, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Hero } from '../../components/Hero.jsx';
@@ -356,10 +356,6 @@ function BookingCard({ b, reload, onReview, savedIds, bookedIds = [], onSavedCha
       <div className="actions">
         {b.status === 'pending' && <span className="meta">Waiting for {b.workerName} to accept.</span>}
         {canChat && <button className="btn-secondary btn-icon" onClick={() => openChat(b)}>{Icons.chat} {b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>}
-        {b.status === 'accepted' && !b.checkedIn && <span className="meta">Accepted — waiting for {b.workerName} to check in.</span>}
-        {b.status === 'accepted' && b.checkedIn && !b.startConfirmed && <button className="btn-primary" onClick={() => act(confirmStart(b.booking_id))}>Confirm start</button>}
-        {b.status === 'in_progress' && !b.checkedOut && <span className="meta">Worker on the job — waiting for check out.</span>}
-        {b.status === 'in_progress' && b.checkedOut && !b.endConfirmed && <button className="btn-primary" onClick={complete}>Confirm completion</button>}
         {b.status === 'completed' && !b.review && <button className="btn-secondary" onClick={() => onReview?.(b)}>Leave a review</button>}
         {b.review && (
           <div className="row">
@@ -376,6 +372,15 @@ function BookingCard({ b, reload, onReview, savedIds, bookedIds = [], onSavedCha
           </button>
         )}
       </div>
+      {['accepted', 'in_progress', 'completed'].includes(b.status) && (
+        <WorkTracker b={b}>
+          {b.status === 'accepted' && !b.checkedIn && <span className="meta">Waiting for {b.workerName} to check in.</span>}
+          {b.status === 'accepted' && b.checkedIn && !b.startConfirmed && <button className="btn-primary" onClick={() => act(confirmStart(b.booking_id))}>Confirm start</button>}
+          {b.status === 'in_progress' && !b.checkedOut && <span className="meta">Worker on the job — waiting for check out.</span>}
+          {b.status === 'in_progress' && b.checkedOut && !b.endConfirmed && <button className="btn-primary" onClick={complete}>Confirm completion</button>}
+          {b.status === 'completed' && <span className="meta">Job complete. Payment released.</span>}
+        </WorkTracker>
+      )}
     </div>
   );
 }

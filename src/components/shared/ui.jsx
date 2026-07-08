@@ -101,6 +101,31 @@ export function Loading({ label = 'Loading…' }) {
   return <div className="empty" style={{ marginTop: '0.75rem' }}>{label}</div>;
 }
 
+// "Track work" — the post-payment work phase (check-in → completion), shown as a
+// labelled block with a compact stepper, separate from booking + payment (which
+// live in the chat). `children` are the role-specific action buttons.
+export function WorkTracker({ b, children }) {
+  const steps = [
+    { label: 'Checked in', done: b.checkedIn },
+    { label: 'Start confirmed', done: b.startConfirmed },
+    { label: 'Checked out', done: b.checkedOut },
+    { label: 'Completed', done: b.status === 'completed' },
+  ];
+  return (
+    <div className="track-work">
+      <div className="track-work-head">Track work</div>
+      <div className="track-steps">
+        {steps.map((s) => (
+          <span key={s.label} className={`track-step ${s.done ? 'is-done' : ''}`}>
+            <i className="track-dot" />{s.label}
+          </span>
+        ))}
+      </div>
+      {children && <div className="track-actions">{children}</div>}
+    </div>
+  );
+}
+
 // Modern empty state: icon tile + title + hint + optional action, on a dashed card.
 export function EmptyState({ icon, title, hint, action }) {
   return (
