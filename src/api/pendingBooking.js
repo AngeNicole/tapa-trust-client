@@ -30,6 +30,9 @@ export async function resumeAfterAuth(user) {
   try {
     await bookWorker(id);
     clearPendingBooking();
+    // Flag survives the PublicOnly → homePath redirect (which strips query params),
+    // so the dashboard reliably lands on Bookings and shows the continue prompt.
+    try { sessionStorage.setItem('tapa_after_book', '1'); } catch { /* ignore */ }
     return '/requester?tab=bookings&booked=1';
   } catch {
     clearPendingBooking();

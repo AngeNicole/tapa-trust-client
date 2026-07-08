@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  getBookingMessages, sendBookingMessage, agreeBookingPrice,
+  getBooking, getBookingMessages, sendBookingMessage, agreeBookingPrice,
   finalizeAgreement, signAgreement, depositEscrow, declineBooking,
 } from '../api/client.js';
 import { rwf, Avatar } from './shared/ui.jsx';
 import { Icons } from './shared/icons.jsx';
+import { SignaturePad } from './SignaturePad.jsx';
 
 // Right-side chat drawer (Instagram-style) for a booking: back-and-forth
 // messages, price offers either party can Accept / Counter / Decline, a Call
@@ -22,6 +23,20 @@ function timeLabel(iso) {
   catch { return ''; }
 }
 
+// One party's signature line — shows the drawn signature image (data URL) or a
+// typed name, or a pending state.
+function Sig({ label, signed, value }) {
+  const isImg = typeof value === 'string' && value.startsWith('data:image');
+  return (
+    <span className={`chat-sig ${signed ? 'is-signed' : ''}`}>
+      <span>{signed ? '✓' : '○'} {label}</span>
+      {signed && (isImg
+        ? <img className="chat-sig-img" src={value} alt={`${label} signature`} />
+        : value ? <em className="chat-sig-name">{value}</em> : null)}
+    </span>
+  );
+}
+
 export default function BookingChat({ booking, me, onClose, onAgreed }) {
   const [messages, setMessages] = useState([]);
   const [agreed, setAgreed] = useState(booking.agreedPrice ?? null);
@@ -34,7 +49,7 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
   useEffect(() => setBk(booking), [booking]);
   const [signModal, setSignModal] = useState(null); // 'finalize' | 'sign' | null
   const [declineOpen, setDeclineOpen] = useState(false);
-  const [sigName, setSigName] = useState(me?.name || '');
+  const [sig, setSig] = useState('');   // drawn signature (PNG data URL)
   const [sigPrice, setSigPrice] = useState('');
   const [reason, setReason] = useState('');
   const threadRef = useRef(null);
@@ -53,15 +68,15 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
   async function doFinalize() {
     const n = Number(sigPrice);
     if (!Number.isFinite(n) || n <= 0) { setErr('Enter the agreed price.'); return; }
-    if (!sigName.trim()) { setErr('Type your full name to sign.'); return; }
+    if (!sig) { setErr('Draw your signature to sign.'); return; }
     setBusy(true); setErr('');
-    try { refresh(await finalizeAgreement(bk.booking_id, { amount: n, signature: sigName.trim() })); setSignModal(null); }
+    try { refresh(await finalizeAgreement(bk.booking_id, { amount: n, signature: sig })); setSignModal(null); setSig(''); }
     catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
   async function doSign() {
-    if (!sigName.trim()) { setErr('Type your full name to sign.'); return; }
+    if (!sig) { setErr('Draw your signature to sign.'); return; }
     setBusy(true); setErr('');
-    try { refresh(await signAgreement(bk.booking_id, sigName.trim())); setSignModal(null); }
+    try { refresh(await signAgreement(bk.booking_id, sig)); setSignModal(null); setSig(''); }
     catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
   async function doDeposit() {
@@ -76,12 +91,17 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
   }
 
   const load = useCallback(async () => {
-    // Background poll — stay silent on transient failures (don't flash an error
-    // on the other party's screen while they're just reading the thread).
+    // Background poll — messages AND the booking, so agreement/escrow/status
+    // changes (sign, deposit, etc.) appear live without a refresh. Silent on
+    // transient failures.
     try {
-      const data = await getBookingMessages(booking.booking_id);
+      const [data, fresh] = await Promise.all([
+        getBookingMessages(booking.booking_id),
+        getBooking(booking.booking_id).catch(() => null),
+      ]);
       setMessages(data.messages || []);
       setAgreed(data.agreedPrice ?? null);
+      if (fresh) setBk(fresh);
     } catch { /* ignore transient poll errors */ }
   }, [booking.booking_id]);
 
@@ -167,7 +187,7 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
         {dealEnabled && !jobDone && (
           <div className="chat-agreement">
             {!ag && agreed != null && !iAmWorker && (
-              <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setSigPrice(String(agreed || '')); setSigName(me?.name || ''); setErr(''); setSignModal('finalize'); }}>
+              <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setSigPrice(String(agreed || '')); setSig(''); setErr(''); setSignModal('finalize'); }}>
                 {Icons.checkCircle} Finalize agreement
               </button>
             )}
@@ -178,11 +198,11 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
               <div className="chat-ag-card">
                 <div className="chat-ag-row"><span>Agreement</span><b>{rwf(ag.agreedPrice)}</b></div>
                 <div className="chat-ag-sigs">
-                  <span className={ag.requesterSigned ? 'is-signed' : ''}>{ag.requesterSigned ? '✓' : '○'} Requester{ag.requesterSignature ? ` · ${ag.requesterSignature}` : ''}</span>
-                  <span className={ag.workerSigned ? 'is-signed' : ''}>{ag.workerSigned ? '✓' : '○'} Worker{ag.workerSignature ? ` · ${ag.workerSignature}` : ''}</span>
+                  <Sig label="Requester" signed={ag.requesterSigned} value={ag.requesterSignature} />
+                  <Sig label="Worker" signed={ag.workerSigned} value={ag.workerSignature} />
                 </div>
                 {ag.status === 'proposed' && iAmWorker && !ag.workerSigned && (
-                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setSigName(me?.name || ''); setErr(''); setSignModal('sign'); }}>Review &amp; sign</button>
+                  <button className="btn-primary" style={{ width: '100%' }} onClick={() => { setSig(''); setErr(''); setSignModal('sign'); }}>Review &amp; sign</button>
                 )}
                 {ag.status === 'proposed' && !iAmWorker && <span className="meta">Waiting for the worker to sign.</span>}
                 {ag.status === 'signed' && escrow?.status === 'held' && <span className="chat-escrow is-held">✓ Deposit held in escrow · {rwf(escrow.amount)}</span>}
@@ -274,9 +294,8 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
                   <input className="input" type="number" min="1" value={sigPrice} onChange={(e) => setSigPrice(e.target.value)} style={{ width: '100%' }} />
                 </label>
               )}
-              <label className="field-label" style={{ marginTop: '0.6rem' }}>Type your full name to sign
-                <input className="input" value={sigName} onChange={(e) => setSigName(e.target.value)} placeholder="Full name" style={{ width: '100%' }} autoFocus />
-              </label>
+              <div className="field-label" style={{ marginTop: '0.6rem' }}>Sign below</div>
+              <SignaturePad onChange={setSig} />
               {err && <div className="form-error" style={{ marginTop: '0.5rem' }}>{err}</div>}
               <div className="row" style={{ marginTop: '1rem', justifyContent: 'flex-end' }}>
                 <button className="btn-secondary" onClick={() => setSignModal(null)}>Cancel</button>

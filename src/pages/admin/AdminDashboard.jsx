@@ -274,13 +274,15 @@ function CategoriesView({ state }) {
     <>
       <h1>Skill categories</h1>
       <p className="subtitle">The service categories workers list skills under.</p>
-      <div className="subtabs">
-        {tabs.map((t) => (
-          <button key={t.key} type="button" className={`subtab ${view === t.key ? 'subtab--active' : ''}`} onClick={() => setView(t.key)}>
-            {t.label} ({counts[t.key]})
-          </button>
-        ))}
-        <button type="button" className="btn-primary" style={{ marginLeft: 'auto' }} onClick={() => { setErr(''); setModal({ mode: 'create' }); }}>+ New category</button>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
+        <div className="subtabs" style={{ margin: 0 }}>
+          {tabs.map((t) => (
+            <button key={t.key} type="button" className={`subtab ${view === t.key ? 'subtab--active' : ''}`} onClick={() => setView(t.key)}>
+              {t.label} ({counts[t.key]})
+            </button>
+          ))}
+        </div>
+        <button type="button" className="btn-primary" onClick={() => { setErr(''); setModal({ mode: 'create' }); }}>+ New category</button>
       </div>
       <ErrorNote message={state.error || err} />
       {state.loading ? <Loading /> : shown.length === 0 ? (
