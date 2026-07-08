@@ -339,6 +339,7 @@ function BookingsView({ state }) {
 }
 
 function EarningsView() {
+  const notify = useToast();
   const { data, loading, error } = useAsync(async () => ({ bookings: await getBookings() }), []);
 
   if (loading) return <><h1>Earnings</h1><Loading /></>;
@@ -385,54 +386,56 @@ function EarningsView() {
   return (
     <>
       <h1>Earnings</h1>
-      <p className="subtitle">Your wallet, payout history and invoices — from prices agreed in chat (payouts simulated).</p>
+      <p className="subtitle">From prices agreed in chat and released on completion (payouts simulated).</p>
 
-      <div className="wallet" style={{ marginTop: '0.75rem' }}>
-        <div className="wallet-label">Available balance</div>
-        <div className="wallet-amount">{rwf(relTotal)}</div>
-        <div className="wallet-sub">
-          <span>Pending&nbsp;·&nbsp;{rwf(penTotal)}</span>
-          <span>Total earned&nbsp;·&nbsp;{rwf(total)}</span>
+      <div className="earn-hero">
+        <div className="earn-hero-glow" />
+        <div className="earn-hero-label">Available balance</div>
+        <div className="earn-hero-amt">{rwf(relTotal)}</div>
+        <div className="earn-hero-foot">
+          <button className="earn-withdraw" onClick={() => notify('Withdrawal requested — funds arrive shortly (simulated).')}>{Icons.wallet} Withdraw</button>
+          <div className="earn-hero-pills">
+            <span>Pending · {rwf(penTotal)}</span>
+            <span>Total earned · {rwf(total)}</span>
+          </div>
         </div>
       </div>
 
-      <div className="grid2" style={{ marginTop: '0.75rem' }}>
-        <div className="card"><div className="stat-num">{rwf(monthTotal)}</div><div className="meta">This month</div></div>
-        <div className="card"><div className="stat-num">{released.length}</div><div className="meta">Invoices paid</div></div>
+      <div className="earn-tiles">
+        <div className="earn-tile"><span className="earn-tile-n">{rwf(monthTotal)}</span><span className="earn-tile-l">This month</span></div>
+        <div className="earn-tile"><span className="earn-tile-n">{released.length}</span><span className="earn-tile-l">Jobs paid</span></div>
+        <div className="earn-tile"><span className="earn-tile-n">{pending.length}</span><span className="earn-tile-l">Pending payouts</span></div>
       </div>
 
-      <div className="grid2">
-        <div className="card">
-          <div className="card-title" style={{ marginBottom: '0.5rem' }}>Earnings — last 6 months</div>
-          {chartData.length ? <BarChart data={chartData} format={(v) => (v >= 1000 ? Math.round(v / 1000) + 'k' : v)} />
-            : <span className="meta">No paid jobs yet.</span>}
+      <div className="card">
+        <div className="card-head" style={{ marginBottom: '0.75rem' }}>
+          <div className="card-title">Earnings</div>
+          <span className="meta">Last 6 months</span>
         </div>
-        <div className="card">
-          <div className="card-title" style={{ marginBottom: '0.5rem' }}>Released vs pending</div>
-          <div className="row" style={{ justifyContent: 'center' }}><Donut released={relTotal} pending={penTotal} /></div>
-        </div>
+        {chartData.length ? <BarChart data={chartData} format={(v) => (v >= 1000 ? Math.round(v / 1000) + 'k' : v)} />
+          : <span className="meta">Complete a job to see your monthly earnings here.</span>}
       </div>
 
       <div className="card">
         <div className="card-head" style={{ marginBottom: '0.5rem' }}>
-          <div className="card-title">Invoices</div>
+          <div className="card-title">Payouts</div>
           <button className="btn-secondary" onClick={() => window.print()}>Export</button>
         </div>
-        {invoices.length === 0 ? <span className="meta">No invoices yet.</span> : (
-          <div style={{ overflowX: 'auto' }}>
-            <table className="tbl">
-              <thead><tr><th>Invoice</th><th>Date</th><th>Task</th><th>Amount</th><th>Status</th></tr></thead>
-              <tbody>
-                {invoices.map((e) => (
-                  <tr key={e.id}>
-                    <td>{e.id}</td><td>{e.date}</td><td>{e.task}</td><td>{rwf(e.amount)}</td>
-                    <td><span className={`badge ${e.status === 'released' ? 'badge--done' : 'badge--neutral'}`}>{e.status === 'released' ? 'Paid' : 'Pending'}</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <div className="payouts">
+          {invoices.map((e) => (
+            <div className="payout-row" key={e.id}>
+              <span className={`payout-ic ${e.status === 'released' ? 'is-paid' : 'is-pending'}`}>{e.status === 'released' ? Icons.checkCircle : Icons.clock}</span>
+              <div className="payout-info">
+                <span className="payout-task">{e.task}</span>
+                <span className="meta">{e.id}{e.date !== '—' ? ` · ${e.date}` : ''}</span>
+              </div>
+              <div className="payout-right">
+                <span className="payout-amt">{rwf(e.amount)}</span>
+                <span className={`badge ${e.status === 'released' ? 'badge--done' : 'badge--neutral'}`}>{e.status === 'released' ? 'Paid' : 'Pending'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </>
   );

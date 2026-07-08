@@ -1196,6 +1196,32 @@ body {
   .track-step.is-done .track-dot { background: var(--color-green-500); }
   .track-actions { @apply mt-3 flex flex-wrap items-center gap-2; }
 
+  /* earnings — Mobbin-style finance view */
+  .earn-hero { @apply relative mt-3 overflow-hidden rounded-3xl p-6 text-static-white; background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark)); }
+  .earn-hero-glow { @apply pointer-events-none absolute; top: -40%; right: -10%; width: 60%; height: 160%; background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%); }
+  .earn-hero-label { @apply relative text-label-sm; color: rgba(255,255,255,0.8); }
+  .earn-hero-amt { @apply relative mt-1 font-semibold; font-size: clamp(2rem, 5vw, 2.75rem); letter-spacing: -0.02em; line-height: 1.1; }
+  .earn-hero-foot { @apply relative mt-5 flex flex-wrap items-center justify-between gap-3; }
+  .earn-withdraw { @apply inline-flex cursor-pointer items-center gap-2 rounded-full bg-bg-white-0 px-5 py-2.5 text-label-sm font-semibold text-primary-dark transition-transform hover:scale-[1.03]; }
+  .earn-withdraw svg { @apply h-4 w-4; }
+  .earn-hero-pills { @apply flex flex-wrap gap-2; }
+  .earn-hero-pills span { @apply rounded-full px-3 py-1.5 text-label-xs font-medium; background: rgba(255, 255, 255, 0.16); }
+  .earn-tiles { @apply my-3 grid grid-cols-2 gap-3 sm:grid-cols-3; }
+  .earn-tile { @apply rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-4; }
+  .earn-tile-n { @apply block text-title-h5 font-semibold text-text-strong-950; letter-spacing: -0.02em; }
+  .earn-tile-l { @apply mt-0.5 block text-label-sm text-text-sub-600; }
+  .payouts { @apply flex flex-col; }
+  .payout-row { @apply flex items-center gap-3 border-t border-stroke-soft-200 py-3; }
+  .payout-row:first-child { @apply border-t-0; }
+  .payout-ic { @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-full; }
+  .payout-ic svg { @apply h-5 w-5; }
+  .payout-ic.is-paid { @apply bg-green-50 text-green-700; }
+  .payout-ic.is-pending { @apply bg-bg-weak-50 text-text-soft-400; }
+  .payout-info { @apply min-w-0 flex-1; }
+  .payout-task { @apply block truncate text-label-md font-medium text-text-strong-950; }
+  .payout-right { @apply flex shrink-0 flex-col items-end gap-1; }
+  .payout-amt { @apply text-label-md font-semibold text-text-strong-950; }
+
   /* settings rows + toggle switch */
   .set-row { @apply flex items-center justify-between gap-4 border-t border-stroke-soft-200 py-3; }
   .set-row:first-of-type { @apply border-t-0; }
