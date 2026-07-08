@@ -36,6 +36,8 @@ import {
   Moon,
   Gear,
   ShieldCheck,
+  ThumbsUp,
+  ThumbsDown,
 } from '@phosphor-icons/react';
 
 const w = 'regular';
@@ -76,4 +78,6 @@ export const Icons = {
   moon: <Moon weight="fill" />,
   settings: <Gear weight={w} />,
   shield: <ShieldCheck weight={w} />,
+  thumbsUp: <ThumbsUp weight={w} />,
+  thumbsDown: <ThumbsDown weight={w} />,
 };
