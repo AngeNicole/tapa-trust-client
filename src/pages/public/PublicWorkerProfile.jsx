@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext.jsx';
 import { setPendingBooking } from '../../api/pendingBooking.js';
 import { Loading, ErrorNote } from '../../components/shared/ui.jsx';
 import { PublicShell } from '../../components/PublicShell.jsx';
+import { ReviewsModal } from '../../components/ReviewsModal.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 
 function initials(name = '') {
@@ -28,6 +29,7 @@ export default function PublicWorkerProfile() {
   const history = useAsync(() => getPublicWorkerHistory(id), [id]);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [showReviews, setShowReviews] = useState(false);
 
   async function book() {
     setErr('');
@@ -45,6 +47,7 @@ export default function PublicWorkerProfile() {
   }
 
   const jobs = history.data || [];
+  const reviews = jobs.filter((h) => h.rating != null).map((h, i) => ({ id: h.booking_id ?? `${id}-${i}`, taskTitle: h.taskTitle, date: String(h.date).slice(0, 10), rating: h.rating, comment: h.comment }));
   const certs = w ? splitList(w.certifications) : [];
 
   return (
@@ -63,7 +66,9 @@ export default function PublicWorkerProfile() {
                 <div className="pp-name">{w.name}</div>
                 <div className="pp-rating">
                   <span className="pp-stars">{stars(w.rating)}</span>
-                  <span className="pp-mono">{(Number(w.rating) || 0).toFixed(1)} · {w.completedJobs || 0} reviews</span>
+                  {reviews.length > 0
+                    ? <button type="button" className="pp-reviews-link" onClick={() => setShowReviews(true)}>{(Number(w.rating) || 0).toFixed(1)} · {reviews.length} review{reviews.length === 1 ? '' : 's'}</button>
+                    : <span className="pp-mono">{(Number(w.rating) || 0).toFixed(1)} · no reviews yet</span>}
                 </div>
                 <div className="pp-badges">
                   {w.verification === 'verified'
@@ -136,6 +141,7 @@ export default function PublicWorkerProfile() {
         </div>
       )}
       </div>
+      {showReviews && <ReviewsModal reviews={reviews} workerName={w?.name} avg={w?.rating} count={reviews.length} onClose={() => setShowReviews(false)} />}
     </PublicShell>
   );
 }

@@ -1196,6 +1196,23 @@ body {
   .track-step.is-done .track-dot { background: var(--color-green-500); }
   .track-actions { @apply mt-3 flex flex-wrap items-center gap-2; }
 
+  /* reviews popup + like/dislike */
+  .pp-reviews-link { @apply cursor-pointer bg-transparent p-0 text-paragraph-sm text-primary-base underline decoration-dotted underline-offset-2; }
+  .reviews-modal { @apply max-w-lg; max-height: 85vh; display: flex; flex-direction: column; }
+  .rv-head { @apply flex items-start justify-between gap-3 border-b border-stroke-soft-200 pb-3; }
+  .rv-sub { @apply mt-1 text-label-sm text-text-sub-600; }
+  .rv-stars { color: var(--color-yellow-500); letter-spacing: 1px; }
+  .rv-list { @apply mt-3 flex flex-col gap-3 overflow-y-auto py-1; }
+  .rv-item { @apply rounded-2xl border border-stroke-soft-200 p-3; }
+  .rv-item-top { @apply flex items-center gap-2; }
+  .rv-comment { @apply mt-1.5 text-paragraph-sm text-text-strong-950; }
+  .rv-comment.rv-empty { @apply italic text-text-soft-400; }
+  .rv-react { @apply mt-2 flex gap-2; }
+  .rv-btn { @apply inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-stroke-soft-200 bg-bg-white-0 px-3 py-1 text-label-xs font-medium text-text-sub-600 transition-colors hover:border-primary-base; }
+  .rv-btn svg { @apply h-4 w-4; }
+  .rv-btn.is-on { @apply border-green-500 bg-green-50 text-green-700; }
+  .rv-btn.is-off { @apply border-red-300 bg-red-50 text-red-700; }
+
   /* earnings — Mobbin-style finance view */
   .earn-hero { @apply relative mt-3 overflow-hidden rounded-3xl p-6 text-static-white; background: linear-gradient(135deg, var(--color-primary-base), var(--color-primary-dark)); }
   .earn-hero-glow { @apply pointer-events-none absolute; top: -40%; right: -10%; width: 60%; height: 160%; background: radial-gradient(circle, rgba(255,255,255,0.18), transparent 70%); }
