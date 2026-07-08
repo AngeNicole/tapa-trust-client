@@ -15,7 +15,7 @@ import {
   checkoutBooking,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, EmptyState, rwf, monthLabel, duration } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, EmptyState, WorkTracker, rwf, monthLabel, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Hero } from '../../components/Hero.jsx';
@@ -334,14 +334,17 @@ function BookingsView({ state }) {
           <div className="actions">
             {b.status !== 'completed' && b.status !== 'cancelled' && <button className="btn-secondary btn-icon" onClick={() => openChat(b)}>{Icons.chat} {b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>}
             {b.status === 'pending' && <button className="btn-primary" onClick={() => act(acceptBooking(b.booking_id))}>Accept job</button>}
-            {/* Once escrow is required, check-in only unlocks after the requester deposits. */}
-            {b.status === 'accepted' && !b.checkedIn && escrowReady(b) && <button className="btn-primary" onClick={() => act(checkinBooking(b.booking_id))}>Check in</button>}
-            {b.status === 'accepted' && !b.checkedIn && !escrowReady(b) && <span className="meta">Sign the agreement in chat — you can check in once the requester deposits to escrow.</span>}
-            {b.status === 'accepted' && b.checkedIn && <span className="meta">Checked in — waiting for requester to confirm start.</span>}
-            {b.status === 'in_progress' && !b.checkedOut && <button className="btn-primary" onClick={() => act(checkoutBooking(b.booking_id))}>Check out</button>}
-            {b.status === 'in_progress' && b.checkedOut && <span className="meta">Checked out — waiting for requester to confirm completion.</span>}
-            {b.status === 'completed' && <span className="meta">Job complete. {b.review ? `Reviewed ${b.review.rating}★.` : 'Awaiting review.'}</span>}
+            {b.status === 'accepted' && !b.checkedIn && !escrowReady(b) && <span className="meta">Agree &amp; sign in chat — you can check in once the requester pays.</span>}
           </div>
+          {['accepted', 'in_progress', 'completed'].includes(b.status) && escrowReady(b) && (
+            <WorkTracker b={b}>
+              {b.status === 'accepted' && !b.checkedIn && <button className="btn-primary" onClick={() => act(checkinBooking(b.booking_id))}>Check in</button>}
+              {b.status === 'accepted' && b.checkedIn && <span className="meta">Checked in — waiting for requester to confirm start.</span>}
+              {b.status === 'in_progress' && !b.checkedOut && <button className="btn-primary" onClick={() => act(checkoutBooking(b.booking_id))}>Check out</button>}
+              {b.status === 'in_progress' && b.checkedOut && <span className="meta">Checked out — waiting for requester to confirm completion.</span>}
+              {b.status === 'completed' && <span className="meta">Job complete. {b.review ? `Reviewed ${b.review.rating}★.` : 'Awaiting review.'}</span>}
+            </WorkTracker>
+          )}
         </div>
       ))}
     </>
