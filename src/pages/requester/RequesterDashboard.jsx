@@ -19,6 +19,7 @@ import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, WorkTracker, duration, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { Settings } from '../../components/Settings.jsx';
+import { MessagesView } from '../../components/MessagesView.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
 import { useToast } from '../../components/Toast.jsx';
@@ -32,7 +33,7 @@ function initials(name = '') {
 export default function RequesterDashboard() {
   const { user } = useAuth();
   const [params] = useSearchParams();
-  const TABS = ['hire', 'bookings', 'history', 'saved', 'profile'];
+  const TABS = ['hire', 'bookings', 'messages', 'history', 'saved', 'profile'];
   // Land on Bookings if arriving from a resumed booking — via ?tab=bookings OR
   // the sessionStorage flag (which survives the PublicOnly redirect that strips
   // the query after signup).
@@ -65,6 +66,7 @@ export default function RequesterDashboard() {
     { key: 'hire', label: 'Find workers', icon: Icons.briefcase },
     { key: 'bookings', label: 'Bookings', icon: Icons.calendar, count: active.length },
     { key: 'history', label: 'History', icon: Icons.clock, count: history.length },
+    { key: 'messages', label: 'Messages', icon: Icons.chat },
     { key: 'saved', label: 'Saved workers', icon: Icons.bookmark, count: (saved.data || []).length },
     { key: 'profile', label: 'Settings', icon: Icons.settings },
   ];
@@ -88,6 +90,7 @@ export default function RequesterDashboard() {
         />
       )}
       {tab === 'bookings' && <BookingsView state={bookings} bookings={active} onReview={setReviewBooking} />}
+      {tab === 'messages' && <MessagesView bookings={all} loading={bookings.loading} />}
       {tab === 'history' && <HistoryView state={bookings} bookings={history} onReview={setReviewBooking} savedIds={(saved.data || []).map((w) => w.worker_id)} bookedIds={bookedIds} onSavedChange={() => saved.reload()} />}
       {tab === 'saved' && <SavedView state={saved} bookedIds={bookedIds} onRebook={afterBook} />}
       {tab === 'profile' && <Settings profileTab={<ProfileView user={user} bookings={all} saved={saved.data || []} />} />}

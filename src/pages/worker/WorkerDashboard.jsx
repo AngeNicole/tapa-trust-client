@@ -19,6 +19,7 @@ import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, Emp
 import { DashShell } from '../../components/DashShell.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Settings } from '../../components/Settings.jsx';
+import { MessagesView } from '../../components/MessagesView.jsx';
 import { StatsRail } from '../../components/StatsRail.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
@@ -43,6 +44,7 @@ export default function WorkerDashboard() {
 
   const items = [
     { key: 'bookings', label: 'My bookings', icon: Icons.calendar, count },
+    { key: 'messages', label: 'Messages', icon: Icons.chat },
     { key: 'earnings', label: 'Earnings', icon: Icons.wallet },
     { key: 'profile', label: 'Settings', icon: Icons.settings },
   ];
@@ -56,6 +58,7 @@ export default function WorkerDashboard() {
     >
       {tab === 'profile' && <Settings profileTab={<ProfileView user={user} embedded />} />}
       {tab === 'bookings' && <BookingsView state={bookings} />}
+      {tab === 'messages' && <MessagesView bookings={bookings.data} loading={bookings.loading} />}
       {tab === 'earnings' && <EarningsView />}
     </DashShell>
   );
