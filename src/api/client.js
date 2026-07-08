@@ -59,6 +59,9 @@ export function fetchMe() {
 export function updateMe(payload) {
   return apiFetch('/auth/me', { method: 'PUT', body: JSON.stringify(payload) });
 }
+export function changePassword(currentPassword, newPassword) {
+  return apiFetch('/auth/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) });
+}
 
 // --- categories ---
 export function getCategories() {

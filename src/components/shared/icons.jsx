@@ -34,6 +34,8 @@ import {
   PaperPlaneTilt,
   Sun,
   Moon,
+  Gear,
+  ShieldCheck,
 } from '@phosphor-icons/react';
 
 const w = 'regular';
@@ -72,4 +74,6 @@ export const Icons = {
   send: <PaperPlaneTilt weight="fill" />,
   sun: <Sun weight="fill" />,
   moon: <Moon weight="fill" />,
+  settings: <Gear weight={w} />,
+  shield: <ShieldCheck weight={w} />,
 };
