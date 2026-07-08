@@ -10,6 +10,8 @@ import { fileToDataUrl } from '../../utils/files.js';
 // certifications → submit for admin review. An admin compares the selfie with
 // the ID to confirm the same person, and previews the uploaded certificates.
 const STEPS = ['Identity document', 'Face scan', 'Skills', 'Certifications', 'Review'];
+const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB per uploaded file
+const tooBig = (f) => f.size > MAX_FILE_BYTES;
 
 export default function WorkerOnboarding() {
   const { user } = useAuth();
@@ -40,21 +42,28 @@ export default function WorkerOnboarding() {
 
   async function onIdFile(e) {
     const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file after an error
     if (!file) return;
-    setErr(''); setIdBusy(true);
+    setErr('');
+    if (tooBig(file)) { setErr(`That file is ${(file.size / 1048576).toFixed(1)}MB — the limit is 5MB. Please choose a smaller photo or PDF.`); return; }
+    setIdBusy(true);
     try { setIdDoc(await fileToDataUrl(file)); }
     catch (e2) { setErr(e2.message); }
     finally { setIdBusy(false); }
   }
   async function onCertFiles(e) {
     const files = Array.from(e.target.files || []);
+    e.target.value = ''; // allow re-selecting the same file
     if (!files.length) return;
     setErr('');
+    const oversized = files.filter(tooBig);
+    if (oversized.length) { setErr(`${oversized.map((f) => f.name).join(', ')} exceeds the 5MB limit — please upload smaller files.`); }
+    const ok = files.filter((f) => !tooBig(f));
+    if (!ok.length) return;
     try {
-      const parsed = await Promise.all(files.map((f) => fileToDataUrl(f)));
+      const parsed = await Promise.all(ok.map((f) => fileToDataUrl(f)));
       setCertFiles((prev) => [...prev, ...parsed]);
     } catch (e2) { setErr(e2.message); }
-    e.target.value = ''; // allow re-selecting the same file
   }
   const removeCert = (i) => setCertFiles((prev) => prev.filter((_, x) => x !== i));
 
@@ -66,7 +75,7 @@ export default function WorkerOnboarding() {
   async function startCam() {
     setCamErr('');
     try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } });
       streamRef.current = s;
       if (videoRef.current) { videoRef.current.srcObject = s; await videoRef.current.play().catch(() => {}); }
     } catch {
@@ -76,10 +85,14 @@ export default function WorkerOnboarding() {
   function capture() {
     const v = videoRef.current;
     if (v && v.videoWidth) {
+      // Capture at a crisp resolution (up to 720px wide) so the admin can
+      // actually compare the face with the ID — not the tiny preview size.
+      const scale = Math.min(1, 720 / v.videoWidth);
       const c = document.createElement('canvas');
-      c.width = 240; c.height = 240 * (v.videoHeight / v.videoWidth || 0.75);
+      c.width = Math.round(v.videoWidth * scale);
+      c.height = Math.round(v.videoHeight * scale);
       c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-      setSelfie(c.toDataURL('image/jpeg', 0.6));
+      setSelfie(c.toDataURL('image/jpeg', 0.88));
     } else {
       setSelfie('simulated');
     }
@@ -126,7 +139,6 @@ export default function WorkerOnboarding() {
     <div className="onb">
       <div className="onb-head">
         <div className="brand"><span className="shell-logo">{Icons.spark}</span> <span className="shell-brand-name">TaPa Trust</span></div>
-        <button className="onb-skip" onClick={() => navigate('/worker', { replace: true })}>Skip for now</button>
       </div>
 
       <div className="onb-body">
@@ -159,7 +171,7 @@ export default function WorkerOnboarding() {
                       <span className="meta">Tap to replace</span>
                     </>
                   ) : (
-                    <><span className="onb-drop-ic">{Icons.upload}</span><span>Tap to choose a photo of your ID</span><span className="meta">JPG, PNG or PDF</span></>
+                    <><span className="onb-drop-ic">{Icons.upload}</span><span>Tap to choose a photo of your ID</span><span className="meta">JPG, PNG or PDF · max 5MB</span></>
                   )}
                 <input type="file" accept="image/*,.pdf" hidden onChange={onIdFile} />
               </label>
@@ -225,7 +237,7 @@ export default function WorkerOnboarding() {
                   <span className="field-label">Certificates</span>
                   <p className="meta" style={{ margin: '0.15rem 0 0.5rem' }}>Upload photos or PDFs of your certificates — an admin previews each one to confirm it&apos;s genuine.</p>
                   <label className="onb-drop onb-drop--sm">
-                    <span className="onb-drop-ic">{Icons.upload}</span><span>Tap to upload certificates</span><span className="meta">JPG, PNG or PDF · you can add several</span>
+                    <span className="onb-drop-ic">{Icons.upload}</span><span>Tap to upload certificates</span><span className="meta">JPG, PNG or PDF · max 5MB each · add several</span>
                     <input type="file" accept="image/*,.pdf" multiple hidden onChange={onCertFiles} />
                   </label>
                   {certFiles.length > 0 && (
