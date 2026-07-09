@@ -1,7 +1,47 @@
 import { useState } from 'react';
-import { acceptBooking, checkinBooking, checkoutBooking, confirmStart, confirmCompletion, raiseDispute } from '../api/client.js';
+import { acceptBooking, checkinBooking, checkoutBooking, confirmStart, confirmCompletion, raiseDispute, setSafetyTimer } from '../api/client.js';
 import { Icons } from './shared/icons.jsx';
 import { rwf, ErrorNote, EscrowBanner } from './shared/ui.jsx';
+
+// Data-minimizing safety check-in for the worker (lone worker at a job). The
+// worker sets when they expect to finish; if they don't check out in time, TaPa
+// (the admin/operator) is alerted in-app. No location is shared, no public link,
+// nothing about the requester is exposed — just an accountability timer.
+function SafetyCheckin({ b, reload }) {
+  const [busy, setBusy] = useState(false);
+  const set = async (min) => { setBusy(true); try { await setSafetyTimer(b.booking_id, min); reload?.(); } catch { /* ignore */ } setBusy(false); };
+  const due = b.safetyExpectedAt ? new Date(b.safetyExpectedAt) : null;
+  const overdue = b.safetyOverdue;
+  const time = due ? due.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  return (
+    <div className={`safety ${overdue ? 'is-overdue' : ''}`}>
+      <div className="safety-head">{Icons.shield} Safety check-in</div>
+      {!due && (
+        <>
+          <p className="meta">Set when you expect to finish. If you don&apos;t check out in time, TaPa is alerted to check on you. Private — no location shared.</p>
+          <div className="row" style={{ marginTop: '0.4rem' }}>
+            {[60, 120, 240].map((m) => <button key={m} type="button" className="btn-secondary" disabled={busy} onClick={() => set(m)}>{m / 60}h</button>)}
+          </div>
+        </>
+      )}
+      {due && !overdue && (
+        <>
+          <p className="meta">Watching until ~{time}. Tap when you&apos;re done or safe.</p>
+          <button type="button" className="btn-primary" disabled={busy} onClick={() => set(0)}>I&apos;m safe</button>
+        </>
+      )}
+      {overdue && (
+        <>
+          <p className="safety-alert">Past your expected finish (~{time}). TaPa has been alerted — tap when you&apos;re safe.</p>
+          <div className="row" style={{ marginTop: '0.4rem' }}>
+            <button type="button" className="btn-primary" disabled={busy} onClick={() => set(0)}>I&apos;m safe</button>
+            <button type="button" className="btn-secondary" disabled={busy} onClick={() => set(60)}>Extend 1h</button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 // Plain-language dispute categories (value = server enum, label = friendly).
 const DISPUTE_CATEGORIES = [
@@ -236,6 +276,10 @@ export function BookingStepper({ b, role, reload, openChat, onReview }) {
           );
         })}
       </ol>
+
+      {isWorker && b.status === 'in_progress' && b.checkedIn && !b.checkedOut && (
+        <SafetyCheckin b={b} reload={reload} />
+      )}
 
       {canDispute && (
         <button type="button" className="bstep-report" onClick={() => setShowDispute(true)}>
