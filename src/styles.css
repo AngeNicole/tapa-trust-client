@@ -1245,6 +1245,13 @@ body {
   .dispute-banner.is-resolved { border-color: var(--color-stroke-soft-200); background: var(--color-bg-weak-50); }
   .dispute-banner.is-resolved .dispute-ic { background: var(--color-green-100, #c2f5da); color: var(--color-green-600, #1fc16b); }
 
+  /* safety check-in (worker, data-minimizing) */
+  .safety { @apply mt-3 rounded-xl border border-stroke-soft-200 bg-bg-white-0 p-3; }
+  .safety.is-overdue { border-color: var(--color-orange-300, #ffb68f); background: var(--color-orange-50, #fff3eb); }
+  .safety-head { @apply mb-1 flex items-center gap-1.5 text-label-xs font-semibold uppercase text-text-soft-400; letter-spacing: 0.04em; }
+  .safety-head svg { @apply h-4 w-4 text-primary-base; }
+  .safety-alert { @apply text-paragraph-sm font-medium; color: var(--color-orange-700, #b23816); }
+
   /* admin dispute detail: evidence timeline + chat */
   .dispute-timeline { @apply mt-1 flex flex-col gap-1.5; }
   .dtl-row { @apply flex items-center gap-2 text-paragraph-sm text-text-soft-400; }
@@ -1258,6 +1265,13 @@ body {
   .dchat-who { @apply text-label-xs font-semibold text-text-strong-950; }
   .dchat-body { @apply text-paragraph-sm text-text-sub-600; }
   .dchat-at { @apply text-label-xs text-text-soft-400; }
+
+  /* optional biometric face-match assist */
+  .facematch { @apply mt-3 flex flex-col items-start gap-1.5; }
+  .facematch-res { @apply flex items-center gap-2 rounded-lg px-3 py-2 text-paragraph-sm; }
+  .facematch-res svg { @apply h-5 w-5 shrink-0; }
+  .facematch-res.is-match { background: var(--color-green-50, #e0faec); color: var(--color-green-700, #178c4e); }
+  .facematch-res.is-nomatch { background: var(--color-orange-50, #fff3eb); color: var(--color-orange-700, #b23816); }
 
   /* messages inbox */
   .convos { @apply flex flex-col; }

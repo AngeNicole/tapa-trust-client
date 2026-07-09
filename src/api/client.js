@@ -149,6 +149,10 @@ export function getPaymentStatus(id) {
 export function rebookWorker(workerId) {
   return apiFetch(`/bookings/rebook/${workerId}`, { method: 'POST' });
 }
+// Safety check-in: worker's expected finish time (minutes from now); 0/null clears.
+export function setSafetyTimer(bookingId, minutes) {
+  return apiFetch(`/bookings/${bookingId}/safety-timer`, { method: 'POST', body: JSON.stringify({ minutes }) });
+}
 
 // --- booking chat / price agreement ---
 export function getBookingMessages(bookingId) {
