@@ -3,7 +3,7 @@ import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { getPublicWorkers } from '../../api/client.js';
 import { useAsync } from '../../api/hooks.js';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
-import { Avatar, VerifyBadge, Loading, ErrorNote } from '../../components/shared/ui.jsx';
+import { Avatar, TierBadge, Loading, ErrorNote } from '../../components/shared/ui.jsx';
 import { PublicShell } from '../../components/PublicShell.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 
@@ -76,7 +76,7 @@ export default function PublicWorkers() {
                 <div className="wcard-top">
                   <Avatar name={w.name} photo={w.photo} className="avatar" style={{ width: 56, height: 56, borderRadius: 16, fontSize: '1.1rem' }} />
                   <div style={{ minWidth: 0 }}>
-                    <div className="wcard-name">{w.name} {w.verification === 'verified' && <VerifyBadge status="verified" />}</div>
+                    <div className="wcard-name">{w.name} <TierBadge tier={w.tier} /></div>
                     <div className="wcard-rating"><span className="stars">{stars(w.rating)}</span> {(Number(w.rating) || 0).toFixed(1)} · {w.completedJobs || 0} jobs</div>
                   </div>
                 </div>

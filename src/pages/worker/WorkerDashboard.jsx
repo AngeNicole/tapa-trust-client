@@ -12,7 +12,7 @@ import {
   getBookings,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, EmptyState, rwf, duration } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, TierBadge, Avatar, Loading, ErrorNote, EmptyState, rwf, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { BookingStepper } from '../../components/BookingStepper.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
@@ -138,13 +138,23 @@ function AvailabilityToggle({ me, reload }) {
   );
 }
 
-function VerificationCard({ status }) {
+const TIER_HINT = {
+  'Admin-Certified': "You're Admin-Certified — the top tier. An admin reviewed and approved your submission.",
+  'Peer-Verified': 'Peer-Verified from your completed, well-reviewed jobs. Get Admin-Certified by finishing identity verification.',
+  Unverified: 'Complete verification — or finish 2+ jobs with strong reviews — to climb the trust ladder.',
+};
+
+function VerificationCard({ status, tier }) {
   return (
     <div className="card">
       <div className="card-head" style={{ marginBottom: '0.4rem' }}>
         <div className="card-title">Identity verification</div>
         <VerifyBadge status={status} />
       </div>
+      <div className="row" style={{ alignItems: 'center', gap: '0.5rem', margin: '0.25rem 0 0.5rem' }}>
+        <span className="meta">Trust tier:</span><TierBadge tier={tier} />
+      </div>
+      <p className="meta" style={{ marginBottom: '0.5rem' }}>{TIER_HINT[tier] || TIER_HINT.Unverified}</p>
       <p className="meta">An admin confirms your identity by comparing your uploaded ID with your selfie, and reviews your certificates. You appear in Browse only once approved.</p>
       {status === 'verified' && <p className="meta" style={{ marginTop: '0.5rem' }}>You&apos;re verified and visible in Browse. ✓</p>}
       {status === 'pending' && <p className="meta" style={{ marginTop: '0.5rem' }}>Your submission is pending admin review.</p>}
@@ -171,7 +181,7 @@ function ProfileEditor({ user, me, reload, embedded }) {
             <div>
               <div className="row" style={{ gap: '0.6rem' }}>
                 <span className="card-title">{user.name}</span>
-                <span className="badge badge--primary">{me.tier}</span>
+                <TierBadge tier={me.tier} />
                 <VerifyBadge status={me.verification} />
               </div>
               <span className="pin">{Icons.pin}{user.location || 'Location not set'}</span>
@@ -190,7 +200,7 @@ function ProfileEditor({ user, me, reload, embedded }) {
         </div>
       </div>
 
-      <VerificationCard status={me.verification} reload={reload} />
+      <VerificationCard status={me.verification} tier={me.tier} reload={reload} />
       <PersonalDetailsCard user={user} me={me} reload={reload} />
       <SkillsCard me={me} reload={reload} />
       <TaskHistory workerId={me.worker_id} />
