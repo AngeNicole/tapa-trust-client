@@ -149,11 +149,12 @@ function DisputeModal({ booking, onClose, onDone }) {
 // what happens next: an action button when it's this viewer's turn, or a
 // "waiting for …" line when it's the other party's turn. Chat-driven steps
 // (agree price, sign, pay) open the chat drawer where that UI already lives.
-export function BookingStepper({ b, role, reload, openChat, onReview }) {
+export function BookingStepper({ b, role, reload, openChat, onReview, collapsible = false, defaultOpen = true }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [showDispute, setShowDispute] = useState(false);
   const [showMediation, setShowMediation] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   async function run(promise, after) {
     setErr(''); setBusy(true);
@@ -283,9 +284,24 @@ export function BookingStepper({ b, role, reload, openChat, onReview }) {
   ];
 
   const currentIdx = steps.findIndex((s) => !s.done);
+  const summary = b.status === 'completed' ? 'Completed'
+    : disputed ? 'Under dispute — frozen'
+      : (steps[currentIdx]?.title || 'In progress');
 
   return (
     <div className="bstep-wrap">
+      {collapsible
+        ? (
+          <button type="button" className="bstep-head bstep-head--toggle" onClick={() => setOpen((o) => !o)}>
+            <span>Booking progress</span>
+            {!open && <span className="bstep-summary">{summary}</span>}
+            <span className="bstep-chev">{open ? '▾' : '▸'}</span>
+          </button>
+        )
+        : <div className="bstep-head">Booking progress</div>}
+
+      {(!collapsible || open) && (
+      <>
       <EscrowBanner b={b} role={role} />
 
       {disputed && (
@@ -313,7 +329,6 @@ export function BookingStepper({ b, role, reload, openChat, onReview }) {
         </div>
       )}
 
-      <div className="bstep-head">Booking progress</div>
       <ol className="bstep-list">
         {steps.map((s, i) => {
           const state = s.done ? 'done' : i === currentIdx ? 'current' : 'upcoming';
@@ -345,6 +360,8 @@ export function BookingStepper({ b, role, reload, openChat, onReview }) {
         <button type="button" className="bstep-report" onClick={() => setShowDispute(true)}>
           {Icons.warning} Report an issue with this booking
         </button>
+      )}
+      </>
       )}
 
       <ErrorNote message={err} />
