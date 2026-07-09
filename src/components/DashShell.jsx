@@ -13,7 +13,7 @@ function initials(name = '') {
 // Unified modern shell: brand + grouped sidebar on the left, and a top bar
 // (search + icons + user) over the content. The content spans the full width —
 // per-role analytics live in a dedicated Dashboard menu, not a right rail.
-export function DashShell({ items, active, onSelect, children }) {
+export function DashShell({ items, active, onSelect, children, headerExtra }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   // Track which menus have been opened so their count badge clears after a view.
@@ -71,6 +71,7 @@ export function DashShell({ items, active, onSelect, children }) {
             {Icons.search}
             <input type="text" placeholder="Search…" aria-label="Search" />
           </label>
+          {headerExtra}
           <ThemeToggle />
           <NotificationsBell />
           <span className="top-divider" />

@@ -64,6 +64,7 @@ export default function WorkerDashboard() {
   const notify = useToast();
   const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
   useBookingAlerts(bookings.data, 'worker', notify);
+  const meState = useAsync(() => getMyWorkerProfile(), []); // for the always-visible availability toggle
   const all = bookings.data || [];
   const activeCount = all.filter((b) => !['completed', 'cancelled'].includes(b.status)).length;
   const doneCount = all.filter((b) => b.status === 'completed').length;
@@ -78,7 +79,8 @@ export default function WorkerDashboard() {
   ];
 
   return (
-    <DashShell items={items} active={tab} onSelect={setTab}>
+    <DashShell items={items} active={tab} onSelect={setTab}
+      headerExtra={meState.data ? <AvailabilityToggle me={meState.data} reload={meState.reload} /> : null}>
       {tab === 'overview' && <OverviewView user={user} bookings={bookings.data || []} />}
       {tab === 'profile' && <Settings profileTab={<ProfileView user={user} embedded />} />}
       {tab === 'bookings' && <BookingsView state={bookings} only="active" />}
@@ -136,9 +138,10 @@ function AvailabilityToggle({ me, reload }) {
     finally { setBusy(false); }
   }
   return (
-    <button type="button" className="btn-secondary" onClick={toggle} disabled={busy} title="Workers must be available to appear in browse">
+    <button type="button" className="btn-secondary btn-avail" onClick={toggle} disabled={busy}
+      title={available ? 'You appear in Browse — tap to go offline' : 'Tap to go available so requesters can find you (needs skills + bio)'}>
       <span className={`activity-dot ${available ? 'activity-dot--completed' : 'activity-dot--pending'}`} style={{ display: 'inline-block', marginRight: 6 }} />
-      {available ? 'Available' : 'Unavailable'} — tap to go {available ? 'offline' : 'available'}
+      {available ? 'Available' : 'Unavailable'}
     </button>
   );
 }
@@ -201,7 +204,6 @@ function ProfileEditor({ user, me, reload, embedded }) {
               </div>
             </div>
           </div>
-          <AvailabilityToggle me={me} reload={reload} />
         </div>
       </div>
 

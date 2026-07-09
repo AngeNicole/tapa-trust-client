@@ -2129,6 +2129,7 @@ body {
     @apply flex flex-1 items-center gap-2 rounded-full border border-stroke-soft-200 bg-bg-white-0 px-4 py-2.5 text-text-soft-400;
   }
   .search svg { @apply h-5 w-5 shrink-0; }
+  .btn-avail { @apply shrink-0 whitespace-nowrap; }
   .search input {
     @apply w-full border-0 bg-transparent p-0 text-paragraph-sm text-text-strong-950 outline-none;
   }
