@@ -5,38 +5,6 @@ import { Loading, ErrorNote, VerifyBadge, EmptyState, Avatar, rwf } from '../../
 import { DashShell } from '../../components/DashShell.jsx';
 import { Analytics } from '../../components/shared/Analytics.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
-import { matchFaces } from '../../utils/faceMatch.js';
-
-// Biometric compare for the ONLINE path — assists the admin; never an auto-gate.
-function FaceMatchAssist({ selfie, idDoc, isImg }) {
-  const [state, setState] = useState('idle'); // idle | running | done | error
-  const [result, setResult] = useState(null);
-  const [msg, setMsg] = useState('');
-  if (!(selfie && idDoc && isImg(selfie) && isImg(idDoc))) return null;
-  async function run() {
-    setState('running'); setMsg('');
-    try {
-      const r = await matchFaces(selfie, idDoc);
-      if (!r.ok) { setState('error'); setMsg(r.reason); return; }
-      setResult(r); setState('done');
-    } catch { setState('error'); setMsg('Could not run the check — please compare the images manually.'); }
-  }
-  return (
-    <div className="facematch">
-      {state === 'idle' && <button type="button" className="btn-secondary btn-icon" onClick={run}>{Icons.scales} Run face comparison</button>}
-      {state === 'running' && <span className="meta">Comparing… first run downloads the model, please wait.</span>}
-      {state === 'error' && <span className="meta" style={{ color: 'var(--color-orange-600)' }}>{msg}</span>}
-      {state === 'done' && result && (
-        <div className={`facematch-res ${result.likelySame ? 'is-match' : 'is-nomatch'}`}>
-          {result.likelySame ? Icons.checkCircle : Icons.warning}
-          <span><strong>{result.score}% similar</strong> — {result.likelySame ? 'likely the same person' : 'faces look different — review closely'} <span className="meta">(distance {result.distance.toFixed(2)})</span></span>
-        </div>
-      )}
-      {(state === 'done' || state === 'error') && <button type="button" className="btn-ghost" onClick={run}>Re-run</button>}
-      <p className="meta" style={{ marginTop: '0.35rem' }}>Assist only — your confirmation decides. Runs in your browser; images aren&apos;t sent anywhere.</p>
-    </div>
-  );
-}
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState('overview');
@@ -222,9 +190,9 @@ function ReviewModal({ worker, onClose, onDone }) {
   const certs = (profile?.certifications || '').split(/[\n;,]/).map((s) => s.trim()).filter(Boolean);
   const certFiles = Array.isArray(profile?.certificationFiles) ? profile.certificationFiles : [];
   const isImg = (s) => typeof s === 'string' && s.startsWith('data:image');
-  const selfie = profile?.selfie;
-  const idDoc = profile?.idDocument;
   const vMethod = profile?.verificationMethod;
+  const fmScore = profile?.faceMatchScore;
+  const fmPassed = profile?.faceMatchPassed;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -256,34 +224,22 @@ function ReviewModal({ worker, onClose, onDone }) {
             </div>
             <div className="review-sec">
               <h4>Identity check</h4>
-              <p className="meta">
-                Verification path: <strong>{vMethod === 'online' ? 'Online (ID + selfie)' : vMethod === 'physical' ? 'In person' : 'Not specified'}</strong>.{' '}
-                {vMethod === 'physical'
-                  ? 'Confirm this worker in person (office/agent), then approve — same Verified status as the online path.'
-                  : 'Compare the selfie with the ID — they should be the same person.'}
-              </p>
-              {selfie || idDoc ? (
+              <p className="meta">Verification path: <strong>{vMethod === 'online' ? 'Online (on-device face match)' : vMethod === 'physical' ? 'In person' : 'Not specified'}</strong>.</p>
+              {vMethod === 'physical' && (
+                <p className="meta">Confirm this worker in person (office/agent), then approve — same Verified status as the online path.</p>
+              )}
+              {vMethod === 'online' && (
                 <>
-                  <div className="review-idcheck">
-                    <figure>
-                      <figcaption>{Icons.camera} Selfie</figcaption>
-                      {selfie
-                        ? <a href={selfie} target="_blank" rel="noreferrer"><img src={selfie} alt="Worker selfie" /></a>
-                        : <div className="review-missing">Not provided</div>}
-                    </figure>
-                    <figure>
-                      <figcaption>{Icons.idCard} ID document</figcaption>
-                      {idDoc
-                        ? (isImg(idDoc)
-                          ? <a href={idDoc} target="_blank" rel="noreferrer"><img src={idDoc} alt="ID document" /></a>
-                          : <a className="review-doc-link" href={idDoc} target="_blank" rel="noreferrer">{Icons.idCard} Open document</a>)
-                        : <div className="review-missing">Not provided</div>}
-                    </figure>
-                  </div>
-                  <FaceMatchAssist selfie={selfie} idDoc={idDoc} isImg={isImg} />
+                  {fmScore != null ? (
+                    <div className={`facematch-res ${fmPassed ? 'is-match' : 'is-nomatch'}`} style={{ marginTop: '0.4rem' }}>
+                      {fmPassed ? Icons.checkCircle : Icons.warning}
+                      <span><strong>Face match: {fmScore}%</strong> — {fmPassed ? 'likely the same person' : 'weak match — review closely'}</span>
+                    </div>
+                  ) : (
+                    <p className="meta">The on-device check wasn&apos;t conclusive — consider confirming in person.</p>
+                  )}
+                  <p className="meta" style={{ marginTop: '0.4rem' }}>ID &amp; selfie were compared in the worker&apos;s browser and <strong>not stored</strong> (match-then-discard).</p>
                 </>
-              ) : (
-                <p className="meta">{vMethod === 'physical' ? 'In-person path — no upload; confirm identity offline.' : 'No selfie/ID on file for this worker yet.'}</p>
               )}
             </div>
             <div className="review-sec">

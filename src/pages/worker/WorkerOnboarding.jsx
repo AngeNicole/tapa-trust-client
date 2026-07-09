@@ -5,6 +5,7 @@ import { getMyWorkerProfile, getCategories, updateMyWorkerProfile, submitVerific
 import { ErrorNote } from '../../components/shared/ui.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 import { fileToDataUrl } from '../../utils/files.js';
+import { matchFaces } from '../../utils/faceMatch.js';
 
 // Guided worker verification onboarding: upload ID → capture selfie → skills →
 // certifications → submit for admin review. An admin compares the selfie with
@@ -29,9 +30,11 @@ export default function WorkerOnboarding() {
   const stepKey = STEP_KEYS[step];
 
   // collected data
-  const [idDoc, setIdDoc] = useState(null);        // { name, type, dataUrl }
+  const [idDoc, setIdDoc] = useState(null);        // { name, type, dataUrl } — kept in memory only, never uploaded
   const [idBusy, setIdBusy] = useState(false);
-  const [selfie, setSelfie] = useState(null);      // dataURL or 'simulated'
+  const [selfie, setSelfie] = useState(null);      // dataURL or 'simulated' — kept in memory only
+  const [faceMatch, setFaceMatch] = useState(null); // { score, passed } | { error }
+  const [matching, setMatching] = useState(false);
   const [skills, setSkills] = useState([]);
   const [customSkill, setCustomSkill] = useState('');
   const [bio, setBio] = useState('');
@@ -90,17 +93,29 @@ export default function WorkerOnboarding() {
       setCamErr("Camera unavailable or blocked — you can simulate the scan for this demo.");
     }
   }
+  // Match-then-discard: compare the selfie with the ID entirely in the browser.
+  // We keep only the verdict (score/passed); the images are never uploaded.
+  async function runMatch(selfieUrl) {
+    if (!idDoc?.dataUrl || !selfieUrl || selfieUrl === 'simulated') return;
+    setMatching(true); setFaceMatch(null);
+    try {
+      const r = await matchFaces(selfieUrl, idDoc.dataUrl);
+      setFaceMatch(r.ok ? { score: r.score, passed: r.likelySame } : { error: r.reason });
+    } catch {
+      setFaceMatch({ error: 'Could not run the on-device check.' });
+    } finally { setMatching(false); }
+  }
   function capture() {
     const v = videoRef.current;
     if (v && v.videoWidth) {
-      // Capture at a crisp resolution (up to 720px wide) so the admin can
-      // actually compare the face with the ID — not the tiny preview size.
       const scale = Math.min(1, 720 / v.videoWidth);
       const c = document.createElement('canvas');
       c.width = Math.round(v.videoWidth * scale);
       c.height = Math.round(v.videoHeight * scale);
       c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-      setSelfie(c.toDataURL('image/jpeg', 0.88));
+      const url = c.toDataURL('image/jpeg', 0.88);
+      setSelfie(url);
+      runMatch(url); // compare on-device; images stay local
     } else {
       setSelfie('simulated');
     }
@@ -137,13 +152,13 @@ export default function WorkerOnboarding() {
       // admin to preview.
       await updateMyWorkerProfile({ skills: skills.join(', '), bio, education, certifications: certFiles.map((f) => f.name).join('\n') });
       const online = method === 'online';
+      // Match-then-discard: the online path sends ONLY the face-match verdict —
+      // never the ID or selfie images. They stay in the browser and are dropped.
       await submitVerification({
         method,                                  // 'physical' | 'online'
-        document: online ? (idDoc?.name || null) : null, // legacy field (name only)
-        faceScan: online && selfie ? 'captured' : null,  // legacy field
-        idDocument: online ? (idDoc?.dataUrl || null) : null,   // ID only on the online path
-        selfie: online && selfie && selfie !== 'simulated' ? selfie : null,
-        certificationFiles: certFiles,           // [{ name, type, dataUrl }]
+        faceMatchScore: online && faceMatch && !faceMatch.error ? faceMatch.score : null,
+        faceMatchPassed: online && faceMatch && !faceMatch.error ? faceMatch.passed : null,
+        certificationFiles: certFiles,           // credentials (kept for admin review)
       });
       navigate('/worker', { replace: true });
     } catch (e) { setErr(e.message); setSubmitting(false); }
@@ -195,7 +210,7 @@ export default function WorkerOnboarding() {
             <div className="onb-pane">
               <h3 className="onb-h">Upload your ID document</h3>
               <p className="meta">A national ID, passport, or driver&apos;s licence.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> the system compares the face on your ID with your live selfie, and an admin confirms. Prefer not to? Go back and choose in-person.</span></div>
+              <div className="onb-why">{Icons.shield} <span><strong>Private by design:</strong> your ID and selfie are compared <em>on your device</em> and never uploaded — only the match result is saved. Prefer not to? Go back and choose in-person.</span></div>
               <label className={`onb-drop ${idBusy ? 'is-busy' : ''}`}>
                 {idBusy ? <span className="meta">Processing…</span>
                   : idDoc ? (
@@ -217,8 +232,8 @@ export default function WorkerOnboarding() {
           {stepKey === 'selfie' && (
             <div className="onb-pane">
               <h3 className="onb-h">Take a live selfie</h3>
-              <p className="meta">Center your face and capture.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> the system compares this selfie with your ID so an admin can confirm you&apos;re the same person.</span></div>
+              <p className="meta">Center your face and capture — it&apos;s matched to your ID on your device.</p>
+              <div className="onb-why">{Icons.shield} <span><strong>Match-then-discard:</strong> the comparison runs here in your browser; neither the selfie nor the ID is uploaded — only the result is saved.</span></div>
               <div className="onb-cam">
                 {selfie && selfie !== 'simulated'
                   ? <img src={selfie} alt="Captured selfie" />
@@ -227,10 +242,18 @@ export default function WorkerOnboarding() {
                     : <video ref={videoRef} playsInline muted />}
               </div>
               {camErr && <p className="meta" style={{ color: 'var(--color-orange-600)' }}>{camErr}</p>}
+              {selfie && selfie !== 'simulated' && (
+                <div className="onb-match">
+                  {matching ? <span className="meta">Comparing with your ID on-device… (first run loads the model)</span>
+                    : faceMatch?.error ? <span className="meta" style={{ color: 'var(--color-orange-600)' }}>{faceMatch.error} You can still submit — an admin will confirm.</span>
+                      : faceMatch ? <span className={`onb-match-res ${faceMatch.passed ? 'is-ok' : 'is-no'}`}>{faceMatch.passed ? Icons.checkCircle : Icons.shield} Face match: {faceMatch.score}% — {faceMatch.passed ? 'looks like the same person' : 'weak match, review advised'}</span>
+                        : null}
+                </div>
+              )}
               <div className="row" style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
                 {!selfie && !camErr && <button className="btn-primary" onClick={capture}>Capture</button>}
                 {!selfie && camErr && <button className="btn-primary" onClick={() => setSelfie('simulated')}>Simulate scan</button>}
-                {selfie && <button className="btn-secondary" onClick={() => { setSelfie(null); startCam(); }}>Retake</button>}
+                {selfie && <button className="btn-secondary" onClick={() => { setSelfie(null); setFaceMatch(null); startCam(); }}>Retake</button>}
               </div>
             </div>
           )}
@@ -296,15 +319,15 @@ export default function WorkerOnboarding() {
             <div className="onb-pane">
               <h3 className="onb-h">Review & submit</h3>
               <ul className="onb-review">
-                <li><span>Method</span><b>{method === 'online' ? 'Online (ID + selfie)' : 'In person'}</b></li>
-                {method === 'online' && <li><span>ID document</span><b>{idDoc ? '✓ Uploaded' : '—'}</b></li>}
-                {method === 'online' && <li><span>Live selfie</span><b>{selfie ? '✓ Captured' : '—'}</b></li>}
+                <li><span>Method</span><b>{method === 'online' ? 'Online (on-device face match)' : 'In person'}</b></li>
+                {method === 'online' && <li><span>Face match</span><b>{faceMatch?.error ? 'Not conclusive' : faceMatch ? `${faceMatch.score}% ${faceMatch.passed ? '✓' : '(weak)'}` : '—'}</b></li>}
                 <li><span>Skills</span><b>{skills.join(', ') || '—'}</b></li>
                 <li><span>Education</span><b>{education || '—'}</b></li>
                 <li><span>Certificates</span><b>{certFiles.length ? `✓ ${certFiles.length} uploaded` : '—'}</b></li>
               </ul>
+              {method === 'online' && <p className="meta" style={{ marginBottom: '0.5rem' }}>Your ID &amp; selfie were compared on your device and are <strong>not uploaded or stored</strong> — only the match result above is saved.</p>}
               <p className="meta">{method === 'online'
-                ? 'An admin reviews your ID + selfie (with the system’s face comparison) and approves you.'
+                ? 'An admin reviews the match result and approves you.'
                 : 'An admin, office or agent confirms your identity in person and approves you.'} You&apos;ll appear in Browse once verified — or earn Peer-Verified from well-reviewed jobs.</p>
             </div>
           )}
