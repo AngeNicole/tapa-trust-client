@@ -41,6 +41,8 @@ import {
   SquaresFour,
   IdentificationCard,
   Camera,
+  WarningCircle,
+  Scales,
 } from '@phosphor-icons/react';
 
 const w = 'regular';
@@ -86,4 +88,6 @@ export const Icons = {
   grid: <SquaresFour weight={w} />,
   idCard: <IdentificationCard weight={w} />,
   camera: <Camera weight={w} />,
+  warning: <WarningCircle weight="fill" />,
+  scales: <Scales weight={w} />,
 };

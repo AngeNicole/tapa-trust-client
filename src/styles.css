@@ -1231,6 +1231,33 @@ body {
   .bstep-cta { @apply mt-2; }
   .bstep-wait { @apply mt-1.5 inline-flex items-center gap-1.5 text-label-xs font-medium text-text-soft-400; }
   .bstep-wait svg { @apply h-3.5 w-3.5; }
+  .bstep-report { @apply mt-3 inline-flex items-center gap-1.5 rounded-lg border border-stroke-soft-200 bg-bg-white-0 px-3 py-1.5 text-label-sm font-medium text-text-sub-600 transition-colors hover:border-red-300 hover:text-red-600; }
+  .bstep-report svg { @apply h-4 w-4; }
+
+  /* dispute banner (shown to both parties on the booking) */
+  .dispute-banner { @apply mb-3 flex items-start gap-3 rounded-xl border p-3; }
+  .dispute-banner .dispute-ic { @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-lg; }
+  .dispute-banner .dispute-ic svg { @apply h-5 w-5; }
+  .dispute-title { @apply text-paragraph-sm font-semibold text-text-strong-950; }
+  .dispute-sub { @apply mt-0.5 text-label-xs text-text-sub-600; }
+  .dispute-banner.is-open { border-color: var(--color-orange-200, #ffdac2); background: var(--color-orange-50, #fff3eb); }
+  .dispute-banner.is-open .dispute-ic { background: var(--color-orange-100, #ffe0c9); color: var(--color-orange-600, #e04f16); }
+  .dispute-banner.is-resolved { border-color: var(--color-stroke-soft-200); background: var(--color-bg-weak-50); }
+  .dispute-banner.is-resolved .dispute-ic { background: var(--color-green-100, #c2f5da); color: var(--color-green-600, #1fc16b); }
+
+  /* admin dispute detail: evidence timeline + chat */
+  .dispute-timeline { @apply mt-1 flex flex-col gap-1.5; }
+  .dtl-row { @apply flex items-center gap-2 text-paragraph-sm text-text-soft-400; }
+  .dtl-row.is-done { @apply text-text-strong-950; }
+  .dtl-dot { @apply inline-block h-2 w-2 shrink-0 rounded-full; background: var(--color-bg-sub-300); }
+  .dtl-row.is-done .dtl-dot { background: var(--color-green-500); }
+  .dtl-label { @apply flex-1; }
+  .dtl-at { @apply text-label-xs text-text-sub-600; }
+  .dispute-chat { @apply mt-1 flex max-h-56 flex-col gap-2 overflow-y-auto rounded-xl border border-stroke-soft-200 bg-bg-weak-50 p-2; }
+  .dchat-msg { @apply flex flex-col rounded-lg bg-bg-white-0 px-2.5 py-1.5; }
+  .dchat-who { @apply text-label-xs font-semibold text-text-strong-950; }
+  .dchat-body { @apply text-paragraph-sm text-text-sub-600; }
+  .dchat-at { @apply text-label-xs text-text-soft-400; }
 
   /* messages inbox */
   .convos { @apply flex flex-col; }

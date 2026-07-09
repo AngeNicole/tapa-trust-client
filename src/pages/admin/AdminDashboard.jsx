@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { getAdminUsers, getCategories, createCategory, updateCategory, deleteCategory, getAllWorkers, getWorker, verifyWorker, rejectWorker } from '../../api/client.js';
+import { getAdminUsers, getCategories, createCategory, updateCategory, deleteCategory, getAllWorkers, getWorker, verifyWorker, rejectWorker, getAdminDisputes, getAdminDispute, ruleDispute } from '../../api/client.js';
 import { useAsync } from '../../api/hooks.js';
-import { Loading, ErrorNote, VerifyBadge, EmptyState, Avatar } from '../../components/shared/ui.jsx';
+import { Loading, ErrorNote, VerifyBadge, EmptyState, Avatar, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { Analytics } from '../../components/shared/Analytics.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
@@ -11,27 +11,31 @@ export default function AdminDashboard() {
   const users = useAsync(() => getAdminUsers(), []);
   const categories = useAsync(() => getCategories(), []);
   const workers = useAsync(() => getAllWorkers(), []);
+  const disputes = useAsync(() => getAdminDisputes(), [], { intervalMs: 8000 });
 
   const pending = (workers.data || []).filter((w) => w.verification === 'pending').length;
+  const openDisputes = (disputes.data || []).filter((d) => d.status === 'open').length;
 
   const items = [
     { key: 'overview', label: 'Dashboard', icon: Icons.grid || Icons.spark },
     { key: 'verify', label: 'Verifications', icon: Icons.check, count: pending },
+    { key: 'disputes', label: 'Disputes', icon: Icons.scales || Icons.warning, count: openDisputes },
     { key: 'users', label: 'Users', icon: Icons.user, count: users.data?.length || 0 },
     { key: 'categories', label: 'Categories', icon: Icons.briefcase, count: categories.data?.length || 0 },
   ];
 
   return (
     <DashShell items={items} active={tab} onSelect={setTab}>
-      {tab === 'overview' && <OverviewView users={users.data || []} workers={workers.data || []} categories={categories.data || []} />}
+      {tab === 'overview' && <OverviewView users={users.data || []} workers={workers.data || []} categories={categories.data || []} openDisputes={openDisputes} />}
       {tab === 'verify' && <VerifyView state={workers} />}
+      {tab === 'disputes' && <DisputesView state={disputes} />}
       {tab === 'users' && <UsersView state={users} />}
       {tab === 'categories' && <CategoriesView state={categories} />}
     </DashShell>
   );
 }
 
-function OverviewView({ users, workers, categories }) {
+function OverviewView({ users, workers, categories, openDisputes = 0 }) {
   const bucketOf = (w) => (w.verification === 'verified' ? 'approved' : w.verification);
   const engaged = workers.filter((w) => w.verification !== 'unverified');
   const counts = {
@@ -59,6 +63,7 @@ function OverviewView({ users, workers, categories }) {
         { icon: Icons.user, value: requesters, label: 'Requesters' },
         { icon: Icons.check, value: counts.pending, label: 'Pending review' },
         { icon: Icons.checkCircle, value: counts.approved, label: 'Verified' },
+        { icon: Icons.scales || Icons.warning, value: openDisputes, label: 'Open disputes' },
         { icon: Icons.briefcase, value: categories.length, label: 'Categories' },
       ]}
       chart={{
@@ -277,6 +282,175 @@ function ReviewModal({ worker, onClose, onDone }) {
                   <button className={mode === 'redo' ? 'btn-primary' : 'btn-danger'} disabled={busy} onClick={sendBack}>
                     {busy ? 'Sending…' : mode === 'redo' ? 'Send back to redo' : 'Confirm rejection'}
                   </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Disputes: queue + neutral admin ruling on captured evidence ──────────
+const CAT_LABEL = {
+  'duration disagreement': 'Duration', 'work quality': 'Work quality',
+  'no-show': 'No-show', 'payment amount': 'Payment amount', other: 'Other',
+};
+const fmtTime = (iso) => (iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '—');
+
+function DisputesView({ state }) {
+  const { data, loading, error, reload } = state;
+  const [view, setView] = useState('open');
+  const [reviewing, setReviewing] = useState(null);
+  const all = data || [];
+  const counts = { open: all.filter((d) => d.status === 'open').length, resolved: all.filter((d) => d.status === 'resolved').length, all: all.length };
+  const shown = view === 'all' ? all : all.filter((d) => d.status === view);
+  const tabs = [{ key: 'open', label: 'Open' }, { key: 'resolved', label: 'Resolved' }, { key: 'all', label: 'All' }];
+
+  return (
+    <>
+      <h1>Disputes</h1>
+      <p className="subtitle">Neutral oversight: rule on the platform-captured record — timeline, agreed price and chat — not he-said-she-said.</p>
+      <div className="subtabs">
+        {tabs.map((t) => (
+          <button key={t.key} type="button" className={`subtab ${view === t.key ? 'subtab--active' : ''}`} onClick={() => setView(t.key)}>
+            {t.label} ({counts[t.key]})
+          </button>
+        ))}
+      </div>
+      <ErrorNote message={error} />
+      {loading ? <Loading /> : shown.length === 0 ? (
+        <EmptyState icon={Icons.scales || Icons.warning} title={`No ${view === 'all' ? '' : view} disputes`} hint="When either party reports an issue on a booking, it appears here with the captured evidence." />
+      ) : (
+        <div className="card">
+          <div style={{ overflowX: 'auto' }}>
+            <table className="tbl">
+              <thead><tr><th>Booking</th><th>Issue</th><th>Raised by</th><th>Amount</th><th>Status</th><th style={{ width: 96 }}></th></tr></thead>
+              <tbody>
+                {shown.map((d) => (
+                  <tr key={d.disputeId}>
+                    <td>{d.taskTitle}<div className="meta">{d.workerName} ↔ {d.requesterName}</div></td>
+                    <td><span className="badge badge--neutral">{CAT_LABEL[d.category] || d.category}</span></td>
+                    <td className="meta">{d.raisedBy}</td>
+                    <td>{d.agreedPrice != null ? rwf(d.agreedPrice) : '—'}</td>
+                    <td><span className={`badge ${d.status === 'open' ? 'badge--progress' : 'badge--done'}`}>{d.status === 'open' ? 'Open' : `Resolved · ${d.outcome}`}</span></td>
+                    <td style={{ textAlign: 'right' }}><button type="button" className="btn-secondary" onClick={() => setReviewing(d)}>Review</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+      {reviewing && <DisputeDetailModal dispute={reviewing} onClose={() => setReviewing(null)} onDone={() => { setReviewing(null); reload(); }} />}
+    </>
+  );
+}
+
+function DisputeDetailModal({ dispute, onClose, onDone }) {
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [outcome, setOutcome] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  useEffect(() => {
+    let alive = true;
+    getAdminDispute(dispute.disputeId)
+      .then((d) => { if (alive) setDetail(d); })
+      .catch((e) => { if (alive) setErr(e.message); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [dispute.disputeId]);
+
+  const resolved = detail?.status === 'resolved';
+  async function rule() {
+    if (!outcome) { setErr('Choose an outcome.'); return; }
+    setBusy(true); setErr('');
+    try { await ruleDispute(dispute.disputeId, { outcome, note }); onDone(); }
+    catch (e) { setErr(e.message); setBusy(false); }
+  }
+
+  const ev = detail?.evidence;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal review-modal" onClick={(e) => e.stopPropagation()}>
+        {loading ? <Loading /> : (
+          <>
+            <div className="review-id">
+              <span className="avatar" style={{ width: 52, height: 52, borderRadius: 14 }}>{Icons.scales || Icons.warning}</span>
+              <div style={{ minWidth: 0 }}>
+                <div className="review-name">{ev?.taskTitle}</div>
+                <div className="row" style={{ gap: '0.5rem', marginTop: 4 }}>
+                  <span className="badge badge--neutral">{CAT_LABEL[detail.category] || detail.category}</span>
+                  <span className="meta">Raised by {detail.raisedBy} · {fmtTime(detail.createdAt)}</span>
+                </div>
+              </div>
+            </div>
+
+            {detail.description && (
+              <div className="review-sec"><h4>What they reported</h4><p>“{detail.description}”</p></div>
+            )}
+
+            <div className="review-sec">
+              <h4>Confirmation timeline (platform-captured)</h4>
+              <div className="dispute-timeline">
+                {ev?.timeline.map((t) => (
+                  <div key={t.key} className={`dtl-row ${t.at ? 'is-done' : ''}`}>
+                    <span className="dtl-dot" />
+                    <span className="dtl-label">{t.label}</span>
+                    <span className="dtl-at">{fmtTime(t.at)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="review-sec">
+              <h4>Agreed price</h4>
+              <p>{ev?.agreedPrice != null ? rwf(ev.agreedPrice) : 'Not set'} · payment currently <strong>{ev?.payment?.status || 'pending'}</strong></p>
+            </div>
+
+            <div className="review-sec">
+              <h4>Chat thread</h4>
+              {ev?.messages?.length ? (
+                <div className="dispute-chat">
+                  {ev.messages.map((m, i) => (
+                    <div key={i} className="dchat-msg">
+                      <span className="dchat-who">{m.senderName}</span>
+                      <span className="dchat-body">{m.body}{m.amount != null ? ` · offered ${rwf(m.amount)}` : ''}</span>
+                      <span className="dchat-at">{fmtTime(m.created_at)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="meta">No messages.</p>}
+            </div>
+
+            <div className="review-sec">
+              <h4>Accountability trail</h4>
+              <p className="meta">This worker has been in {detail.history?.workerDisputes ?? 0} dispute(s); this requester in {detail.history?.requesterDisputes ?? 0}.</p>
+            </div>
+
+            {err && <div className="form-error" style={{ marginTop: '0.75rem' }}>{err}</div>}
+
+            {resolved ? (
+              <div className="review-sec"><h4>Ruling</h4><p>Outcome: <strong>{detail.outcome}</strong>{detail.ruling ? ` — “${detail.ruling}”` : ''}</p></div>
+            ) : (
+              <>
+                <div className="review-sec">
+                  <h4>Ruling (neutral oversight)</h4>
+                  <p className="meta" style={{ marginBottom: '0.5rem' }}>A no-prior-relationship handler gives fairer outcomes. Decide based on the record above.</p>
+                  <div className="row" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {[{ v: 'release', l: 'Release to worker' }, { v: 'refund', l: 'Refund requester' }, { v: 'dismiss', l: 'Dismiss (no change)' }].map((o) => (
+                      <button key={o.v} type="button" className={outcome === o.v ? 'chip' : 'chip-opt'} onClick={() => setOutcome(o.v)}>{o.l}</button>
+                    ))}
+                  </div>
+                  <textarea className="input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ruling note (optional)" style={{ width: '100%', marginTop: '0.6rem' }} />
+                </div>
+                <div className="review-actions">
+                  <button className="btn-secondary" onClick={onClose} disabled={busy}>Close</button>
+                  <button className="btn-primary" onClick={rule} disabled={busy || !outcome}>{busy ? 'Recording…' : 'Record ruling'}</button>
                 </div>
               </>
             )}

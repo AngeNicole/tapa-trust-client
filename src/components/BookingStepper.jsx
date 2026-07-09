@@ -1,7 +1,53 @@
 import { useState } from 'react';
-import { acceptBooking, checkinBooking, checkoutBooking, confirmStart, confirmCompletion } from '../api/client.js';
+import { acceptBooking, checkinBooking, checkoutBooking, confirmStart, confirmCompletion, raiseDispute } from '../api/client.js';
 import { Icons } from './shared/icons.jsx';
 import { rwf, ErrorNote, EscrowBanner } from './shared/ui.jsx';
+
+// Plain-language dispute categories (value = server enum, label = friendly).
+const DISPUTE_CATEGORIES = [
+  { value: 'duration disagreement', label: 'How long the job took' },
+  { value: 'work quality', label: 'Quality of the work' },
+  { value: 'no-show', label: "The other person didn't show up" },
+  { value: 'payment amount', label: 'The amount owed' },
+  { value: 'other', label: 'Something else' },
+];
+
+function DisputeModal({ booking, onClose, onDone }) {
+  const [category, setCategory] = useState('');
+  const [description, setDescription] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  async function submit() {
+    if (!category) { setErr('Please choose what the issue is about.'); return; }
+    setBusy(true); setErr('');
+    try { await raiseDispute(booking.booking_id, { category, description }); onDone(); }
+    catch (e) { setErr(e.message); setBusy(false); }
+  }
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-title">Report an issue</div>
+        <p className="meta" style={{ marginTop: '0.25rem' }}>
+          An admin reviews the booking record — the confirmation timeline, agreed price and chat — and rules fairly.
+          Opening a dispute <strong>freezes the payment</strong> until it&apos;s resolved.
+        </p>
+        <label className="field-label" style={{ marginTop: '0.9rem' }}>What&apos;s the issue about?</label>
+        <select className="select" value={category} onChange={(e) => setCategory(e.target.value)} style={{ width: '100%' }}>
+          <option value="">Choose…</option>
+          {DISPUTE_CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+        <label className="field-label" style={{ marginTop: '0.6rem' }}>Describe what happened (optional)</label>
+        <textarea className="textarea" rows={3} value={description} onChange={(e) => setDescription(e.target.value)}
+          placeholder="A short, plain description helps the admin." style={{ width: '100%' }} />
+        {err && <div className="form-error" style={{ marginTop: '0.5rem' }}>{err}</div>}
+        <div className="row" style={{ justifyContent: 'flex-end', marginTop: '1rem' }}>
+          <button className="btn-secondary" onClick={onClose} disabled={busy}>Cancel</button>
+          <button className="btn-danger" onClick={submit} disabled={busy}>{busy ? 'Submitting…' : 'Open dispute'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // One vertical stepper for the whole booking journey, shown to BOTH parties.
 // Each step shows what it is, whether it's done, and — for the current step —
@@ -11,6 +57,7 @@ import { rwf, ErrorNote, EscrowBanner } from './shared/ui.jsx';
 export function BookingStepper({ b, role, reload, openChat, onReview }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  const [showDispute, setShowDispute] = useState(false);
 
   async function run(promise, after) {
     setErr(''); setBusy(true);
@@ -36,6 +83,11 @@ export function BookingStepper({ b, role, reload, openChat, onReview }) {
   const iSigned = role === 'worker' ? ag.workerSigned : ag.requesterSigned;
   const isWorker = role === 'worker';
   const openChatFn = () => openChat?.(b);
+
+  const disputed = b.dispute?.status === 'open';
+  const resolvedDispute = b.dispute?.status === 'resolved' ? b.dispute : null;
+  // Either party can report an issue once work is underway and no dispute is open.
+  const canDispute = ['in_progress', 'completed'].includes(b.status) && !disputed;
 
   // Each step: done flag, the copy for done/todo, and — when it's the current
   // step — whose turn it is (myTurn) plus the action, or who to wait for.
@@ -139,10 +191,33 @@ export function BookingStepper({ b, role, reload, openChat, onReview }) {
   return (
     <div className="bstep-wrap">
       <EscrowBanner b={b} role={role} />
+
+      {disputed && (
+        <div className="dispute-banner is-open">
+          <span className="dispute-ic">{Icons.warning}</span>
+          <div>
+            <div className="dispute-title">Under dispute — payment frozen</div>
+            <div className="dispute-sub">
+              {b.dispute.raisedBy === role ? 'You' : (b.dispute.raisedBy === 'worker' ? b.workerName || 'The worker' : b.requesterName || 'The requester')} raised an issue{b.dispute.category ? ` (${b.dispute.category})` : ''}. An admin is reviewing the booking record and will rule.
+            </div>
+          </div>
+        </div>
+      )}
+      {resolvedDispute && (
+        <div className="dispute-banner is-resolved">
+          <span className="dispute-ic">{Icons.checkCircle}</span>
+          <div>
+            <div className="dispute-title">Dispute resolved by an admin</div>
+            <div className="dispute-sub">Outcome: {resolvedDispute.outcome || 'recorded'}.</div>
+          </div>
+        </div>
+      )}
+
       <div className="bstep-head">Booking progress</div>
       <ol className="bstep-list">
         {steps.map((s, i) => {
           const state = s.done ? 'done' : i === currentIdx ? 'current' : 'upcoming';
+          const frozenHere = state === 'current' && disputed;
           return (
             <li key={s.key} className={`bstep bstep--${state}`}>
               <span className="bstep-dot">{s.done ? Icons.check : i + 1}</span>
@@ -150,16 +225,26 @@ export function BookingStepper({ b, role, reload, openChat, onReview }) {
                 <div className="bstep-title">{s.title}</div>
                 <div className="bstep-desc">{state === 'done' ? s.doneText : s.todo}</div>
                 {state === 'current' && (
-                  s.myTurn
-                    ? <button type="button" className="btn-primary bstep-cta" disabled={busy} onClick={s.act}>{s.cta}</button>
-                    : <div className="bstep-wait">{Icons.clock} Waiting for {s.waitFor}…</div>
+                  frozenHere
+                    ? <div className="bstep-wait">{Icons.warning} Frozen — waiting on the admin&apos;s ruling.</div>
+                    : s.myTurn
+                      ? <button type="button" className="btn-primary bstep-cta" disabled={busy} onClick={s.act}>{s.cta}</button>
+                      : <div className="bstep-wait">{Icons.clock} Waiting for {s.waitFor}…</div>
                 )}
               </div>
             </li>
           );
         })}
       </ol>
+
+      {canDispute && (
+        <button type="button" className="bstep-report" onClick={() => setShowDispute(true)}>
+          {Icons.warning} Report an issue with this booking
+        </button>
+      )}
+
       <ErrorNote message={err} />
+      {showDispute && <DisputeModal booking={b} onClose={() => setShowDispute(false)} onDone={() => { setShowDispute(false); reload?.(); }} />}
     </div>
   );
 }

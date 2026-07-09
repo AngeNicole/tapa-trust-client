@@ -174,6 +174,22 @@ export function declineBooking(bookingId, reason) {
   return apiFetch(`/bookings/${bookingId}/decline`, { method: 'POST', body: JSON.stringify({ reason: reason || null }) });
 }
 
+// --- disputes ---
+// Either party raises a dispute on an in-progress/completed booking; opening one
+// freezes the payment (escrow stays held) until an admin rules.
+export function raiseDispute(bookingId, { category, description }) {
+  return apiFetch(`/bookings/${bookingId}/dispute`, { method: 'POST', body: JSON.stringify({ category, description }) });
+}
+export function getAdminDisputes() {
+  return apiFetch('/admin/disputes');
+}
+export function getAdminDispute(id) {
+  return apiFetch(`/admin/disputes/${id}`);
+}
+export function ruleDispute(id, { outcome, note }) {
+  return apiFetch(`/admin/disputes/${id}/rule`, { method: 'POST', body: JSON.stringify({ outcome, note }) });
+}
+
 // --- reviews ---
 export function createReview(payload) {
   return apiFetch('/reviews', { method: 'POST', body: JSON.stringify(payload) });
