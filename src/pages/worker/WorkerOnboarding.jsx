@@ -131,13 +131,18 @@ export default function WorkerOnboarding() {
   const toggleSkill = (n) => setSkills((s) => (s.includes(n) ? s.filter((x) => x !== n) : [...s, n]));
   const addCustom = () => { const v = customSkill.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setCustomSkill(''); };
 
+  // The selfie step advances only once the on-device scan MATCHES the ID
+  // (a weak/failed match can't proceed on the online path). 'simulated' is the
+  // no-camera demo fallback.
+  const faceMatched = faceMatch?.passed === true || selfie === 'simulated';
+  const continueDisabled = matching
+    || (stepKey === 'id' && !idDoc)
+    || (stepKey === 'selfie' && !faceMatched);
+
   function next() {
     setErr('');
-    // On the online path the ID + selfie are the point of the method — ask for
-    // them (a worker who can't should pick in-person instead). Skills are needed
-    // on both paths so the profile is usable.
     if (stepKey === 'id' && !idDoc) return setErr('Upload your ID — or go back and choose in-person verification.');
-    if (stepKey === 'selfie' && !selfie) return setErr('Capture your selfie — or go back and choose in-person verification.');
+    if (stepKey === 'selfie' && !faceMatched) return setErr('Scan your face until it matches your ID to continue — or go back and choose in-person.');
     if (stepKey === 'skills' && skills.length === 0) return setErr('Add at least one skill.');
     setStep((s) => Math.min(s + 1, STEP_KEYS.length - 1));
   }
@@ -245,9 +250,13 @@ export default function WorkerOnboarding() {
               {selfie && selfie !== 'simulated' && (
                 <div className="onb-match">
                   {matching ? <span className="meta">Comparing with your ID on-device… (first run loads the model)</span>
-                    : faceMatch?.error ? <span className="meta" style={{ color: 'var(--color-orange-600)' }}>{faceMatch.error} You can still submit — an admin will confirm.</span>
-                      : faceMatch ? <span className={`onb-match-res ${faceMatch.passed ? 'is-ok' : 'is-no'}`}>{faceMatch.passed ? Icons.checkCircle : Icons.shield} Face match: {faceMatch.score}% — {faceMatch.passed ? 'looks like the same person' : 'weak match, review advised'}</span>
-                        : null}
+                    : faceMatch?.error ? <span className="meta" style={{ color: 'var(--color-orange-600)' }}>{faceMatch.error} Scan again, or go back and choose in-person.</span>
+                      : faceMatch ? (
+                        <>
+                          <span className={`onb-match-res ${faceMatch.passed ? 'is-ok' : 'is-no'}`}>{faceMatch.passed ? Icons.checkCircle : Icons.shield} Face match: {faceMatch.score}% — {faceMatch.passed ? 'matches your ID — you can continue' : 'too low to continue'}</span>
+                          {!faceMatch.passed && <div className="meta" style={{ marginTop: '0.35rem' }}>Scan again for a stronger match, or go back and choose in-person.</div>}
+                        </>
+                      ) : null}
                 </div>
               )}
               <div className="row" style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
@@ -337,7 +346,7 @@ export default function WorkerOnboarding() {
           <div className="onb-actions">
             <button className="btn-secondary" onClick={back} disabled={submitting}>Back</button>
             {step < STEP_KEYS.length - 1
-              ? <button className="btn-primary" onClick={next}>Continue</button>
+              ? <button className="btn-primary" onClick={next} disabled={continueDisabled}>{matching ? 'Matching…' : 'Continue'}</button>
               : <button className="btn-primary" onClick={submit} disabled={submitting}>{submitting ? 'Submitting…' : 'Submit for review'}</button>}
           </div>
         </div>
