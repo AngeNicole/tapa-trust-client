@@ -2130,6 +2130,8 @@ body {
   }
   .search svg { @apply h-5 w-5 shrink-0; }
   .btn-avail { @apply shrink-0 whitespace-nowrap; }
+  .photo-upload { @apply flex items-center gap-4; }
+  .photo-upload .is-busy { @apply pointer-events-none opacity-70; }
   .search input {
     @apply w-full border-0 bg-transparent p-0 text-paragraph-sm text-text-strong-950 outline-none;
   }
