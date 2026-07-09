@@ -1,7 +1,62 @@
-import { useState } from 'react';
-import { acceptBooking, checkinBooking, checkoutBooking, confirmStart, confirmCompletion, raiseDispute, setSafetyTimer } from '../api/client.js';
+import { useState, useEffect } from 'react';
+import { acceptBooking, checkinBooking, checkoutBooking, confirmStart, confirmCompletion, raiseDispute, setSafetyTimer, getDisputeMessages, postDisputeMessage } from '../api/client.js';
 import { Icons } from './shared/icons.jsx';
 import { rwf, ErrorNote, EscrowBanner } from './shared/ui.jsx';
+
+const MEETING_LABEL = { in_app: 'In-app discussion', google_meet: 'Google Meet', physical: 'Physical meetup' };
+const fmtT = (iso) => (iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '');
+
+// Mediation thread a party opens from the dispute banner — see the meeting the
+// admin set, read both sides + the admin's notes, and add your own account.
+function DisputeMediationModal({ dispute, onClose }) {
+  const [messages, setMessages] = useState([]);
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  async function load() {
+    try { setMessages(await getDisputeMessages(dispute.disputeId)); } catch (e) { setErr(e.message); }
+  }
+  useEffect(() => { load(); }, [dispute.disputeId]); // eslint-disable-line react-hooks/exhaustive-deps
+  async function send() {
+    if (!msg.trim()) return;
+    setBusy(true); setErr('');
+    try { await postDisputeMessage(dispute.disputeId, msg.trim()); setMsg(''); await load(); }
+    catch (e) { setErr(e.message); } finally { setBusy(false); }
+  }
+  const m = dispute.meetingMode;
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-title">Dispute mediation</div>
+        {m ? (
+          <p className="meta" style={{ marginTop: '0.25rem' }}>
+            Meeting: <strong>{MEETING_LABEL[m] || m}</strong>{dispute.meetingAt ? ` · ${fmtT(dispute.meetingAt)}` : ''}
+            {m === 'google_meet' && dispute.meetingDetail ? <> · <a href={dispute.meetingDetail} target="_blank" rel="noreferrer">Join link</a></> : null}
+            {m === 'physical' && dispute.meetingDetail ? ` · ${dispute.meetingDetail}` : ''}
+          </p>
+        ) : <p className="meta" style={{ marginTop: '0.25rem' }}>An admin will set up a meeting. You can share your side here in the meantime.</p>}
+        <div className="dispute-chat" style={{ marginTop: '0.75rem' }}>
+          {messages.length ? messages.map((x, i) => (
+            <div key={i} className="dchat-msg">
+              <span className="dchat-who">{x.senderName} · {x.senderRole}</span>
+              <span className="dchat-body">{x.body}</span>
+              <span className="dchat-at">{fmtT(x.created_at)}</span>
+            </div>
+          )) : <p className="meta">No messages yet — add your account below.</p>}
+        </div>
+        {err && <div className="form-error" style={{ marginTop: '0.5rem' }}>{err}</div>}
+        <div className="row" style={{ gap: '0.5rem', marginTop: '0.75rem' }}>
+          <input className="input" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Share your side…" style={{ flex: 1 }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } }} />
+          <button className="btn-primary" onClick={send} disabled={busy || !msg.trim()}>Send</button>
+        </div>
+        <div className="row" style={{ justifyContent: 'flex-end', marginTop: '0.75rem' }}>
+          <button className="btn-secondary" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Data-minimizing safety check-in for the worker (lone worker at a job). The
 // worker sets when they expect to finish; if they don't check out in time, TaPa
@@ -98,6 +153,7 @@ export function BookingStepper({ b, role, reload, openChat, onReview }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const [showDispute, setShowDispute] = useState(false);
+  const [showMediation, setShowMediation] = useState(false);
 
   async function run(promise, after) {
     setErr(''); setBusy(true);
@@ -238,8 +294,12 @@ export function BookingStepper({ b, role, reload, openChat, onReview }) {
           <div>
             <div className="dispute-title">Under dispute — payment frozen</div>
             <div className="dispute-sub">
-              {b.dispute.raisedBy === role ? 'You' : (b.dispute.raisedBy === 'worker' ? b.workerName || 'The worker' : b.requesterName || 'The requester')} raised an issue{b.dispute.category ? ` (${b.dispute.category})` : ''}. An admin is reviewing the booking record and will rule.
+              {b.dispute.raisedBy === role ? 'You' : (b.dispute.raisedBy === 'worker' ? b.workerName || 'The worker' : b.requesterName || 'The requester')} raised an issue{b.dispute.category ? ` (${b.dispute.category})` : ''}.{' '}
+              {b.dispute.meetingMode
+                ? <>Mediation set: <strong>{MEETING_LABEL[b.dispute.meetingMode] || b.dispute.meetingMode}</strong>{b.dispute.meetingAt ? ` · ${fmtT(b.dispute.meetingAt)}` : ''}{b.dispute.meetingMode === 'google_meet' && b.dispute.meetingDetail ? <> · <a href={b.dispute.meetingDetail} target="_blank" rel="noreferrer">Join</a></> : ''}{b.dispute.meetingMode === 'physical' && b.dispute.meetingDetail ? ` · ${b.dispute.meetingDetail}` : ''}.</>
+                : 'An admin will set up a meeting to hear both sides before deciding.'}
             </div>
+            <button type="button" className="bstep-report" style={{ marginTop: '0.5rem' }} onClick={() => setShowMediation(true)}>{Icons.chat} Open mediation discussion</button>
           </div>
         </div>
       )}
@@ -289,6 +349,7 @@ export function BookingStepper({ b, role, reload, openChat, onReview }) {
 
       <ErrorNote message={err} />
       {showDispute && <DisputeModal booking={b} onClose={() => setShowDispute(false)} onDone={() => { setShowDispute(false); reload?.(); }} />}
+      {showMediation && b.dispute && <DisputeMediationModal dispute={b.dispute} onClose={() => { setShowMediation(false); reload?.(); }} />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getAdminUsers, getCategories, createCategory, updateCategory, deleteCategory, getAllWorkers, getWorker, verifyWorker, rejectWorker, getAdminDisputes, getAdminDispute, ruleDispute } from '../../api/client.js';
+import { getAdminUsers, getCategories, createCategory, updateCategory, deleteCategory, getAllWorkers, getWorker, verifyWorker, rejectWorker, getAdminDisputes, getAdminDispute, ruleDispute, scheduleDisputeMeeting, postDisputeMessage } from '../../api/client.js';
 import { useAsync } from '../../api/hooks.js';
 import { Loading, ErrorNote, VerifyBadge, EmptyState, Avatar, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
@@ -348,6 +348,8 @@ function DisputesView({ state }) {
   );
 }
 
+const MEETING_LABEL = { in_app: 'In-app discussion', google_meet: 'Google Meet', physical: 'Physical meetup' };
+
 function DisputeDetailModal({ dispute, onClose, onDone }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -355,17 +357,36 @@ function DisputeDetailModal({ dispute, onClose, onDone }) {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  // Mediation scheduling + thread composer
+  const [mode, setMode] = useState('in_app');
+  const [meetDetail, setMeetDetail] = useState('');
+  const [meetAt, setMeetAt] = useState('');
+  const [msg, setMsg] = useState('');
 
-  useEffect(() => {
-    let alive = true;
-    getAdminDispute(dispute.disputeId)
-      .then((d) => { if (alive) setDetail(d); })
-      .catch((e) => { if (alive) setErr(e.message); })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
-  }, [dispute.disputeId]);
+  async function load() {
+    try { setDetail(await getAdminDispute(dispute.disputeId)); }
+    catch (e) { setErr(e.message); }
+    finally { setLoading(false); }
+  }
+  useEffect(() => { load(); }, [dispute.disputeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const resolved = detail?.status === 'resolved';
+  const hasMeeting = Boolean(detail?.meetingMode);
+
+  async function schedule() {
+    if ((mode === 'google_meet' || mode === 'physical') && !meetDetail.trim()) {
+      setErr(mode === 'google_meet' ? 'Paste the meeting link.' : 'Enter the meetup place/time.'); return;
+    }
+    setBusy(true); setErr('');
+    try { await scheduleDisputeMeeting(dispute.disputeId, { mode, detail: meetDetail, at: meetAt || null }); await load(); }
+    catch (e) { setErr(e.message); } finally { setBusy(false); }
+  }
+  async function send() {
+    if (!msg.trim()) return;
+    setBusy(true); setErr('');
+    try { await postDisputeMessage(dispute.disputeId, msg.trim()); setMsg(''); await load(); }
+    catch (e) { setErr(e.message); } finally { setBusy(false); }
+  }
   async function rule() {
     if (!outcome) { setErr('Choose an outcome.'); return; }
     setBusy(true); setErr('');
@@ -432,6 +453,53 @@ function DisputeDetailModal({ dispute, onClose, onDone }) {
               <p className="meta">This worker has been in {detail.history?.workerDisputes ?? 0} dispute(s); this requester in {detail.history?.requesterDisputes ?? 0}.</p>
             </div>
 
+            {/* Mediation — hear both sides before ruling */}
+            <div className="review-sec">
+              <h4>Mediation</h4>
+              {!hasMeeting && !resolved && (
+                <>
+                  <p className="meta" style={{ marginBottom: '0.5rem' }}>Set up a meeting to hear both parties, in the mode they&apos;re comfortable with.</p>
+                  <div className="row" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {[{ v: 'in_app', l: 'In-app discussion' }, { v: 'google_meet', l: 'Google Meet' }, { v: 'physical', l: 'Physical meetup' }].map((o) => (
+                      <button key={o.v} type="button" className={mode === o.v ? 'chip' : 'chip-opt'} onClick={() => setMode(o.v)}>{o.l}</button>
+                    ))}
+                  </div>
+                  {mode !== 'in_app' && (
+                    <input className="input" value={meetDetail} onChange={(e) => setMeetDetail(e.target.value)} style={{ width: '100%', marginTop: '0.5rem' }}
+                      placeholder={mode === 'google_meet' ? 'Paste the Google Meet link' : 'Place & time (e.g. TaPa office, Fri 2pm)'} />
+                  )}
+                  <input className="input" type="datetime-local" value={meetAt} onChange={(e) => setMeetAt(e.target.value)} style={{ width: '100%', marginTop: '0.5rem' }} />
+                  <button className="btn-primary" onClick={schedule} disabled={busy} style={{ marginTop: '0.6rem' }}>{busy ? 'Scheduling…' : 'Schedule meeting'}</button>
+                </>
+              )}
+              {hasMeeting && (
+                <>
+                  <p className="meta">
+                    <strong>{MEETING_LABEL[detail.meetingMode] || detail.meetingMode}</strong>
+                    {detail.meetingAt ? ` · ${fmtTime(detail.meetingAt)}` : ''}
+                    {detail.meetingMode === 'google_meet' && detail.meetingDetail ? <> · <a href={detail.meetingDetail} target="_blank" rel="noreferrer">Join link</a></> : null}
+                    {detail.meetingMode === 'physical' && detail.meetingDetail ? ` · ${detail.meetingDetail}` : ''}
+                  </p>
+                  <div className="dispute-chat" style={{ marginTop: '0.5rem' }}>
+                    {detail.messages?.length ? detail.messages.map((m, i) => (
+                      <div key={i} className="dchat-msg">
+                        <span className="dchat-who">{m.senderName} · {m.senderRole}</span>
+                        <span className="dchat-body">{m.body}</span>
+                        <span className="dchat-at">{fmtTime(m.created_at)}</span>
+                      </div>
+                    )) : <p className="meta">No messages yet — both parties can post here.</p>}
+                  </div>
+                  {!resolved && (
+                    <div className="row" style={{ gap: '0.5rem', marginTop: '0.5rem' }}>
+                      <input className="input" value={msg} onChange={(e) => setMsg(e.target.value)} placeholder="Add a note to the discussion…" style={{ flex: 1 }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(); } }} />
+                      <button className="btn-secondary" onClick={send} disabled={busy || !msg.trim()}>Send</button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
             {err && <div className="form-error" style={{ marginTop: '0.75rem' }}>{err}</div>}
 
             {resolved ? (
@@ -440,17 +508,23 @@ function DisputeDetailModal({ dispute, onClose, onDone }) {
               <>
                 <div className="review-sec">
                   <h4>Ruling (neutral oversight)</h4>
-                  <p className="meta" style={{ marginBottom: '0.5rem' }}>A no-prior-relationship handler gives fairer outcomes. Decide based on the record above.</p>
-                  <div className="row" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {[{ v: 'release', l: 'Release to worker' }, { v: 'refund', l: 'Refund requester' }, { v: 'dismiss', l: 'Dismiss (no change)' }].map((o) => (
-                      <button key={o.v} type="button" className={outcome === o.v ? 'chip' : 'chip-opt'} onClick={() => setOutcome(o.v)}>{o.l}</button>
-                    ))}
-                  </div>
-                  <textarea className="input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ruling note (optional)" style={{ width: '100%', marginTop: '0.6rem' }} />
+                  {!hasMeeting ? (
+                    <p className="meta">Schedule a mediation meeting and hear both parties before recording a ruling.</p>
+                  ) : (
+                    <>
+                      <p className="meta" style={{ marginBottom: '0.5rem' }}>A no-prior-relationship handler gives fairer outcomes. Decide based on the record and the meeting.</p>
+                      <div className="row" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                        {[{ v: 'release', l: 'Release to worker' }, { v: 'refund', l: 'Refund requester' }, { v: 'dismiss', l: 'Dismiss (no change)' }].map((o) => (
+                          <button key={o.v} type="button" className={outcome === o.v ? 'chip' : 'chip-opt'} onClick={() => setOutcome(o.v)}>{o.l}</button>
+                        ))}
+                      </div>
+                      <textarea className="input" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ruling note (optional)" style={{ width: '100%', marginTop: '0.6rem' }} />
+                    </>
+                  )}
                 </div>
                 <div className="review-actions">
                   <button className="btn-secondary" onClick={onClose} disabled={busy}>Close</button>
-                  <button className="btn-primary" onClick={rule} disabled={busy || !outcome}>{busy ? 'Recording…' : 'Record ruling'}</button>
+                  <button className="btn-primary" onClick={rule} disabled={busy || !outcome || !hasMeeting}>{busy ? 'Recording…' : 'Record ruling'}</button>
                 </div>
               </>
             )}
