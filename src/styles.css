@@ -1503,6 +1503,10 @@ body {
   .badge--rejected { @apply bg-red-50 text-red-700; }
   .badge--primary  { @apply bg-primary-lighter text-primary-dark; }
   .badge--star     { @apply bg-yellow-50 text-yellow-800; }
+  .badge--tier-admin { @apply inline-flex items-center gap-1 bg-purple-50 text-purple-700; }
+  .badge--tier-admin svg { @apply h-3.5 w-3.5; }
+  .badge--tier-peer  { @apply inline-flex items-center gap-1 bg-blue-50 text-blue-700; }
+  .badge--tier-peer svg { @apply h-3.5 w-3.5; }
   .empty {
     @apply rounded-2xl border border-dashed border-stroke-sub-300 bg-bg-weak-50 p-5 text-center text-paragraph-sm text-text-sub-600;
   }

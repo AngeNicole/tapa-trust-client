@@ -14,7 +14,7 @@ import {
   updateMe,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, duration, rwf } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, TierBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, duration, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { BookingStepper } from '../../components/BookingStepper.jsx';
 import { Settings } from '../../components/Settings.jsx';
@@ -211,6 +211,7 @@ function HireView({ savedIds, bookedIds = [], onBooked, onSavedChange }) {
 function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
   const [term, setTerm] = useState('');
   const [skill, setSkill] = useState('');
+  const [tierFilter, setTierFilter] = useState('all');
   const workers = useAsync(() => getWorkers(skill), [skill]);
   const [err, setErr] = useState('');
 
@@ -222,20 +223,28 @@ function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
     } catch (e) { setErr(e.message); }
   }
 
-  // Same set as the public Browse: only admin-verified workers surface.
-  const list = (workers.data || []).filter((w) => w.verification === 'verified');
+  // Show trusted workers (Admin-Certified + Peer-Verified); hide Unverified.
+  // Then apply the requester's tier filter.
+  const list = (workers.data || [])
+    .filter((w) => w.tier && w.tier !== 'Unverified')
+    .filter((w) => tierFilter === 'all' || w.tier === tierFilter);
 
   return (
     <>
       <h1>Find workers</h1>
-      <p className="subtitle">Browse verified workers, open a profile, and book — no task to post.</p>
+      <p className="subtitle">Browse trusted workers by tier, open a profile, and book — no task to post.</p>
       <ErrorNote message={err} />
 
-      <form className="row" onSubmit={(e) => { e.preventDefault(); setSkill(term.trim()); }} style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+      <form className="row" onSubmit={(e) => { e.preventDefault(); setSkill(term.trim()); }} style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
         <input className="input" style={{ flex: 1, minWidth: '180px' }} value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Search a skill, e.g. Plumbing" />
         <button className="btn-primary" type="submit">Search</button>
         {skill && <button type="button" className="btn-secondary" onClick={() => { setTerm(''); setSkill(''); }}>Clear</button>}
       </form>
+      <div className="subtabs" style={{ marginBottom: '1rem' }}>
+        {[{ k: 'all', l: 'All tiers' }, { k: 'Admin-Certified', l: 'Admin-Certified' }, { k: 'Peer-Verified', l: 'Peer-Verified' }].map((t) => (
+          <button key={t.k} type="button" className={`subtab ${tierFilter === t.k ? 'subtab--active' : ''}`} onClick={() => setTierFilter(t.k)}>{t.l}</button>
+        ))}
+      </div>
 
       {workers.loading ? <Loading /> : workers.error ? <ErrorNote message={workers.error} /> : list.length === 0 ? (
         <EmptyState icon={Icons.search} title={skill ? `No workers for “${skill}”` : 'No available workers yet'} hint="Try a different skill, or check back soon as more workers get verified." />
@@ -254,7 +263,7 @@ function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
                 <Stars rating={Number(w.rating) || 0} />
               </div>
               <div className="row" style={{ marginTop: '0.6rem' }}>
-                <VerifyBadge status={w.verification} />
+                <TierBadge tier={w.tier} />
                 <span className="meta">{w.completedJobs || 0} jobs done</span>
               </div>
               <div className="actions">
@@ -296,6 +305,7 @@ function WorkerProfilePanel({ workerId, saved, alreadyBooked, onBack, onBooked, 
                 <div>
                   <div className="row" style={{ gap: '0.5rem' }}>
                     <span className="card-title">{w.name}</span>
+                    <TierBadge tier={w.tier} />
                     <VerifyBadge status={w.verification} />
                   </div>
                   <div className="stars-row"><Stars rating={Number(w.rating) || 0} /></div>

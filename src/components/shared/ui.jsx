@@ -70,8 +70,15 @@ export function PaymentBadge({ payment }) {
   return <span className={`badge ${p.cls}`}>{p.label}</span>;
 }
 
+// Three-tier trust ladder badge.
+const TIER = {
+  'Admin-Certified': { cls: 'badge--tier-admin', icon: Icons.shield, label: 'Admin-Certified' },
+  'Peer-Verified': { cls: 'badge--tier-peer', icon: Icons.thumbsUp, label: 'Peer-Verified' },
+  Unverified: { cls: 'badge--neutral', icon: null, label: 'Unverified' },
+};
 export function TierBadge({ tier }) {
-  return <span className="badge badge--primary">{tier}</span>;
+  const t = TIER[tier] || TIER.Unverified;
+  return <span className={`badge ${t.cls}`}>{t.icon}{t.label}</span>;
 }
 
 // Simulated verification status — a labelled status badge, not a security claim.
