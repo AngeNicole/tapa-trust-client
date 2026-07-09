@@ -5,7 +5,7 @@ import { getMyWorkerProfile, getCategories, updateMyWorkerProfile, submitVerific
 import { ErrorNote } from '../../components/shared/ui.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 import { fileToDataUrl } from '../../utils/files.js';
-import { matchFaces } from '../../utils/faceMatch.js';
+import { matchFaces, detectIdFace } from '../../utils/faceMatch.js';
 
 // Guided worker verification onboarding: upload ID → capture selfie → skills →
 // certifications → submit for admin review. An admin compares the selfie with
@@ -35,6 +35,7 @@ export default function WorkerOnboarding() {
   const [selfie, setSelfie] = useState(null);      // dataURL or 'simulated' — kept in memory only
   const [faceMatch, setFaceMatch] = useState(null); // { score, passed } | { error }
   const [matching, setMatching] = useState(false);
+  const [idCheck, setIdCheck] = useState(null); // null | 'checking' | 'ok' | 'noface'
   const [skills, setSkills] = useState([]);
   const [customSkill, setCustomSkill] = useState('');
   const [bio, setBio] = useState('');
@@ -57,9 +58,19 @@ export default function WorkerOnboarding() {
     if (!file) return;
     setErr('');
     if (tooBig(file)) { setErr(`That file is ${(file.size / 1048576).toFixed(1)}MB — the limit is 5MB. Please choose a smaller photo or PDF.`); return; }
-    setIdBusy(true);
-    try { setIdDoc(await fileToDataUrl(file)); }
-    catch (e2) { setErr(e2.message); }
+    setIdBusy(true); setIdCheck(null); setFaceMatch(null);
+    try {
+      const doc = await fileToDataUrl(file);
+      setIdDoc(doc);
+      // Authenticity signal: an image ID must contain a real, detectable face.
+      if (doc.type?.startsWith('image/')) {
+        setIdCheck('checking');
+        const r = await detectIdFace(doc.dataUrl);
+        setIdCheck(r.hasFace ? 'ok' : 'noface');
+      } else {
+        setIdCheck('ok'); // PDF — can't face-detect; the live match still proves ownership
+      }
+    } catch (e2) { setErr(e2.message); }
     finally { setIdBusy(false); }
   }
   async function onCertFiles(e) {
@@ -135,13 +146,15 @@ export default function WorkerOnboarding() {
   // (a weak/failed match can't proceed on the online path). 'simulated' is the
   // no-camera demo fallback.
   const faceMatched = faceMatch?.passed === true || selfie === 'simulated';
+  const idValid = idDoc && idCheck === 'ok';
   const continueDisabled = matching
-    || (stepKey === 'id' && !idDoc)
+    || (stepKey === 'id' && !idValid)
     || (stepKey === 'selfie' && !faceMatched);
 
   function next() {
     setErr('');
     if (stepKey === 'id' && !idDoc) return setErr('Upload your ID — or go back and choose in-person verification.');
+    if (stepKey === 'id' && idCheck === 'noface') return setErr('We couldn’t find a face on this ID — upload a clear photo of your actual ID (front side), or go in-person.');
     if (stepKey === 'selfie' && !faceMatched) return setErr('Scan your face until it matches your ID to continue — or go back and choose in-person.');
     if (stepKey === 'skills' && skills.length === 0) return setErr('Add at least one skill.');
     setStep((s) => Math.min(s + 1, STEP_KEYS.length - 1));
@@ -173,14 +186,13 @@ export default function WorkerOnboarding() {
     <div className="onb">
       <div className="onb-head">
         <div className="brand"><span className="shell-logo">{Icons.spark}</span> <span className="shell-brand-name">TaPa Trust</span></div>
-        <button className="onb-skip" onClick={() => navigate('/worker', { replace: true })}>Skip for now</button>
       </div>
 
       <div className="onb-body">
         {method === null ? (
           <div className="onb-card">
-            <div className="onb-title">Choose how to verify</div>
-            <p className="onb-sub">Both paths lead to the same <strong>Verified</strong> badge — pick the one that suits you. Verifying is optional; you can also earn Peer-Verified from well-reviewed jobs.</p>
+            <div className="onb-title">Verify to start working</div>
+            <p className="onb-sub">Every worker verifies before taking jobs — choose the path that suits you. Both lead to the same <strong>Verified</strong> badge.</p>
             <div className="onb-methods">
               <button type="button" className="onb-method" onClick={() => { setMethod('physical'); setStep(0); setErr(''); }}>
                 <span className="onb-method-ic">{Icons.user}</span>
@@ -231,6 +243,16 @@ export default function WorkerOnboarding() {
                   )}
                 <input type="file" accept="image/*,.pdf" hidden onChange={onIdFile} />
               </label>
+              {idCheck === 'checking' && <p className="meta" style={{ marginTop: '0.5rem' }}>Checking the ID photo…</p>}
+              {idCheck === 'ok' && idDoc?.type?.startsWith('image/') && (
+                <div className="onb-match" style={{ textAlign: 'left' }}><span className="onb-match-res is-ok">{Icons.checkCircle} ID photo looks valid — a face was detected.</span></div>
+              )}
+              {idCheck === 'noface' && (
+                <div className="onb-match" style={{ textAlign: 'left' }}>
+                  <span className="onb-match-res is-no">{Icons.shield} No face found on this ID.</span>
+                  <div className="meta" style={{ marginTop: '0.35rem' }}>Upload a clear photo of your actual ID (front side), or go back and choose in-person.</div>
+                </div>
+              )}
             </div>
           )}
 
@@ -346,7 +368,7 @@ export default function WorkerOnboarding() {
           <div className="onb-actions">
             <button className="btn-secondary" onClick={back} disabled={submitting}>Back</button>
             {step < STEP_KEYS.length - 1
-              ? <button className="btn-primary" onClick={next} disabled={continueDisabled}>{matching ? 'Matching…' : 'Continue'}</button>
+              ? <button className="btn-primary" onClick={next} disabled={continueDisabled}>{idCheck === 'checking' ? 'Checking ID…' : matching ? 'Matching…' : 'Continue'}</button>
               : <button className="btn-primary" onClick={submit} disabled={submitting}>{submitting ? 'Submitting…' : 'Submit for review'}</button>}
           </div>
         </div>
