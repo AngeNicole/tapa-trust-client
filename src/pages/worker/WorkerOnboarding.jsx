@@ -13,7 +13,7 @@ import { matchFaces } from '../../utils/faceMatch.js';
 // Two verification paths — both end at the SAME "verified" status (same tier).
 //   physical → admin confirms in person; no device, no upload, no biometric.
 //   online   → upload ID + live selfie; the system compares them (self-service).
-const STEP_LABELS = { id: 'Identity document', selfie: 'Live selfie', skills: 'Skills', certs: 'Certifications', review: 'Review' };
+const STEP_LABELS = { id: 'Identity document', selfie: 'Face scan', skills: 'Skills', certs: 'Certifications', review: 'Review' };
 const STEPS_ONLINE = ['id', 'selfie', 'skills', 'certs', 'review'];
 const STEPS_PHYSICAL = ['skills', 'certs', 'review'];
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB per uploaded file
@@ -231,9 +231,9 @@ export default function WorkerOnboarding() {
 
           {stepKey === 'selfie' && (
             <div className="onb-pane">
-              <h3 className="onb-h">Take a live selfie</h3>
-              <p className="meta">Center your face and capture — it&apos;s matched to your ID on your device.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Match-then-discard:</strong> the comparison runs here in your browser; neither the selfie nor the ID is uploaded — only the result is saved.</span></div>
+              <h3 className="onb-h">Scan your face</h3>
+              <p className="meta">Center your face and capture — a free on-device face engine scans it and matches it to the photo on your ID.</p>
+              <div className="onb-why">{Icons.shield} <span><strong>Match-then-discard:</strong> the face scan and the ID are compared here in your browser; neither is uploaded — only the match result is saved.</span></div>
               <div className="onb-cam">
                 {selfie && selfie !== 'simulated'
                   ? <img src={selfie} alt="Captured selfie" />
@@ -251,9 +251,9 @@ export default function WorkerOnboarding() {
                 </div>
               )}
               <div className="row" style={{ justifyContent: 'center', marginTop: '0.75rem' }}>
-                {!selfie && !camErr && <button className="btn-primary" onClick={capture}>Capture</button>}
+                {!selfie && !camErr && <button className="btn-primary" onClick={capture}>Scan my face</button>}
                 {!selfie && camErr && <button className="btn-primary" onClick={() => setSelfie('simulated')}>Simulate scan</button>}
-                {selfie && <button className="btn-secondary" onClick={() => { setSelfie(null); setFaceMatch(null); startCam(); }}>Retake</button>}
+                {selfie && <button className="btn-secondary" onClick={() => { setSelfie(null); setFaceMatch(null); startCam(); }}>Scan again</button>}
               </div>
             </div>
           )}
