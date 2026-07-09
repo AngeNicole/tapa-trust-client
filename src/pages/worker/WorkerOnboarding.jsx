@@ -110,8 +110,10 @@ export default function WorkerOnboarding() {
 
   function next() {
     setErr('');
-    if (step === 0 && !idDoc) return setErr('Upload a photo of your ID to continue.');
-    if (step === 1 && !selfie) return setErr('Capture (or simulate) your face scan to continue.');
+    // ID and selfie are OPTIONAL supporting evidence — never a gate. The primary
+    // path is admin review (+ the peer-verified tier); a worker with no device or
+    // no wish to share biometrics can still get verified. Only skills are needed
+    // to continue (and skills+bio to go available later).
     if (step === 2 && skills.length === 0) return setErr('Add at least one skill.');
     setStep((s) => Math.min(s + 1, STEPS.length - 1));
   }
@@ -139,6 +141,7 @@ export default function WorkerOnboarding() {
     <div className="onb">
       <div className="onb-head">
         <div className="brand"><span className="shell-logo">{Icons.spark}</span> <span className="shell-brand-name">TaPa Trust</span></div>
+        <button className="onb-skip" onClick={() => navigate('/worker', { replace: true })}>Skip for now</button>
       </div>
 
       <div className="onb-body">
@@ -152,14 +155,14 @@ export default function WorkerOnboarding() {
         </div>
 
         <div className="onb-card">
-          <div className="onb-title">Verify your identity</div>
-          <p className="onb-sub">Requesters only see admin-approved workers. Upload your ID and take a selfie so an admin can confirm you are the real person behind the profile.</p>
+          <div className="onb-title">Build your trust profile</div>
+          <p className="onb-sub">An admin reviews and verifies workers — you don&apos;t need any of this to start. Every step below is <strong>optional</strong>: add what you can, or skip and get verified later. You can also earn Peer-Verified from well-reviewed jobs.</p>
 
           {step === 0 && (
             <div className="onb-pane">
-              <h3 className="onb-h">Upload your ID document</h3>
-              <p className="meta">A national ID, passport, or driver&apos;s licence.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> an admin compares this document with your selfie to confirm they show the <em>same person</em>. It&apos;s used only for that identity check.</span></div>
+              <h3 className="onb-h">Upload your ID document <span className="onb-optional">optional</span></h3>
+              <p className="meta">A national ID, passport, or driver&apos;s licence. You can skip this and be verified by an admin in person.</p>
+              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> if you add it, it helps an admin confirm your identity faster. It&apos;s optional supporting evidence, never required.</span></div>
               <label className={`onb-drop ${idBusy ? 'is-busy' : ''}`}>
                 {idBusy ? <span className="meta">Processing…</span>
                   : idDoc ? (
@@ -180,9 +183,9 @@ export default function WorkerOnboarding() {
 
           {step === 1 && (
             <div className="onb-pane">
-              <h3 className="onb-h">Take a selfie</h3>
-              <p className="meta">Center your face in the frame and capture.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> an admin compares this selfie with your uploaded ID to check the face matches — this is how requesters know verified workers are real.</span></div>
+              <h3 className="onb-h">Take a selfie <span className="onb-optional">optional</span></h3>
+              <p className="meta">Center your face and capture — or skip it. No camera? No problem.</p>
+              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> if you add it, an admin can match it to your ID. Optional — admins also verify workers in person.</span></div>
               <div className="onb-cam">
                 {selfie && selfie !== 'simulated'
                   ? <img src={selfie} alt="Captured selfie" />
@@ -266,7 +269,7 @@ export default function WorkerOnboarding() {
                 <li><span>Education</span><b>{education || '—'}</b></li>
                 <li><span>Certificates</span><b>{certFiles.length ? `✓ ${certFiles.length} uploaded` : '—'}</b></li>
               </ul>
-              <p className="meta">An admin will compare your selfie with your ID and review your certificates. You&apos;ll appear in Browse once approved.</p>
+              <p className="meta">An admin reviews whatever you&apos;ve added (in person if needed) and approves you. You&apos;ll appear in Browse once verified — or earn Peer-Verified from well-reviewed jobs.</p>
             </div>
           )}
 

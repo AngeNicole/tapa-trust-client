@@ -1266,12 +1266,6 @@ body {
   .dchat-body { @apply text-paragraph-sm text-text-sub-600; }
   .dchat-at { @apply text-label-xs text-text-soft-400; }
 
-  /* optional biometric face-match assist */
-  .facematch { @apply mt-3 flex flex-col items-start gap-1.5; }
-  .facematch-res { @apply flex items-center gap-2 rounded-lg px-3 py-2 text-paragraph-sm; }
-  .facematch-res svg { @apply h-5 w-5 shrink-0; }
-  .facematch-res.is-match { background: var(--color-green-50, #e0faec); color: var(--color-green-700, #178c4e); }
-  .facematch-res.is-nomatch { background: var(--color-orange-50, #fff3eb); color: var(--color-orange-700, #b23816); }
 
   /* messages inbox */
   .convos { @apply flex flex-col; }
@@ -1468,6 +1462,7 @@ body {
   .onb-why { @apply mt-3 flex items-start gap-2 rounded-xl p-3 text-paragraph-sm text-text-sub-600; background: var(--color-bg-weak-50); border: 1px solid var(--color-stroke-soft-200); }
   .onb-why svg { @apply h-5 w-5 shrink-0 text-primary-base; margin-top: 1px; }
   .onb-why strong { @apply text-text-strong-950; }
+  .onb-optional { @apply ml-2 rounded-full bg-bg-weak-50 px-2 py-0.5 align-middle text-label-xs font-medium text-text-soft-400; }
   .onb-drop.is-busy { @apply pointer-events-none opacity-70; }
   .onb-drop--sm { @apply py-6; }
   .onb-doc-thumb { @apply rounded-xl object-cover; max-height: 160px; max-width: 100%; }
