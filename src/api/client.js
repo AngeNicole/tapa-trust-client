@@ -196,6 +196,17 @@ export function getAdminDispute(id) {
 export function ruleDispute(id, { outcome, note }) {
   return apiFetch(`/admin/disputes/${id}/rule`, { method: 'POST', body: JSON.stringify({ outcome, note }) });
 }
+// Mediation: admin schedules a meeting before ruling; both parties + admin can
+// post in the in-app discussion thread.
+export function scheduleDisputeMeeting(id, { mode, detail, at }) {
+  return apiFetch(`/admin/disputes/${id}/meeting`, { method: 'POST', body: JSON.stringify({ mode, detail, at }) });
+}
+export function getDisputeMessages(id) {
+  return apiFetch(`/disputes/${id}/messages`);
+}
+export function postDisputeMessage(id, body) {
+  return apiFetch(`/disputes/${id}/messages`, { method: 'POST', body: JSON.stringify({ body }) });
+}
 
 // --- reviews ---
 export function createReview(payload) {
