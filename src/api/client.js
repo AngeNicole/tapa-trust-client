@@ -111,6 +111,9 @@ export function getWorkerHistory(id) {
 export function getMyWorkerProfile() {
   return apiFetch('/workers/me');
 }
+export function getMyEarnings() {
+  return apiFetch('/workers/me/earnings');
+}
 export function updateMyWorkerProfile(payload) {
   return apiFetch('/workers/me', { method: 'PUT', body: JSON.stringify(payload) });
 }

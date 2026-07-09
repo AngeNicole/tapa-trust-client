@@ -1301,6 +1301,14 @@ body {
   .earn-tile { @apply rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-4; }
   .earn-tile-n { @apply block text-title-h5 font-semibold text-text-strong-950; letter-spacing: -0.02em; }
   .earn-tile-l { @apply mt-0.5 block text-label-sm text-text-sub-600; }
+  /* earnings by category */
+  .cat-bars { @apply flex flex-col gap-2.5; }
+  .cat-row { @apply grid items-center gap-3; grid-template-columns: 120px 1fr auto; }
+  .cat-name { @apply truncate text-paragraph-sm text-text-sub-600; }
+  .cat-track { @apply h-2.5 overflow-hidden rounded-full; background: var(--color-bg-weak-50); }
+  .cat-fill { @apply block h-full rounded-full; background: var(--color-primary-base); }
+  .cat-amt { @apply text-paragraph-sm font-semibold text-text-strong-950; }
+
   .payouts { @apply flex flex-col; }
   .payout-row { @apply flex items-center gap-3 border-t border-stroke-soft-200 py-3; }
   .payout-row:first-child { @apply border-t-0; }

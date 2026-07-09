@@ -387,7 +387,8 @@ function BookingsView({ state }) {
 
 function EarningsView() {
   const notify = useToast();
-  const { data, loading, error } = useAsync(async () => ({ bookings: await getBookings() }), []);
+  const { user } = useAuth();
+  const { data, loading, error } = useAsync(async () => ({ bookings: await getBookings(), earnings: await getMyEarnings() }), []);
 
   if (loading) return <><h1>Earnings</h1><Loading /></>;
   if (error) return <><h1>Earnings</h1><ErrorNote message={error} /></>;
@@ -395,6 +396,7 @@ function EarningsView() {
   // Real earnings come from the price agreed in chat. A completed booking is a
   // released payout; an in-flight booking with an agreed price is pending.
   const bookings = data.bookings || [];
+  const earn = data.earnings || { total: 0, count: 0, avgRating: 0, byCategory: [], records: [] };
   const amountOf = (b) => Number(b.agreedPrice) || 0;
   const released = bookings
     .filter((b) => b.status === 'completed' && amountOf(b) > 0)
@@ -426,6 +428,32 @@ function EarningsView() {
   const monthTotal = released.filter((e) => e.date.slice(0, 7) === thisMonth).reduce((a, e) => a + e.amount, 0);
 
   const chartData = weekEarnings(bookings);
+  const maxCat = Math.max(1, ...earn.byCategory.map((c) => c.amount));
+
+  // Printable income statement → the worker's browser "Save as PDF". A real
+  // income record informal workers can use for loans/accounts (SDG 8), with no
+  // extra dependency.
+  function exportIncomeSummary() {
+    const win = window.open('', '_blank', 'width=820,height=920');
+    if (!win) { notify('Allow pop-ups to export your income summary as a PDF.'); return; }
+    const rows = earn.records.map((r) => `<tr><td>${new Date(r.date).toLocaleDateString()}</td><td>${r.taskTitle || ''}</td><td>${r.category}</td><td style="text-align:right">${rwf(r.amount)}</td></tr>`).join('');
+    const cats = earn.byCategory.map((c) => `<li>${c.category}: <strong>${rwf(c.amount)}</strong></li>`).join('');
+    win.document.write(`<html><head><title>TaPa Trust — Income Summary</title>
+      <style>body{font-family:system-ui,Arial,sans-serif;padding:32px;color:#1a1a1a}h1{margin:0 0 2px}small{color:#666}.tot{font-size:24px;font-weight:800;margin:18px 0 6px}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{text-align:left;padding:8px;border-bottom:1px solid #eee;font-size:13px}th{color:#666}ul{padding-left:18px;line-height:1.7}.foot{margin-top:24px;color:#888;font-size:12px}</style>
+      </head><body>
+      <h1>Income summary</h1>
+      <small>TaPa Trust &middot; ${user?.name || 'Worker'} &middot; generated ${new Date().toLocaleDateString()}</small>
+      <div class="tot">Total earned: ${rwf(earn.total)}</div>
+      <p>Jobs completed: <strong>${earn.count}</strong> &middot; Average rating: <strong>${(earn.avgRating || 0).toFixed(1)}★</strong></p>
+      <h3>Earnings by category</h3><ul>${cats || '<li>—</li>'}</ul>
+      <h3>Payout records</h3>
+      <table><thead><tr><th>Date</th><th>Job</th><th>Category</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="4">No records yet</td></tr>'}</tbody></table>
+      <p class="foot">Simulated payouts for demonstration. Reflects completed, released jobs on TaPa Trust.</p>
+      </body></html>`);
+    win.document.close();
+    setTimeout(() => { win.focus(); win.print(); }, 300);
+  }
 
   return (
     <>
@@ -449,6 +477,7 @@ function EarningsView() {
         <div className="earn-tile"><span className="earn-tile-n">{rwf(monthTotal)}</span><span className="earn-tile-l">This month</span></div>
         <div className="earn-tile"><span className="earn-tile-n">{released.length}</span><span className="earn-tile-l">Jobs paid</span></div>
         <div className="earn-tile"><span className="earn-tile-n">{pending.length}</span><span className="earn-tile-l">Pending payouts</span></div>
+        <div className="earn-tile"><span className="earn-tile-n">{(earn.avgRating || 0).toFixed(1)}★</span><span className="earn-tile-l">Avg rating</span></div>
       </div>
 
       <div className="card">
@@ -459,10 +488,25 @@ function EarningsView() {
         <BarChart data={chartData} format={earnFmt} />
       </div>
 
+      {earn.byCategory.length > 0 && (
+        <div className="card">
+          <div className="card-title" style={{ marginBottom: '0.75rem' }}>Earnings by category</div>
+          <div className="cat-bars">
+            {earn.byCategory.map((c) => (
+              <div className="cat-row" key={c.category}>
+                <span className="cat-name">{c.category}</span>
+                <span className="cat-track"><span className="cat-fill" style={{ width: `${Math.round((c.amount / maxCat) * 100)}%` }} /></span>
+                <span className="cat-amt">{rwf(c.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <div className="card-head" style={{ marginBottom: '0.5rem' }}>
           <div className="card-title">Payouts</div>
-          <button className="btn-secondary" onClick={() => window.print()}>Export</button>
+          <button className="btn-secondary" onClick={exportIncomeSummary}>Export PDF</button>
         </div>
         <div className="payouts">
           {invoices.map((e) => (
