@@ -5,39 +5,6 @@ import { Loading, ErrorNote, VerifyBadge, EmptyState, Avatar, rwf } from '../../
 import { DashShell } from '../../components/DashShell.jsx';
 import { Analytics } from '../../components/shared/Analytics.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
-import { matchFaces } from '../../utils/faceMatch.js';
-
-// Optional biometric assist — compares selfie vs ID face in-browser. Never
-// required; the admin's own comparison remains the decision.
-function FaceMatchAssist({ selfie, idDoc, isImg }) {
-  const [state, setState] = useState('idle'); // idle | running | done | error
-  const [result, setResult] = useState(null);
-  const [msg, setMsg] = useState('');
-  if (!(selfie && idDoc && isImg(selfie) && isImg(idDoc))) return null;
-  async function run() {
-    setState('running'); setMsg('');
-    try {
-      const r = await matchFaces(selfie, idDoc);
-      if (!r.ok) { setState('error'); setMsg(r.reason); return; }
-      setResult(r); setState('done');
-    } catch { setState('error'); setMsg('Could not run the check — please compare the images manually.'); }
-  }
-  return (
-    <div className="facematch">
-      {state === 'idle' && <button type="button" className="btn-secondary btn-icon" onClick={run}>{Icons.scales} Run face match (optional)</button>}
-      {state === 'running' && <span className="meta">Comparing… first run downloads the model, please wait.</span>}
-      {state === 'error' && <span className="meta" style={{ color: 'var(--color-orange-600)' }}>{msg}</span>}
-      {state === 'done' && result && (
-        <div className={`facematch-res ${result.likelySame ? 'is-match' : 'is-nomatch'}`}>
-          {result.likelySame ? Icons.checkCircle : Icons.warning}
-          <span><strong>{result.score}% similar</strong> — {result.likelySame ? 'likely the same person' : 'faces look different — review closely'} <span className="meta">(distance {result.distance.toFixed(2)})</span></span>
-        </div>
-      )}
-      {(state === 'done' || state === 'error') && <button type="button" className="btn-ghost" onClick={run}>Re-run</button>}
-      <p className="meta" style={{ marginTop: '0.35rem' }}>Assist only — your review decides. Runs in your browser; images aren&apos;t sent anywhere.</p>
-    </div>
-  );
-}
 
 export default function AdminDashboard() {
   const [tab, setTab] = useState('overview');
@@ -277,7 +244,6 @@ function ReviewModal({ worker, onClose, onDone }) {
               ) : (
                 <p className="meta">No selfie/ID on file for this worker yet.</p>
               )}
-              <FaceMatchAssist selfie={selfie} idDoc={idDoc} isImg={isImg} />
             </div>
             <div className="review-sec">
               <h4>Certificates</h4>
