@@ -9,16 +9,24 @@ import { fileToDataUrl } from '../../utils/files.js';
 // Guided worker verification onboarding: upload ID → capture selfie → skills →
 // certifications → submit for admin review. An admin compares the selfie with
 // the ID to confirm the same person, and previews the uploaded certificates.
-const STEPS = ['Identity document', 'Face scan', 'Skills', 'Certifications', 'Review'];
+// Two verification paths — both end at the SAME "verified" status (same tier).
+//   physical → admin confirms in person; no device, no upload, no biometric.
+//   online   → upload ID + live selfie; the system compares them (self-service).
+const STEP_LABELS = { id: 'Identity document', selfie: 'Live selfie', skills: 'Skills', certs: 'Certifications', review: 'Review' };
+const STEPS_ONLINE = ['id', 'selfie', 'skills', 'certs', 'review'];
+const STEPS_PHYSICAL = ['skills', 'certs', 'review'];
 const MAX_FILE_BYTES = 5 * 1024 * 1024; // 5 MB per uploaded file
 const tooBig = (f) => f.size > MAX_FILE_BYTES;
 
 export default function WorkerOnboarding() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [method, setMethod] = useState(null); // 'physical' | 'online'
   const [step, setStep] = useState(0);
   const [err, setErr] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const STEP_KEYS = method === 'online' ? STEPS_ONLINE : STEPS_PHYSICAL;
+  const stepKey = STEP_KEYS[step];
 
   // collected data
   const [idDoc, setIdDoc] = useState(null);        // { name, type, dataUrl }
@@ -98,26 +106,28 @@ export default function WorkerOnboarding() {
     }
     stopCam();
   }
-  // start/stop camera as the face step comes in/out of view
+  // start/stop camera as the selfie step comes in/out of view
   useEffect(() => {
-    if (step === 1 && !selfie) startCam();
+    if (stepKey === 'selfie' && !selfie) startCam();
     else stopCam();
     return stopCam;
-  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stepKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleSkill = (n) => setSkills((s) => (s.includes(n) ? s.filter((x) => x !== n) : [...s, n]));
   const addCustom = () => { const v = customSkill.trim(); if (v && !skills.includes(v)) setSkills([...skills, v]); setCustomSkill(''); };
 
   function next() {
     setErr('');
-    // ID and selfie are OPTIONAL supporting evidence — never a gate. The primary
-    // path is admin review (+ the peer-verified tier); a worker with no device or
-    // no wish to share biometrics can still get verified. Only skills are needed
-    // to continue (and skills+bio to go available later).
-    if (step === 2 && skills.length === 0) return setErr('Add at least one skill.');
-    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    // On the online path the ID + selfie are the point of the method — ask for
+    // them (a worker who can't should pick in-person instead). Skills are needed
+    // on both paths so the profile is usable.
+    if (stepKey === 'id' && !idDoc) return setErr('Upload your ID — or go back and choose in-person verification.');
+    if (stepKey === 'selfie' && !selfie) return setErr('Capture your selfie — or go back and choose in-person verification.');
+    if (stepKey === 'skills' && skills.length === 0) return setErr('Add at least one skill.');
+    setStep((s) => Math.min(s + 1, STEP_KEYS.length - 1));
   }
-  const back = () => { setErr(''); setStep((s) => Math.max(s - 1, 0)); };
+  // Back from the first step returns to the method chooser.
+  const back = () => { setErr(''); if (step === 0) { setMethod(null); } else { setStep((s) => Math.max(s - 1, 0)); } };
 
   async function submit() {
     setErr(''); setSubmitting(true);
@@ -126,11 +136,13 @@ export default function WorkerOnboarding() {
       // list still shows them; the actual files go with the verification for the
       // admin to preview.
       await updateMyWorkerProfile({ skills: skills.join(', '), bio, education, certifications: certFiles.map((f) => f.name).join('\n') });
+      const online = method === 'online';
       await submitVerification({
-        document: idDoc?.name || null,          // legacy field (name only)
-        faceScan: selfie ? 'captured' : null,   // legacy field
-        idDocument: idDoc?.dataUrl || null,      // the uploaded ID image/PDF
-        selfie: selfie && selfie !== 'simulated' ? selfie : null,
+        method,                                  // 'physical' | 'online'
+        document: online ? (idDoc?.name || null) : null, // legacy field (name only)
+        faceScan: online && selfie ? 'captured' : null,  // legacy field
+        idDocument: online ? (idDoc?.dataUrl || null) : null,   // ID only on the online path
+        selfie: online && selfie && selfie !== 'simulated' ? selfie : null,
         certificationFiles: certFiles,           // [{ name, type, dataUrl }]
       });
       navigate('/worker', { replace: true });
@@ -145,24 +157,45 @@ export default function WorkerOnboarding() {
       </div>
 
       <div className="onb-body">
+        {method === null ? (
+          <div className="onb-card">
+            <div className="onb-title">Choose how to verify</div>
+            <p className="onb-sub">Both paths lead to the same <strong>Verified</strong> badge — pick the one that suits you. Verifying is optional; you can also earn Peer-Verified from well-reviewed jobs.</p>
+            <div className="onb-methods">
+              <button type="button" className="onb-method" onClick={() => { setMethod('physical'); setStep(0); setErr(''); }}>
+                <span className="onb-method-ic">{Icons.user}</span>
+                <span className="onb-method-t">Verify in person</span>
+                <span className="onb-method-d">An admin, office or agent confirms you — no smartphone, no upload, no biometrics. Best if you don&apos;t have a capable phone.</span>
+              </button>
+              <button type="button" className="onb-method" onClick={() => { setMethod('online'); setStep(0); setErr(''); }}>
+                <span className="onb-method-ic">{Icons.idCard}</span>
+                <span className="onb-method-t">Verify online</span>
+                <span className="onb-method-d">Upload your ID and take a live selfie; the system compares them. Do it yourself from your phone.</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+        <>
         <div className="onb-steps">
-          {STEPS.map((s, i) => (
-            <div key={s} className={`onb-step ${i === step ? 'is-active' : ''} ${i < step ? 'is-done' : ''}`}>
+          {STEP_KEYS.map((k, i) => (
+            <div key={k} className={`onb-step ${i === step ? 'is-active' : ''} ${i < step ? 'is-done' : ''}`}>
               <span className="onb-step-dot">{i < step ? Icons.check : i + 1}</span>
-              <span className="onb-step-label">{s}</span>
+              <span className="onb-step-label">{STEP_LABELS[k]}</span>
             </div>
           ))}
         </div>
 
         <div className="onb-card">
-          <div className="onb-title">Build your trust profile</div>
-          <p className="onb-sub">An admin reviews and verifies workers — you don&apos;t need any of this to start. Every step below is <strong>optional</strong>: add what you can, or skip and get verified later. You can also earn Peer-Verified from well-reviewed jobs.</p>
+          <div className="onb-title">{method === 'online' ? 'Verify online' : 'Verify in person'}</div>
+          <p className="onb-sub">{method === 'online'
+            ? 'Upload your ID and take a live selfie — the system compares them, and an admin confirms. Same Verified badge as in-person.'
+            : 'Add your skills (and any certificates). An admin, office or agent confirms your identity in person — same Verified badge, no upload needed.'}</p>
 
-          {step === 0 && (
+          {stepKey === 'id' && (
             <div className="onb-pane">
-              <h3 className="onb-h">Upload your ID document <span className="onb-optional">optional</span></h3>
-              <p className="meta">A national ID, passport, or driver&apos;s licence. You can skip this and be verified by an admin in person.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> if you add it, it helps an admin confirm your identity faster. It&apos;s optional supporting evidence, never required.</span></div>
+              <h3 className="onb-h">Upload your ID document</h3>
+              <p className="meta">A national ID, passport, or driver&apos;s licence.</p>
+              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> the system compares the face on your ID with your live selfie, and an admin confirms. Prefer not to? Go back and choose in-person.</span></div>
               <label className={`onb-drop ${idBusy ? 'is-busy' : ''}`}>
                 {idBusy ? <span className="meta">Processing…</span>
                   : idDoc ? (
@@ -181,11 +214,11 @@ export default function WorkerOnboarding() {
             </div>
           )}
 
-          {step === 1 && (
+          {stepKey === 'selfie' && (
             <div className="onb-pane">
-              <h3 className="onb-h">Take a selfie <span className="onb-optional">optional</span></h3>
-              <p className="meta">Center your face and capture — or skip it. No camera? No problem.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> if you add it, an admin can match it to your ID. Optional — admins also verify workers in person.</span></div>
+              <h3 className="onb-h">Take a live selfie</h3>
+              <p className="meta">Center your face and capture.</p>
+              <div className="onb-why">{Icons.shield} <span><strong>Why we ask:</strong> the system compares this selfie with your ID so an admin can confirm you&apos;re the same person.</span></div>
               <div className="onb-cam">
                 {selfie && selfie !== 'simulated'
                   ? <img src={selfie} alt="Captured selfie" />
@@ -202,7 +235,7 @@ export default function WorkerOnboarding() {
             </div>
           )}
 
-          {step === 2 && (
+          {stepKey === 'skills' && (
             <div className="onb-pane">
               <h3 className="onb-h">What do you do?</h3>
               <p className="meta">Pick your service categories and add any others.</p>
@@ -226,7 +259,7 @@ export default function WorkerOnboarding() {
             </div>
           )}
 
-          {step === 3 && (
+          {stepKey === 'certs' && (
             <div className="onb-pane">
               <h3 className="onb-h">Experience & certifications</h3>
               <div className="form" style={{ maxWidth: '100%' }}>
@@ -259,29 +292,34 @@ export default function WorkerOnboarding() {
             </div>
           )}
 
-          {step === 4 && (
+          {stepKey === 'review' && (
             <div className="onb-pane">
               <h3 className="onb-h">Review & submit</h3>
               <ul className="onb-review">
-                <li><span>ID document</span><b>{idDoc ? '✓ Uploaded' : '—'}</b></li>
-                <li><span>Selfie</span><b>{selfie ? '✓ Captured' : '—'}</b></li>
+                <li><span>Method</span><b>{method === 'online' ? 'Online (ID + selfie)' : 'In person'}</b></li>
+                {method === 'online' && <li><span>ID document</span><b>{idDoc ? '✓ Uploaded' : '—'}</b></li>}
+                {method === 'online' && <li><span>Live selfie</span><b>{selfie ? '✓ Captured' : '—'}</b></li>}
                 <li><span>Skills</span><b>{skills.join(', ') || '—'}</b></li>
                 <li><span>Education</span><b>{education || '—'}</b></li>
                 <li><span>Certificates</span><b>{certFiles.length ? `✓ ${certFiles.length} uploaded` : '—'}</b></li>
               </ul>
-              <p className="meta">An admin reviews whatever you&apos;ve added (in person if needed) and approves you. You&apos;ll appear in Browse once verified — or earn Peer-Verified from well-reviewed jobs.</p>
+              <p className="meta">{method === 'online'
+                ? 'An admin reviews your ID + selfie (with the system’s face comparison) and approves you.'
+                : 'An admin, office or agent confirms your identity in person and approves you.'} You&apos;ll appear in Browse once verified — or earn Peer-Verified from well-reviewed jobs.</p>
             </div>
           )}
 
           <ErrorNote message={err} />
 
           <div className="onb-actions">
-            {step > 0 ? <button className="btn-secondary" onClick={back} disabled={submitting}>Back</button> : <span />}
-            {step < STEPS.length - 1
+            <button className="btn-secondary" onClick={back} disabled={submitting}>Back</button>
+            {step < STEP_KEYS.length - 1
               ? <button className="btn-primary" onClick={next}>Continue</button>
               : <button className="btn-primary" onClick={submit} disabled={submitting}>{submitting ? 'Submitting…' : 'Submit for review'}</button>}
           </div>
         </div>
+        </>
+        )}
       </div>
     </div>
   );

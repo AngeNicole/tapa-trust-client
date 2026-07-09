@@ -1270,6 +1270,13 @@ body {
   .dchat-body { @apply text-paragraph-sm text-text-sub-600; }
   .dchat-at { @apply text-label-xs text-text-soft-400; }
 
+  /* biometric face-match assist (online verification path) */
+  .facematch { @apply mt-3 flex flex-col items-start gap-1.5; }
+  .facematch-res { @apply flex items-center gap-2 rounded-lg px-3 py-2 text-paragraph-sm; }
+  .facematch-res svg { @apply h-5 w-5 shrink-0; }
+  .facematch-res.is-match { background: var(--color-green-50, #e0faec); color: var(--color-green-700, #178c4e); }
+  .facematch-res.is-nomatch { background: var(--color-orange-50, #fff3eb); color: var(--color-orange-700, #b23816); }
+
 
   /* messages inbox */
   .convos { @apply flex flex-col; }
@@ -1467,6 +1474,14 @@ body {
   .onb-why svg { @apply h-5 w-5 shrink-0 text-primary-base; margin-top: 1px; }
   .onb-why strong { @apply text-text-strong-950; }
   .onb-optional { @apply ml-2 rounded-full bg-bg-weak-50 px-2 py-0.5 align-middle text-label-xs font-medium text-text-soft-400; }
+  /* verification method chooser */
+  .onb-methods { @apply mt-4 grid gap-3; grid-template-columns: 1fr; }
+  @media (min-width: 620px) { .onb-methods { grid-template-columns: 1fr 1fr; } }
+  .onb-method { @apply flex cursor-pointer flex-col items-start gap-1 rounded-2xl border border-stroke-soft-200 bg-bg-white-0 p-4 text-left transition-colors hover:border-primary-base; }
+  .onb-method-ic { @apply mb-1 flex h-11 w-11 items-center justify-center rounded-xl text-primary-base; background: var(--color-bg-weak-50); }
+  .onb-method-ic svg { @apply h-6 w-6; }
+  .onb-method-t { @apply text-label-lg font-semibold text-text-strong-950; }
+  .onb-method-d { @apply text-paragraph-sm text-text-sub-600; }
   .onb-drop.is-busy { @apply pointer-events-none opacity-70; }
   .onb-drop--sm { @apply py-6; }
   .onb-doc-thumb { @apply rounded-xl object-cover; max-height: 160px; max-width: 100%; }
