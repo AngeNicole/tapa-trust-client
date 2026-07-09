@@ -1482,6 +1482,11 @@ body {
   .onb-method-ic svg { @apply h-6 w-6; }
   .onb-method-t { @apply text-label-lg font-semibold text-text-strong-950; }
   .onb-method-d { @apply text-paragraph-sm text-text-sub-600; }
+  .onb-match { @apply mt-2 text-center; }
+  .onb-match-res { @apply inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-paragraph-sm font-medium; }
+  .onb-match-res svg { @apply h-4 w-4; }
+  .onb-match-res.is-ok { background: var(--color-green-50, #e0faec); color: var(--color-green-700, #178c4e); }
+  .onb-match-res.is-no { background: var(--color-orange-50, #fff3eb); color: var(--color-orange-700, #b23816); }
   .onb-drop.is-busy { @apply pointer-events-none opacity-70; }
   .onb-drop--sm { @apply py-6; }
   .onb-doc-thumb { @apply rounded-xl object-cover; max-height: 160px; max-width: 100%; }

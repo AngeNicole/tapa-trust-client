@@ -7,12 +7,13 @@ At verification the worker **chooses their path**, and both reach the same
 `verified` status / tier:
 - **In person** — an admin/office/agent confirms them; no device, no upload, no
   biometrics. The inclusive path for the no-smartphone worker.
-- **Online** — upload ID + live selfie; the system runs a biometric **face
-  comparison** (selfie ↔ ID) as an admin assist. Self-service from a phone.
+- **Online** — the worker's ID + live selfie are compared **in their browser**
+  (match-then-discard): the images are **never uploaded or stored**, only the
+  match verdict (a score) is saved. Self-service from a phone.
 
 The biometric compare is **built and offered on the online path**, but it is
-**never an auto-gate** — the admin confirms either way, and the in-person path
-needs no biometric at all.
+**never an auto-gate** — the admin confirms either way, the images are
+discarded after matching, and the in-person path needs no biometric at all.
 
 ## Real identity verification (NIDA / Smile ID) — future work
 The online compare is currently selfie↔self-supplied-ID (the admin is the trusted
