@@ -64,11 +64,14 @@ export default function WorkerDashboard() {
   const notify = useToast();
   const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
   useBookingAlerts(bookings.data, 'worker', notify);
-  const count = bookings.data?.length || 0;
+  const all = bookings.data || [];
+  const activeCount = all.filter((b) => !['completed', 'cancelled'].includes(b.status)).length;
+  const doneCount = all.filter((b) => b.status === 'completed').length;
 
   const items = [
     { key: 'overview', label: 'Dashboard', icon: Icons.grid || Icons.spark },
-    { key: 'bookings', label: 'My bookings', icon: Icons.calendar, count },
+    { key: 'bookings', label: 'My bookings', icon: Icons.calendar, count: activeCount },
+    { key: 'history', label: 'History', icon: Icons.clock, count: doneCount },
     { key: 'messages', label: 'Messages', icon: Icons.chat },
     { key: 'earnings', label: 'Earnings', icon: Icons.wallet },
     { key: 'profile', label: 'Settings', icon: Icons.settings },
@@ -78,7 +81,8 @@ export default function WorkerDashboard() {
     <DashShell items={items} active={tab} onSelect={setTab}>
       {tab === 'overview' && <OverviewView user={user} bookings={bookings.data || []} />}
       {tab === 'profile' && <Settings profileTab={<ProfileView user={user} embedded />} />}
-      {tab === 'bookings' && <BookingsView state={bookings} />}
+      {tab === 'bookings' && <BookingsView state={bookings} only="active" />}
+      {tab === 'history' && <BookingsView state={bookings} only="done" />}
       {tab === 'messages' && <MessagesView bookings={bookings.data} loading={bookings.loading} />}
       {tab === 'earnings' && <EarningsView />}
     </DashShell>
@@ -334,35 +338,27 @@ function TaskHistory({ workerId }) {
   );
 }
 
-function BookingsView({ state }) {
+function BookingsView({ state, only = 'active' }) {
   const { openChat } = useChat();
   const { data, loading, error, reload } = state;
-  const [view, setView] = useState('active');
   const all = data || [];
-  const activeJobs = all.filter((b) => b.status !== 'completed');
-  const doneJobs = all.filter((b) => b.status === 'completed');
-  const bookings = view === 'active' ? activeJobs : doneJobs;
+  const isHistory = only === 'done';
+  const bookings = isHistory
+    ? all.filter((b) => b.status === 'completed')
+    : all.filter((b) => b.status !== 'completed');
 
   return (
     <>
-      <h1>My bookings</h1>
-      <p className="subtitle">Accept jobs and record check-in / check-out.</p>
+      <h1>{isHistory ? 'History' : 'My bookings'}</h1>
+      <p className="subtitle">{isHistory ? 'Your completed jobs and their reviews.' : 'Accept jobs and record check-in / check-out.'}</p>
       <ErrorNote message={error} />
-      <div className="subtabs">
-        <button type="button" className={`subtab ${view === 'active' ? 'subtab--active' : ''}`} onClick={() => setView('active')}>
-          Active ({activeJobs.length})
-        </button>
-        <button type="button" className={`subtab ${view === 'done' ? 'subtab--active' : ''}`} onClick={() => setView('done')}>
-          Done ({doneJobs.length})
-        </button>
-      </div>
       {loading ? <Loading /> : bookings.length === 0 ? (
         <EmptyState
-          icon={Icons.calendar}
-          title={view === 'active' ? 'No active jobs' : 'No completed jobs yet'}
-          hint={view === 'active' ? 'When a requester books you, the job shows up here to accept and track.' : 'Finished jobs and their reviews will appear here.'}
+          icon={isHistory ? Icons.clock : Icons.calendar}
+          title={isHistory ? 'No completed jobs yet' : 'No active jobs'}
+          hint={isHistory ? 'Finished jobs and their reviews will appear here.' : 'When a requester books you, the job shows up here to accept and track.'}
         />
-      ) : bookings.map((b) => (
+      ) : bookings.map((b, i) => (
         <div className="card" key={b.booking_id}>
           <div className="card-head">
             <div>
@@ -379,7 +375,7 @@ function BookingsView({ state }) {
               <button className="btn-secondary btn-icon" onClick={() => openChat(b)}>{Icons.chat} {b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>
             </div>
           )}
-          <BookingStepper b={b} role="worker" reload={reload} openChat={openChat} />
+          <BookingStepper b={b} role="worker" reload={reload} openChat={openChat} collapsible defaultOpen={!isHistory && i === 0} />
         </div>
       ))}
     </>

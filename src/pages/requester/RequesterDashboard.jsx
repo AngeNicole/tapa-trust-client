@@ -356,7 +356,7 @@ function BookingsView({ state, bookings, onReview }) {
       <ErrorNote message={error} />
       {loading ? <Loading /> : bookings.length === 0 ? (
         <EmptyState icon={Icons.calendar} title="No active bookings" hint="Find a worker and book them — your active jobs will track here." />
-      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} />)}
+      ) : bookings.map((b, i) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} expanded={i === 0} />)}
     </>
   );
 }
@@ -370,12 +370,12 @@ function HistoryView({ state, bookings, onReview, savedIds = [], bookedIds = [],
       <ErrorNote message={error} />
       {loading ? <Loading /> : bookings.length === 0 ? (
         <EmptyState icon={Icons.clock} title="No completed jobs yet" hint="Once a job is confirmed complete, it moves here with its review and a one-tap rebook." />
-      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} savedIds={savedIds} bookedIds={bookedIds} onSavedChange={onSavedChange} />)}
+      ) : bookings.map((b) => <BookingCard key={b.booking_id} b={b} reload={reload} onReview={onReview} savedIds={savedIds} bookedIds={bookedIds} onSavedChange={onSavedChange} expanded={false} />)}
     </>
   );
 }
 
-function BookingCard({ b, reload, onReview, savedIds, bookedIds = [], onSavedChange }) {
+function BookingCard({ b, reload, onReview, savedIds, bookedIds = [], onSavedChange, expanded = true }) {
   const { openChat } = useChat();
   const [err, setErr] = useState('');
   const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
@@ -419,7 +419,7 @@ function BookingCard({ b, reload, onReview, savedIds, bookedIds = [], onSavedCha
           </button>
         )}
       </div>
-      <BookingStepper b={b} role="requester" reload={reload} openChat={openChat} onReview={onReview} />
+      <BookingStepper b={b} role="requester" reload={reload} openChat={openChat} onReview={onReview} collapsible defaultOpen={expanded} />
     </div>
   );
 }
