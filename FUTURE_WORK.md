@@ -2,26 +2,25 @@
 
 These are specified and justified but deliberately **not** in the graded build.
 
-## Biometric identity matching
-A face-match step (selfie ↔ ID) is **future work**, not in the live flow.
+## Verification: two paths, one status (built)
+At verification the worker **chooses their path**, and both reach the same
+`verified` status / tier:
+- **In person** — an admin/office/agent confirms them; no device, no upload, no
+  biometrics. The inclusive path for the no-smartphone worker.
+- **Online** — upload ID + live selfie; the system runs a biometric **face
+  comparison** (selfie ↔ ID) as an admin assist. Self-service from a phone.
 
-Reasoning:
-- **Biometric without a trusted reference doesn't prove identity.** Matching a
-  self-supplied selfie against a self-supplied ID photo is circular — both come
-  from the same person. It only becomes meaningful against a *trusted* reference
-  (e.g. Rwanda's NIDA), which is out of scope.
-- **Inclusion first.** The no-device / no-biometric worker must have a fully
-  valid path, so **admin verification is primary** and **Peer-Verified** (earned
-  from completed, well-reviewed jobs) is the automatic Tier-2 — biometrics are an
-  optional extra, **never a gate**.
-- If demonstrated in future, it should run on **AI-synthetic faces + a
-  TaPa-branded demo card**, framed as a *capability demonstration on
-  privacy-preserving synthetic data* (cf. SFace / synthetic-data-for-FR
-  literature), never on real people's IDs.
+The biometric compare is **built and offered on the online path**, but it is
+**never an auto-gate** — the admin confirms either way, and the in-person path
+needs no biometric at all.
 
-## Real identity verification (NIDA / Smile ID)
-The optional top tier: match against Rwanda's national ID via NIDA or a provider
-like Smile ID. Deferred — needs a provider account/keys and a trusted reference.
+## Real identity verification (NIDA / Smile ID) — future work
+The online compare is currently selfie↔self-supplied-ID (the admin is the trusted
+confirmer). Matching against a **trusted external reference** — Rwanda's **NIDA**
+or a provider like **Smile ID** — is the optional top tier and is deferred: it
+needs a provider account/keys and a government identity reference. For a synthetic
+demonstration, run the compare on **AI-synthetic faces + a TaPa-branded demo
+card** (cf. SFace / synthetic-data-for-FR literature), never real people's IDs.
 
 ## Real payments (MTN MoMo / Airtel / eKash)
 - **MoMo sandbox** collection on deposit is built and gated (see server
