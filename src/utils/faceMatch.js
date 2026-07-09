@@ -32,6 +32,9 @@ function loadImage(src) {
   });
 }
 
+// Pass bar: the face similarity must be ABOVE 65% to count as a match.
+export const MATCH_THRESHOLD = 65;
+
 // Returns { ok, score (0-100), distance, likelySame, reason }.
 export async function matchFaces(selfieUrl, idUrl) {
   const faceapi = await loadFaceApi();
@@ -43,7 +46,23 @@ export async function matchFaces(selfieUrl, idUrl) {
       : !a ? 'No face detected in the selfie' : 'No clear face detected on the ID';
     return { ok: false, reason };
   }
+  // euclidean distance → similarity %. Same person ≈ 0.3-0.4 (≈60-70%),
+  // different people ≈ 0.7+ (≈30% or less).
   const distance = faceapi.euclideanDistance(a.descriptor, b.descriptor);
-  const score = Math.max(0, Math.min(100, Math.round((1 - distance / 0.6) * 100)));
-  return { ok: true, distance, score, likelySame: distance < 0.5 };
+  const score = Math.max(0, Math.min(100, Math.round((1 - distance) * 100)));
+  return { ok: true, distance, score, likelySame: score > MATCH_THRESHOLD };
+}
+
+// Lightweight authenticity signal for the uploaded ID: does it actually contain
+// a detectable face? Rejects screenshots/blank/non-ID images. (True document
+// tamper / NIDA cross-checks are future work — see FUTURE_WORK.md.)
+export async function detectIdFace(idUrl) {
+  try {
+    const faceapi = await loadFaceApi();
+    const img = await loadImage(idUrl);
+    const d = await faceapi.detectSingleFace(img);
+    return { ok: true, hasFace: Boolean(d) };
+  } catch {
+    return { ok: false, hasFace: false };
+  }
 }
