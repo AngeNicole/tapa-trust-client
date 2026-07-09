@@ -190,26 +190,26 @@ export function BookingStepper({ b, role, reload, openChat, onReview, collapsibl
   // step — whose turn it is (myTurn) plus the action, or who to wait for.
   const steps = [
     {
-      key: 'accept',
-      title: 'Booking accepted',
-      done: b.status !== 'pending',
-      doneText: `${b.workerName || 'The worker'} accepted the job.`,
-      todo: 'The worker reviews and accepts the request.',
-      myTurn: isWorker,
-      waitFor: b.workerName || 'the worker',
-      cta: 'Accept job',
-      act: () => run(acceptBooking(b.booking_id)),
-    },
-    {
       key: 'price',
       title: amount != null ? `Price agreed · ${money}` : 'Agree a price',
       done: amount != null,
       doneText: `You agreed on ${money}.`,
-      todo: 'Chat to negotiate and agree a price for the job.',
+      todo: 'Chat to negotiate and agree a price before the job is accepted.',
       myTurn: true, // either party can propose / accept in chat
       waitFor: isWorker ? (b.requesterName || 'the requester') : (b.workerName || 'the worker'),
       cta: 'Agree price in chat',
       act: openChatFn,
+    },
+    {
+      key: 'accept',
+      title: 'Booking accepted',
+      done: b.status !== 'pending',
+      doneText: `${b.workerName || 'The worker'} accepted the job.`,
+      todo: 'Once the price is agreed, the worker accepts the job.',
+      myTurn: isWorker,
+      waitFor: b.workerName || 'the worker',
+      cta: 'Accept job',
+      act: () => run(acceptBooking(b.booking_id)),
     },
     {
       key: 'sign',
