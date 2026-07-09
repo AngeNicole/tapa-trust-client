@@ -1,4 +1,5 @@
 // Small presentational helpers shared by the demo dashboards.
+import { useState, useEffect } from 'react';
 import { Icons } from './icons.jsx';
 
 function initials(name = '') {
@@ -106,7 +107,19 @@ export function duration(startTs, endTs) {
 }
 
 export function Loading({ label = 'Loading…' }) {
-  return <div className="empty" style={{ marginTop: '0.75rem' }}>{label}</div>;
+  // Free-tier APIs sleep when idle; the first request can take ~30s to wake.
+  // After a few seconds, reassure the user it's waking rather than stuck.
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setSlow(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div className="empty" style={{ marginTop: '0.75rem' }}>
+      {label}
+      {slow && <div className="meta" style={{ marginTop: '0.4rem' }}>Waking the server (it sleeps when idle) — this can take up to a minute the first time.</div>}
+    </div>
+  );
 }
 
 // Escrow status banner — makes the money flow unmistakable to BOTH parties:

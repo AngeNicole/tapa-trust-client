@@ -60,7 +60,7 @@ const earnFmt = (v) => (v >= 1000 ? Math.round(v / 1000) + 'k' : v);
 
 export default function WorkerDashboard() {
   const { user } = useAuth();
-  const [tab, setTab] = useState('bookings');
+  const [tab, setTab] = useState('overview');
   const notify = useToast();
   const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
   useBookingAlerts(bookings.data, 'worker', notify);
