@@ -23,6 +23,7 @@ import { Analytics, bookingActivity } from '../../components/shared/Analytics.js
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 import { BarChart } from '../../components/shared/Charts.jsx';
+import { fileToDataUrl } from '../../utils/files.js';
 
 function initials(name = '') {
   const p = name.trim().split(/\s+/);
@@ -221,9 +222,23 @@ function PersonalDetailsCard({ user, me, reload }) {
   const [phone, setPhone] = useState(user.phone || '');
   const [location, setLocation] = useState(user.location || '');
   const [photo, setPhoto] = useState(me.photo || '');
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [bio, setBio] = useState(me.bio || '');
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState('');
+
+  async function onPhotoFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setErr('');
+    if (!file.type?.startsWith('image/')) { setErr('Please choose an image (JPG or PNG).'); return; }
+    if (file.size > 5 * 1024 * 1024) { setErr('Photo must be 5MB or smaller.'); return; }
+    setPhotoBusy(true);
+    try { const { dataUrl } = await fileToDataUrl(file, 512); setPhoto(dataUrl); }
+    catch (e2) { setErr(e2.message); }
+    finally { setPhotoBusy(false); }
+  }
 
   async function save(e) {
     e.preventDefault();
@@ -243,11 +258,23 @@ function PersonalDetailsCard({ user, me, reload }) {
       <div className="card-title" style={{ marginBottom: '0.25rem' }}>Personal details</div>
       <p className="meta" style={{ marginBottom: '0.75rem' }}>Your contact info and how you present yourself to requesters.</p>
       <form className="form" onSubmit={save} style={{ maxWidth: '100%' }}>
+        <div className="photo-upload">
+          <Avatar name={user.name} photo={photo} className="avatar" style={{ width: 64, height: 64, borderRadius: 16, fontSize: '1.2rem' }} />
+          <div>
+            <div className="row" style={{ gap: '0.5rem' }}>
+              <label className={`btn-secondary btn-icon ${photoBusy ? 'is-busy' : ''}`} style={{ cursor: 'pointer' }}>
+                {Icons.upload} {photoBusy ? 'Processing…' : photo ? 'Change photo' : 'Upload photo'}
+                <input type="file" accept="image/*" hidden onChange={onPhotoFile} disabled={photoBusy} />
+              </label>
+              {photo && <button type="button" className="btn-ghost" onClick={() => setPhoto('')}>Remove</button>}
+            </div>
+            <p className="meta" style={{ marginTop: '0.35rem' }}>JPG or PNG · max 5MB. This is what requesters see. Remember to Save.</p>
+          </div>
+        </div>
         <div className="grid2">
           <label>Full name<input value={name} onChange={(e) => setName(e.target.value)} /></label>
           <label>Phone<input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="07…" /></label>
           <label>Location<input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Kigali, Gasabo" /></label>
-          <label>Profile photo URL<input value={photo} onChange={(e) => setPhoto(e.target.value)} placeholder="https://…" /></label>
         </div>
         <label>Bio
           <textarea className="textarea" rows={3} maxLength={500} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Tell requesters about your work, experience and what you do best." />
