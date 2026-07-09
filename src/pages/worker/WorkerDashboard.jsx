@@ -10,13 +10,11 @@ import {
   submitVerification,
   getWorkerHistory,
   getBookings,
-  acceptBooking,
-  checkinBooking,
-  checkoutBooking,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, EmptyState, WorkTracker, rwf, duration } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Avatar, Loading, ErrorNote, EmptyState, rwf, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { BookingStepper } from '../../components/BookingStepper.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Settings } from '../../components/Settings.jsx';
 import { MessagesView } from '../../components/MessagesView.jsx';
@@ -58,10 +56,6 @@ function weekEarnings(bookings) {
 }
 
 const earnFmt = (v) => (v >= 1000 ? Math.round(v / 1000) + 'k' : v);
-
-// Check-in is allowed once escrow is held. Old backend has no `escrow` field →
-// don't block (so behaviour is unchanged until escrow ships).
-const escrowReady = (b) => !b.escrow || ['held', 'released'].includes(b.escrow.status);
 
 export default function WorkerDashboard() {
   const { user } = useAuth();
@@ -332,9 +326,7 @@ function TaskHistory({ workerId }) {
 function BookingsView({ state }) {
   const { openChat } = useChat();
   const { data, loading, error, reload } = state;
-  const [err, setErr] = useState('');
   const [view, setView] = useState('active');
-  const act = async (p) => { setErr(''); try { await p; reload(); } catch (e) { setErr(e.message); } };
   const all = data || [];
   const activeJobs = all.filter((b) => b.status !== 'completed');
   const doneJobs = all.filter((b) => b.status === 'completed');
@@ -344,7 +336,7 @@ function BookingsView({ state }) {
     <>
       <h1>My bookings</h1>
       <p className="subtitle">Accept jobs and record check-in / check-out.</p>
-      <ErrorNote message={error || err} />
+      <ErrorNote message={error} />
       <div className="subtabs">
         <button type="button" className={`subtab ${view === 'active' ? 'subtab--active' : ''}`} onClick={() => setView('active')}>
           Active ({activeJobs.length})
@@ -371,20 +363,12 @@ function BookingsView({ state }) {
               <StatusBadge status={b.status} /><PaymentBadge payment={b.payment} />
             </div>
           </div>
-          <div className="actions">
-            {b.status !== 'completed' && b.status !== 'cancelled' && <button className="btn-secondary btn-icon" onClick={() => openChat(b)}>{Icons.chat} {b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>}
-            {b.status === 'pending' && <button className="btn-primary" onClick={() => act(acceptBooking(b.booking_id))}>Accept job</button>}
-            {b.status === 'accepted' && !b.checkedIn && !escrowReady(b) && <span className="meta">Agree &amp; sign in chat — you can check in once the requester pays.</span>}
-          </div>
-          {['accepted', 'in_progress', 'completed'].includes(b.status) && escrowReady(b) && (
-            <WorkTracker b={b} role="worker">
-              {b.status === 'accepted' && !b.checkedIn && <button className="btn-primary" onClick={() => act(checkinBooking(b.booking_id))}>Check in</button>}
-              {b.status === 'accepted' && b.checkedIn && <span className="meta">Checked in — waiting for requester to confirm start.</span>}
-              {b.status === 'in_progress' && !b.checkedOut && <button className="btn-primary" onClick={() => act(checkoutBooking(b.booking_id))}>Check out</button>}
-              {b.status === 'in_progress' && b.checkedOut && <span className="meta">Checked out — waiting for requester to confirm completion.</span>}
-              {b.status === 'completed' && <span className="meta">Job complete. {b.review ? `Reviewed ${b.review.rating}★.` : 'Awaiting review.'}</span>}
-            </WorkTracker>
+          {b.status !== 'completed' && b.status !== 'cancelled' && (
+            <div className="actions">
+              <button className="btn-secondary btn-icon" onClick={() => openChat(b)}>{Icons.chat} {b.agreedPrice != null ? 'Chat' : 'Chat & agree price'}</button>
+            </div>
           )}
+          <BookingStepper b={b} role="worker" reload={reload} openChat={openChat} />
         </div>
       ))}
     </>

@@ -6,8 +6,6 @@ import {
   getWorker,
   bookWorker,
   getBookings,
-  confirmStart,
-  confirmCompletion,
   createReview,
   getSavedWorkers,
   saveWorker,
@@ -16,8 +14,9 @@ import {
   updateMe,
 } from '../../api/client.js';
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
-import { StatusBadge, PaymentBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, WorkTracker, duration, rwf } from '../../components/shared/ui.jsx';
+import { StatusBadge, PaymentBadge, VerifyBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, duration, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { BookingStepper } from '../../components/BookingStepper.jsx';
 import { Settings } from '../../components/Settings.jsx';
 import { MessagesView } from '../../components/MessagesView.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
@@ -378,11 +377,6 @@ function BookingCard({ b, reload, onReview, savedIds, bookedIds = [], onSavedCha
     setErr('');
     try { await (isSaved ? unsaveWorker(b.worker_id) : saveWorker(b.worker_id)); onSavedChange?.(); } catch (e) { setErr(e.message); }
   }
-  // Confirm completion, then suggest a review via the popup (handled by parent).
-  async function complete() {
-    setErr('');
-    try { await confirmCompletion(b.booking_id); reload(); onReview?.(b); } catch (e) { setErr(e.message); }
-  }
   return (
     <div className="card">
       <div className="card-head">
@@ -415,15 +409,7 @@ function BookingCard({ b, reload, onReview, savedIds, bookedIds = [], onSavedCha
           </button>
         )}
       </div>
-      {['accepted', 'in_progress', 'completed'].includes(b.status) && (
-        <WorkTracker b={b} role="requester">
-          {b.status === 'accepted' && !b.checkedIn && <span className="meta">Waiting for {b.workerName} to check in.</span>}
-          {b.status === 'accepted' && b.checkedIn && !b.startConfirmed && <button className="btn-primary" onClick={() => act(confirmStart(b.booking_id))}>Confirm start</button>}
-          {b.status === 'in_progress' && !b.checkedOut && <span className="meta">Worker on the job — waiting for check out.</span>}
-          {b.status === 'in_progress' && b.checkedOut && !b.endConfirmed && <button className="btn-primary" onClick={complete}>Confirm completion</button>}
-          {b.status === 'completed' && <span className="meta">Job complete. Payment released.</span>}
-        </WorkTracker>
-      )}
+      <BookingStepper b={b} role="requester" reload={reload} openChat={openChat} onReview={onReview} />
     </div>
   );
 }
