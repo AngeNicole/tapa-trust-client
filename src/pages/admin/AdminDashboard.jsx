@@ -358,6 +358,7 @@ function DisputeDetailModal({ dispute, onClose, onDone }) {
   const [mode, setMode] = useState('in_app');
   const [meetDetail, setMeetDetail] = useState('');
   const [meetAt, setMeetAt] = useState('');
+  const [rescheduling, setRescheduling] = useState(false);
   const [msg, setMsg] = useState('');
 
   async function load() {
@@ -375,7 +376,7 @@ function DisputeDetailModal({ dispute, onClose, onDone }) {
       setErr(mode === 'google_meet' ? 'Paste the meeting link.' : 'Enter the meetup place/time.'); return;
     }
     setBusy(true); setErr('');
-    try { await scheduleDisputeMeeting(dispute.disputeId, { mode, detail: meetDetail, at: meetAt || null }); await load(); }
+    try { await scheduleDisputeMeeting(dispute.disputeId, { mode, detail: meetDetail, at: meetAt || null }); setRescheduling(false); setMeetDetail(''); setMeetAt(''); await load(); }
     catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
   async function send() {
@@ -453,26 +454,11 @@ function DisputeDetailModal({ dispute, onClose, onDone }) {
             {/* Mediation — hear both sides before ruling */}
             <div className="review-sec">
               <h4>Mediation</h4>
-              {!hasMeeting && !resolved && (
-                <>
-                  <p className="meta" style={{ marginBottom: '0.5rem' }}>Set up a meeting to hear both parties, in the mode they&apos;re comfortable with.</p>
-                  <div className="row" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
-                    {[{ v: 'in_app', l: 'In-app discussion' }, { v: 'google_meet', l: 'Google Meet' }, { v: 'physical', l: 'Physical meetup' }].map((o) => (
-                      <button key={o.v} type="button" className={mode === o.v ? 'chip' : 'chip-opt'} onClick={() => setMode(o.v)}>{o.l}</button>
-                    ))}
-                  </div>
-                  {mode !== 'in_app' && (
-                    <input className="input" value={meetDetail} onChange={(e) => setMeetDetail(e.target.value)} style={{ width: '100%', marginTop: '0.5rem' }}
-                      placeholder={mode === 'google_meet' ? 'Paste the Google Meet link' : 'Place & time (e.g. TaPa office, Fri 2pm)'} />
-                  )}
-                  <input className="input" type="datetime-local" value={meetAt} onChange={(e) => setMeetAt(e.target.value)} style={{ width: '100%', marginTop: '0.5rem' }} />
-                  <button className="btn-primary" onClick={schedule} disabled={busy} style={{ marginTop: '0.6rem' }}>{busy ? 'Scheduling…' : 'Schedule meeting'}</button>
-                </>
-              )}
+
               {hasMeeting && (
                 <>
                   <p className="meta">
-                    <strong>{MEETING_LABEL[detail.meetingMode] || detail.meetingMode}</strong>
+                    Current method: <strong>{MEETING_LABEL[detail.meetingMode] || detail.meetingMode}</strong>
                     {detail.meetingAt ? ` · ${fmtTime(detail.meetingAt)}` : ''}
                     {detail.meetingMode === 'google_meet' && detail.meetingDetail ? <> · <a href={detail.meetingDetail} target="_blank" rel="noreferrer">Join link</a></> : null}
                     {detail.meetingMode === 'physical' && detail.meetingDetail ? ` · ${detail.meetingDetail}` : ''}
@@ -493,7 +479,35 @@ function DisputeDetailModal({ dispute, onClose, onDone }) {
                       <button className="btn-secondary" onClick={send} disabled={busy || !msg.trim()}>Send</button>
                     </div>
                   )}
+                  {!resolved && !rescheduling && (
+                    <button type="button" className="btn-ghost" style={{ marginTop: '0.5rem' }}
+                      onClick={() => { setRescheduling(true); setMode(detail.meetingMode); setMeetDetail(detail.meetingDetail || ''); setErr(''); }}>
+                      {Icons.scales} This method isn’t working? Propose a different one
+                    </button>
+                  )}
                 </>
+              )}
+
+              {!resolved && (!hasMeeting || rescheduling) && (
+                <div style={{ marginTop: hasMeeting ? '0.5rem' : 0 }}>
+                  <p className="meta" style={{ marginBottom: '0.5rem' }}>
+                    {hasMeeting ? 'Propose a different way to meet — the parties are notified.' : 'Set up a meeting to hear both parties, in the mode they’re comfortable with.'}
+                  </p>
+                  <div className="row" style={{ gap: '0.5rem', flexWrap: 'wrap' }}>
+                    {[{ v: 'in_app', l: 'In-app discussion' }, { v: 'google_meet', l: 'Google Meet' }, { v: 'physical', l: 'Physical meetup' }].map((o) => (
+                      <button key={o.v} type="button" className={mode === o.v ? 'chip' : 'chip-opt'} onClick={() => setMode(o.v)}>{o.l}</button>
+                    ))}
+                  </div>
+                  {mode !== 'in_app' && (
+                    <input className="input" value={meetDetail} onChange={(e) => setMeetDetail(e.target.value)} style={{ width: '100%', marginTop: '0.5rem' }}
+                      placeholder={mode === 'google_meet' ? 'Paste the Google Meet link' : 'Place & time (e.g. TaPa office, Fri 2pm)'} />
+                  )}
+                  <input className="input" type="datetime-local" value={meetAt} onChange={(e) => setMeetAt(e.target.value)} style={{ width: '100%', marginTop: '0.5rem' }} />
+                  <div className="row" style={{ gap: '0.5rem', marginTop: '0.6rem' }}>
+                    <button className="btn-primary" onClick={schedule} disabled={busy}>{busy ? 'Saving…' : hasMeeting ? 'Update meeting' : 'Schedule meeting'}</button>
+                    {rescheduling && <button className="btn-secondary" onClick={() => { setRescheduling(false); setErr(''); }} disabled={busy}>Cancel</button>}
+                  </div>
+                </div>
               )}
             </div>
 
