@@ -41,12 +41,13 @@ async function loadFaceApi() {
   return apiPromise;
 }
 
+// Load a data-URL into an <img>. No crossOrigin — these are same-origin data
+// URIs; setting it can make some browsers reject the load.
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
-    img.onerror = () => reject(new Error('Could not load image'));
+    img.onerror = () => reject(new Error('decode failed'));
     img.src = src;
   });
 }
@@ -57,7 +58,11 @@ export const MATCH_THRESHOLD = 65;
 // Returns { ok, score (0-100), distance, likelySame, reason }.
 export async function matchFaces(selfieUrl, idUrl) {
   const faceapi = await loadFaceApi();
-  const [selfie, id] = await Promise.all([loadImage(selfieUrl), loadImage(idUrl)]);
+  // Load each separately so we can say which one couldn't be read (e.g. a PDF
+  // or HEIC ID that isn't a decodable photo).
+  let selfie, id;
+  try { selfie = await loadImage(selfieUrl); } catch { return { ok: false, reason: 'Could not read your selfie — scan again.' }; }
+  try { id = await loadImage(idUrl); } catch { return { ok: false, reason: 'Could not read the ID as a photo — upload a clear JPG/PNG image of your ID (not a PDF).' }; }
   const a = await faceapi.detectSingleFace(selfie).withFaceLandmarks().withFaceDescriptor();
   const b = await faceapi.detectSingleFace(id).withFaceLandmarks().withFaceDescriptor();
   if (!a || !b) {

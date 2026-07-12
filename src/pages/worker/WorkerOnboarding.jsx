@@ -68,7 +68,7 @@ export default function WorkerOnboarding() {
         const r = await detectIdFace(doc.dataUrl);
         setIdCheck(r.hasFace ? 'ok' : 'noface');
       } else {
-        setIdCheck('ok'); // PDF — can't face-detect; the live match still proves ownership
+        setIdCheck('notimage'); // PDF/other — can't run the face match; ask for a photo
       }
     } catch (e2) { setErr(e2.message); }
     finally { setIdBusy(false); }
@@ -155,6 +155,7 @@ export default function WorkerOnboarding() {
   function next() {
     setErr('');
     if (stepKey === 'id' && !idDoc) return setErr('Upload your ID — or go back and choose in-person verification.');
+    if (stepKey === 'id' && idCheck === 'notimage') return setErr('Upload a photo (JPG or PNG) of your ID — the online face check needs an image, not a PDF. Or go back and choose in-person.');
     if (stepKey === 'id' && idCheck === 'noface') return setErr('We couldn’t find a face on this ID — upload a clear photo of your actual ID (front side), or go in-person.');
     if (stepKey === 'selfie' && !faceMatched) return setErr('Scan your face until it matches your ID to continue — or go back and choose in-person.');
     if (stepKey === 'skills' && skills.length === 0) return setErr('Add at least one skill.');
@@ -252,6 +253,12 @@ export default function WorkerOnboarding() {
                 <div className="onb-match" style={{ textAlign: 'left' }}>
                   <span className="onb-match-res is-no">{Icons.shield} No face found on this ID.</span>
                   <div className="meta" style={{ marginTop: '0.35rem' }}>Upload a clear photo of your actual ID (front side), or go back and choose in-person.</div>
+                </div>
+              )}
+              {idCheck === 'notimage' && (
+                <div className="onb-match" style={{ textAlign: 'left' }}>
+                  <span className="onb-match-res is-no">{Icons.shield} That&apos;s not a photo.</span>
+                  <div className="meta" style={{ marginTop: '0.35rem' }}>The online face check needs a JPG or PNG image of your ID (not a PDF). Upload a photo, or go back and choose in-person.</div>
                 </div>
               )}
             </div>
