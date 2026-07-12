@@ -112,8 +112,9 @@ export default function WorkerOnboarding() {
     try {
       const r = await matchFaces(selfieUrl, idDoc.dataUrl);
       setFaceMatch(r.ok ? { score: r.score, passed: r.likelySame } : { error: r.reason });
-    } catch {
-      setFaceMatch({ error: 'Could not run the on-device check.' });
+    } catch (e) {
+      console.error('[face-match]', e);
+      setFaceMatch({ error: `Couldn’t run the on-device check — ${e.message || e}` });
     } finally { setMatching(false); }
   }
   function capture() {

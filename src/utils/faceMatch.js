@@ -13,10 +13,29 @@ let apiPromise = null;
 async function loadFaceApi() {
   if (apiPromise) return apiPromise;
   apiPromise = (async () => {
-    const faceapi = await import(/* @vite-ignore */ LIB);
-    await faceapi.nets.ssdMobilenetv1.loadFromUri(MODELS);
-    await faceapi.nets.faceLandmark68Net.loadFromUri(MODELS);
-    await faceapi.nets.faceRecognitionNet.loadFromUri(MODELS);
+    let faceapi;
+    try {
+      faceapi = await import(/* @vite-ignore */ LIB);
+    } catch (e) {
+      throw new Error(`model library failed to load (${e.message || e})`);
+    }
+    // Pin a browser backend before loading models — WebGL, falling back to CPU.
+    // Auto-detection sometimes tries a WASM backend whose assets aren't hosted.
+    try {
+      const tf = faceapi.tf;
+      if (tf?.setBackend) {
+        const ok = await tf.setBackend('webgl').catch(() => false);
+        if (ok === false) await tf.setBackend('cpu').catch(() => {});
+        await tf.ready?.();
+      }
+    } catch { /* use whatever backend the library picks */ }
+    try {
+      await faceapi.nets.ssdMobilenetv1.loadFromUri(MODELS);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODELS);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(MODELS);
+    } catch (e) {
+      throw new Error(`model weights failed to load (${e.message || e})`);
+    }
     return faceapi;
   })().catch((e) => { apiPromise = null; throw e; });
   return apiPromise;
