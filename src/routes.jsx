@@ -1,22 +1,34 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import { useAuth, homePathForRole } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import RoleGate from './components/RoleGate.jsx';
 import Layout from './components/Layout.jsx';
 
-// Code-split each page into its own chunk so the first visit (the public
-// landing) downloads only what it needs, not the whole app (dashboards, admin,
-// chat, verification…). Cuts initial JS → faster first paint / Speed Index.
-const PublicBrowse = lazy(() => import('./pages/public/PublicBrowse.jsx'));
-const PublicWorkers = lazy(() => import('./pages/public/PublicWorkers.jsx'));
-const PublicWorkerProfile = lazy(() => import('./pages/public/PublicWorkerProfile.jsx'));
-const Login = lazy(() => import('./pages/auth/Login.jsx'));
-const Register = lazy(() => import('./pages/auth/Register.jsx'));
-const RequesterDashboard = lazy(() => import('./pages/requester/RequesterDashboard.jsx'));
-const WorkerDashboard = lazy(() => import('./pages/worker/WorkerDashboard.jsx'));
-const WorkerOnboarding = lazy(() => import('./pages/worker/WorkerOnboarding.jsx'));
-const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard.jsx'));
+// Each page is its own chunk so the first paint downloads only what it needs
+// (fast initial load / Speed Index). But we then PREFETCH every chunk in the
+// background once the app is up (see the effect below), so navigation is
+// instant — the whole app ends up loaded, just not blocking the first paint.
+const loaders = {
+  publicBrowse: () => import('./pages/public/PublicBrowse.jsx'),
+  publicWorkers: () => import('./pages/public/PublicWorkers.jsx'),
+  publicWorkerProfile: () => import('./pages/public/PublicWorkerProfile.jsx'),
+  login: () => import('./pages/auth/Login.jsx'),
+  register: () => import('./pages/auth/Register.jsx'),
+  requester: () => import('./pages/requester/RequesterDashboard.jsx'),
+  worker: () => import('./pages/worker/WorkerDashboard.jsx'),
+  onboarding: () => import('./pages/worker/WorkerOnboarding.jsx'),
+  admin: () => import('./pages/admin/AdminDashboard.jsx'),
+};
+const PublicBrowse = lazy(loaders.publicBrowse);
+const PublicWorkers = lazy(loaders.publicWorkers);
+const PublicWorkerProfile = lazy(loaders.publicWorkerProfile);
+const Login = lazy(loaders.login);
+const Register = lazy(loaders.register);
+const RequesterDashboard = lazy(loaders.requester);
+const WorkerDashboard = lazy(loaders.worker);
+const WorkerOnboarding = lazy(loaders.onboarding);
+const AdminDashboard = lazy(loaders.admin);
 
 function NotFound() {
   return (
@@ -49,6 +61,14 @@ function area(roles, Page) {
 }
 
 export default function AppRoutes() {
+  // Warm every route chunk in the background once the first paint is done, so
+  // navigating between areas is instant (no per-page loading flash).
+  useEffect(() => {
+    const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 300));
+    const id = idle(() => { Object.values(loaders).forEach((fn) => fn()); });
+    return () => (window.cancelIdleCallback ? window.cancelIdleCallback(id) : clearTimeout(id));
+  }, []);
+
   return (
     <Suspense fallback={<div className="page">Loading…</div>}>
     <Routes>
