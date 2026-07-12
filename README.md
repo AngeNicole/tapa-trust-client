@@ -37,24 +37,41 @@ review) is the heart of the product and the focus of the demo.
 - Only **admin-verified** workers are shown publicly; unverified profiles never surface.
 
 ### Requester
-- **Browse-and-book** — book a worker directly from their profile (no task posting).
-- **Chat & price agreement** — a right-side chat drawer to message the worker, **propose / counter /
-  accept a price**, and (optionally) call. The agreed price is pinned to the booking.
-- **Trust loop** — confirm the worker's check-in, confirm completion; watch payment status advance
-  `pending → confirmed → released` (simulated).
-- **Reviews & rebooking**, **saved workers**, and in-app **notifications**.
+- **Browse-and-book by trust tier** — filter workers by **Admin-Certified / Peer-Verified**; book
+  directly from a profile (no task posting).
+- **Chat & price agreement** — one composer to message and **propose / counter / accept a price**.
+  A **price must be agreed before the worker can accept** the job.
+- **Digital agreement** — both parties **draw a signature** (canvas), then the requester **pays**;
+  funds are held in **escrow** (`held → released`), shown as a banner to both sides.
+- **Unified booking stepper** — one vertical stepper drives the whole journey (agree price → accept →
+  sign → pay → check-in → confirm-start → check-out → confirm-completion), telling each party what's
+  next; only the current booking is expanded.
+- **Dispute resolution** — "Report an issue" freezes payment; an admin mediates (see below).
+- **Reviews & rebooking**, **saved workers**, a **Dashboard** (KPIs/charts/activity), in-app
+  **notifications**.
 
 ### Worker
-- **Profile** — photo, category-based skills + custom skills, education, certifications.
-- **Availability toggle** and **simulated ID verification** submission.
-- **Bookings** — accept, check in, check out; **job duration** is computed and shown.
-- **Earnings wallet** with charts and an invoice table.
+- **Two-path verification (non-skippable)** — choose **In-person** (admin confirms; no device/upload)
+  or **Online** (upload ID + live **face scan**; a free in-browser biometric matches the face to the
+  ID and must exceed **65%**). **Match-then-discard**: images are compared on-device and never
+  uploaded — only the verdict is stored. Both paths reach the same **Verified** status.
+- **Trust tiers** — Unverified → Peer-Verified (earned from well-reviewed jobs) → Admin-Certified.
+- **Profile** — upload a **profile picture**, skills, education, certificate uploads.
+- **Availability toggle** (always visible in the top bar).
+- **Bookings + History**, **check-in/out** with tracked **duration**, a data-minimizing
+  **safety check-in** (overdue → the platform is alerted; no location broadcast).
+- **Earnings** — weekly chart, by-category breakdown, average rating, **exportable PDF income
+  summary** (financial-inclusion / SDG 8).
 
 ### Admin (oversight only)
-- **Verifications** — a table (Name / Availability / Status / ⋯) with **Approve / Request redo /
-  Reject**; redo & reject open a note modal explaining what was missing (the worker can resubmit).
-  Tabs: All / Pending / Approved / Rejected.
-- **Users** — All / Requesters / Workers tabs. **Categories** management.
+- **Verifications** — review each worker (path chosen, biometric verdict, certificate previews);
+  **Approve / Request redo / Reject** with a note.
+- **Disputes** — a queue with **auto-attached evidence** (timestamped confirmation timeline, agreed
+  price, chat thread, each party's repeat-dispute count). The admin **schedules a mediation meeting**
+  (**in-app discussion / Google Meet link / physical meetup**) and can **propose a different method**
+  if one isn't working; **ruling is blocked until both sides are heard**, then release / refund /
+  dismiss.
+- **Dashboard** (platform KPIs), **Users**, **Categories** management.
 
 ### Cross-cutting
 - **In-app notifications** (a bell + toast alerts, polled live). Chat/offer notifications carry a
@@ -218,11 +235,13 @@ Run these with a **requester** and a **worker** side-by-side (two windows), plus
 5. **Review & rebook** — requester leaves a rating/review; rebooks the worker in one tap.
 
 ### 2. Automated tests (API)
-The server ships a Jest suite covering auth, RBAC, and the booking lifecycle:
+The server ships a Jest + supertest suite — **106 tests across 11 suites** — covering auth, RBAC,
+the full booking lifecycle, and every trust feature (price-before-accept, dispute
+freeze/mediation/ruling, verification tiers, match-then-discard, safety check-in, 24h auto-release,
+earnings). It runs against an isolated test DB that's auto-created and migrated:
 ```bash
 cd tapa-trust-server
-createdb tapa_trust_test
-npm test                 # runs against tapa_trust_test with a throwaway secret
+npm test                 # spins up tapa_trust_test, applies schema + startup migrations, runs all suites
 ```
 
 ### 3. Different data values & edge cases
@@ -241,16 +260,25 @@ npm test                 # runs against tapa_trust_test with a throwaway secret
 - **Network:** first-load against the sleeping Render free tier (~30s cold start) vs. warm
   (sub-second API responses); production build is code-split and gzipped.
 
-### Suggested 5-minute demo script (core functionality first)
-> The brief asks to **avoid dwelling on sign-up/sign-in** and focus on core features.
-1. (0:00) One line on the problem + show the public **Browse** page and a worker profile.
-2. (0:45) As a requester, **book** a worker and run the **chat price negotiation** (propose →
-   counter → accept).
-3. (2:00) Switch to the worker: receive the **notification → open chat**, then run **check-in →
-   check-out** (show tracked duration).
-4. (3:15) Back to requester: **confirm completion**, watch **payment status**, leave a **review**.
-5. (4:00) As admin: **Verifications** table — approve / request redo / reject with a note.
-6. (4:45) Show it on a **mobile viewport** to demonstrate responsiveness.
+### 5-minute demo script (core functionality first)
+> Avoid dwelling on sign-up/sign-in; lead with the trust loop.
+1. **(0:00) Verification** — worker picks **Online**: upload ID → ID face-check → **face scan** →
+   biometric match must exceed **65%** (note *images aren't stored*). Mention the **In-person** path
+   for no-device workers. Show the resulting **trust tier**.
+2. **(1:00) Book + agree price** — requester books; in chat, show **accept is blocked until a price
+   is agreed**; agree it → worker **accepts**.
+3. **(1:45) Sign + pay + escrow** — both **draw signatures**; requester **pays** → **"held in
+   escrow"** banner on both sides.
+4. **(2:30) Track work** — check-in → confirm-start → check-out → confirm-completion → **"released"**
+   banner; show **Earnings** + the **PDF income summary**.
+5. **(3:15) Dispute (different data values)** — raise an issue (a category) → **payment frozen** →
+   admin schedules **mediation** (in-app / Google Meet / physical), **proposes a different method**,
+   then **rules** → released/refunded.
+6. **(4:00) Testing + performance** — show the terminal running **`npm test` → 106 passing**
+   (automated + edge/negative + security tests); show the app on **desktop + mobile viewport** and
+   **light/dark**, running against the **live Vercel/Render** deployment.
+7. **(4:40) Analysis / discussion / recommendations** — narrate objectives met vs deferred, why the
+   milestones matter, and future work (see the video-narration notes provided with this submission).
 
 ---
 
