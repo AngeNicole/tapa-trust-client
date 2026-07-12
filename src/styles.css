@@ -2172,6 +2172,29 @@ body {
   .shell-content { @apply flex flex-1 justify-center overflow-y-auto p-5 sm:p-6; }
   .shell-main { @apply min-w-0 w-full max-w-[1240px]; }
 
+  /* hamburger — hidden on desktop, shown on mobile */
+  .shell-menu-btn { @apply hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-stroke-soft-200 bg-bg-white-0 text-text-sub-600; }
+  .shell-menu-btn svg { @apply h-5 w-5; }
+  .shell-backdrop { @apply fixed inset-0 z-40 bg-black/40; }
+
+  /* ── mobile: sidebar becomes an off-canvas drawer, top bar slims down ── */
+  @media (max-width: 767px) {
+    .shell-menu-btn { @apply flex; }
+    .shell-side {
+      @apply fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto bg-bg-white-0;
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+      box-shadow: var(--shadow-regular-md, 0 12px 32px rgba(0,0,0,0.18));
+    }
+    .shell-side.is-open { transform: translateX(0); }
+    .search { @apply hidden; }              /* free up width; search is non-essential on phones */
+    .top-user .meta { @apply hidden; }      /* keep the avatar, drop the long name */
+    .shell-top { @apply gap-2 px-4; }
+  }
+  @media (min-width: 768px) {
+    .shell-backdrop { @apply hidden; }      /* never dim on desktop */
+  }
+
   /* analytics / dashboard overview */
   .kpi-grid { @apply grid gap-4 mt-4; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
   .kpi-card { @apply rounded-2xl p-4; background: var(--color-bg-white-0); border: 1px solid var(--color-stroke-soft-200); }

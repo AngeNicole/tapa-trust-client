@@ -43,6 +43,7 @@ import {
   Camera,
   WarningCircle,
   Scales,
+  List,
 } from '@phosphor-icons/react';
 
 const w = 'regular';
@@ -90,4 +91,5 @@ export const Icons = {
   camera: <Camera weight={w} />,
   warning: <WarningCircle weight="fill" />,
   scales: <Scales weight={w} />,
+  menu: <List weight="bold" />,
 };

@@ -18,6 +18,7 @@ export function DashShell({ items, active, onSelect, children, headerExtra }) {
   const navigate = useNavigate();
   // Track which menus have been opened so their count badge clears after a view.
   const [opened, setOpened] = useState(() => new Set([active]));
+  const [menuOpen, setMenuOpen] = useState(false); // mobile drawer
   useEffect(() => {
     setOpened((s) => (s.has(active) ? s : new Set(s).add(active)));
   }, [active]);
@@ -25,6 +26,7 @@ export function DashShell({ items, active, onSelect, children, headerExtra }) {
   function select(key) {
     setOpened((s) => new Set(s).add(key));
     onSelect(key);
+    setMenuOpen(false); // close the drawer after picking a menu on mobile
   }
 
   function onLogout() {
@@ -34,7 +36,8 @@ export function DashShell({ items, active, onSelect, children, headerExtra }) {
 
   return (
     <>
-      <aside className="shell-side">
+      {menuOpen && <div className="shell-backdrop" onClick={() => setMenuOpen(false)} />}
+      <aside className={`shell-side ${menuOpen ? 'is-open' : ''}`}>
         <div className="shell-brand">
           <span className="shell-logo">{Icons.spark}</span>
           <span className="shell-brand-name">TaPa Trust</span>
@@ -67,6 +70,7 @@ export function DashShell({ items, active, onSelect, children, headerExtra }) {
 
       <div className="shell-body">
         <header className="shell-top">
+          <button type="button" className="shell-menu-btn" aria-label="Open menu" onClick={() => setMenuOpen(true)}>{Icons.menu}</button>
           <label className="search">
             {Icons.search}
             <input type="text" placeholder="Search…" aria-label="Search" />
