@@ -66,7 +66,7 @@ export default function PublicWorkerProfile() {
           <aside className="pp-side">
             <div className="pp-card pp-id">
               <div className="pp-photo">
-                {w.photo ? <img src={w.photo} alt={w.name} /> : initials(w.name)}
+                {w.photo ? <img src={w.photo} alt={w.name} loading="lazy" decoding="async" /> : initials(w.name)}
               </div>
               <div className="pp-id-body">
                 <div className="pp-name">{w.name}</div>

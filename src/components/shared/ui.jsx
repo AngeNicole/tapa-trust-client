@@ -28,7 +28,7 @@ export function Avatar({ name, photo, className = 'avatar', style }) {
   if (photo) {
     return (
       <span className={className} style={{ padding: 0, overflow: 'hidden', ...style }}>
-        <img src={photo} alt={name || 'avatar'} />
+        <img src={photo} alt={name || 'avatar'} loading="lazy" decoding="async" />
       </span>
     );
   }
