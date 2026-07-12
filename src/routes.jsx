@@ -1,17 +1,22 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import { useAuth, homePathForRole } from './context/AuthContext.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import RoleGate from './components/RoleGate.jsx';
 import Layout from './components/Layout.jsx';
-import PublicBrowse from './pages/public/PublicBrowse.jsx';
-import PublicWorkers from './pages/public/PublicWorkers.jsx';
-import PublicWorkerProfile from './pages/public/PublicWorkerProfile.jsx';
-import Login from './pages/auth/Login.jsx';
-import Register from './pages/auth/Register.jsx';
-import RequesterDashboard from './pages/requester/RequesterDashboard.jsx';
-import WorkerDashboard from './pages/worker/WorkerDashboard.jsx';
-import WorkerOnboarding from './pages/worker/WorkerOnboarding.jsx';
-import AdminDashboard from './pages/admin/AdminDashboard.jsx';
+
+// Code-split each page into its own chunk so the first visit (the public
+// landing) downloads only what it needs, not the whole app (dashboards, admin,
+// chat, verification…). Cuts initial JS → faster first paint / Speed Index.
+const PublicBrowse = lazy(() => import('./pages/public/PublicBrowse.jsx'));
+const PublicWorkers = lazy(() => import('./pages/public/PublicWorkers.jsx'));
+const PublicWorkerProfile = lazy(() => import('./pages/public/PublicWorkerProfile.jsx'));
+const Login = lazy(() => import('./pages/auth/Login.jsx'));
+const Register = lazy(() => import('./pages/auth/Register.jsx'));
+const RequesterDashboard = lazy(() => import('./pages/requester/RequesterDashboard.jsx'));
+const WorkerDashboard = lazy(() => import('./pages/worker/WorkerDashboard.jsx'));
+const WorkerOnboarding = lazy(() => import('./pages/worker/WorkerOnboarding.jsx'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard.jsx'));
 
 function NotFound() {
   return (
@@ -45,6 +50,7 @@ function area(roles, Page) {
 
 export default function AppRoutes() {
   return (
+    <Suspense fallback={<div className="page">Loading…</div>}>
     <Routes>
       <Route path="/" element={<PublicBrowse />} />
       <Route path="/workers" element={<PublicWorkers />} />
@@ -59,5 +65,6 @@ export default function AppRoutes() {
 
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </Suspense>
   );
 }

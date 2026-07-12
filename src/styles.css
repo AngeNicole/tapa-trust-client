@@ -1,5 +1,5 @@
-/* Primary font: Plus Jakarta Sans (Google Fonts). @import must precede all other rules. */
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap');
+/* Primary font (Plus Jakarta Sans) is loaded via <link> in index.html so it
+   fetches in parallel rather than blocking behind a CSS @import. */
 @import "tailwindcss";
 
 @theme {
