@@ -15,7 +15,7 @@ This repository is the **React web client**. It talks to the **TaPa Trust API**
 
 | | |
 | --- | --- |
-| 🎬 **Demo video (5 min)** | ⬜ _REPLACE WITH VIDEO LINK_ |
+| 🎬 **Demo video (5 min)** | [Watch the 5-min demo](https://drive.google.com/drive/folders/1vcwAf0Zi6MBi6FW-jBYfpLlhrzUUgNg4?usp=sharing) |
 | 🌐 **Live app (client)** | **https://tapa-trust-client.vercel.app** |
 | 🔌 **Live API** | `https://tapa-trust-server.onrender.com` · health: `GET /api/health` |
 | 💻 **Client repo** | https://github.com/AngeNicole/tapa-trust-client |
@@ -34,7 +34,7 @@ The project spans **two repositories** plus its deployment and demo artefacts:
 | **API server** (Node/Express + PostgreSQL) | https://github.com/AngeNicole/tapa-trust-server |
 | **Deployed app** | https://tapa-trust-client.vercel.app |
 | **Deployed API** | https://tapa-trust-server.onrender.com |
-| **Demo video (5 min)** | ⬜ _REPLACE WITH VIDEO LINK_ |
+| **Demo video (5 min)** | [Watch the 5-min demo](https://drive.google.com/drive/folders/1vcwAf0Zi6MBi6FW-jBYfpLlhrzUUgNg4?usp=sharing) |
 
 **Key files**
 - Client: `src/routes.jsx` (routes + role gating), `src/api/client.js` (API calls), `src/context/` (Auth/Chat/Toast), `src/pages/` (public, auth, requester, worker, admin), `src/components/` (shared UI, `BookingStepper`, `DashShell`), `src/styles.css` (Tailwind + design tokens), `vercel.json` (SPA config).
