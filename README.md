@@ -24,6 +24,22 @@ This repository is the **React web client**. It talks to the **TaPa Trust API**
 > The API is on Render's free tier, which sleeps after inactivity — the **first request after idle
 > can take ~30s** to wake. Load the site, wait a moment, and it connects.
 
+## Related files & repositories
+
+The project spans **two repositories** plus its deployment and demo artefacts:
+
+| Item | Where |
+| --- | --- |
+| **Web client** (this repo — React/Vite) | https://github.com/AngeNicole/tapa-trust-client |
+| **API server** (Node/Express + PostgreSQL) | https://github.com/AngeNicole/tapa-trust-server |
+| **Deployed app** | https://tapa-trust-client.vercel.app |
+| **Deployed API** | https://tapa-trust-server.onrender.com |
+| **Demo video (5 min)** | ⬜ _REPLACE WITH VIDEO LINK_ |
+
+**Key files**
+- Client: `src/routes.jsx` (routes + role gating), `src/api/client.js` (API calls), `src/context/` (Auth/Chat/Toast), `src/pages/` (public, auth, requester, worker, admin), `src/components/` (shared UI, `BookingStepper`, `DashShell`), `src/styles.css` (Tailwind + design tokens), `vercel.json` (SPA config).
+- Server: `src/routes/` + `src/controllers/` (auth, workers, bookings, disputes, admin, public), `src/middleware/` (`auth`, `requireRole`), `src/lib/trust.js`, `db/schema.sql`, `src/startupMigrations.js`, and the **`tests/` suite** (`npm test` — 106 tests).
+
 ---
 
 ## Core functionality
