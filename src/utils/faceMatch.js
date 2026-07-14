@@ -52,29 +52,52 @@ function loadImage(src) {
   });
 }
 
-// Pass bar: the face similarity must be ABOVE 65% to count as a match.
+// face-api's descriptor euclidean distance for the SAME person is typically
+// ~0.3–0.55, and its FaceMatcher uses 0.6 as the default "same person" cutoff.
+// A selfie-vs-ID compare (different lighting, an older/printed ID photo, a small
+// face) sits at the high end of that range, so distance ≤ 0.6 counts as a match.
+const MATCH_DISTANCE = 0.6;
+
+// Displayed pass bar (%). The score is mapped from distance so this bar lands
+// exactly on the match cutoff: distance 0 → 100%, distance MATCH_DISTANCE → 65%.
+// So "score ≥ 65%" is equivalent to "distance ≤ 0.6" — the displayed number and
+// the pass/fail verdict never disagree.
 export const MATCH_THRESHOLD = 65;
+
+// Calibrated distance → similarity %. Linear, clamped, with MATCH_DISTANCE
+// mapped to MATCH_THRESHOLD. Beats the naive (1 - distance) * 100, which put a
+// genuine 0.5-distance match at only 50% and failed real people.
+function scoreForDistance(distance) {
+  const pct = 100 - ((100 - MATCH_THRESHOLD) / MATCH_DISTANCE) * distance;
+  return Math.max(0, Math.min(100, Math.round(pct)));
+}
+
+// A more tolerant detector than the 0.5 default, so small/low-contrast faces on
+// an ID photo are still found (a missed face is worse than a slightly weak one).
+function detectorOptions(faceapi) {
+  return new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3, maxResults: 1 });
+}
 
 // Returns { ok, score (0-100), distance, likelySame, reason }.
 export async function matchFaces(selfieUrl, idUrl) {
   const faceapi = await loadFaceApi();
+  const opts = detectorOptions(faceapi);
   // Load each separately so we can say which one couldn't be read (e.g. a PDF
   // or HEIC ID that isn't a decodable photo).
   let selfie, id;
   try { selfie = await loadImage(selfieUrl); } catch { return { ok: false, reason: 'Could not read your selfie — scan again.' }; }
   try { id = await loadImage(idUrl); } catch { return { ok: false, reason: 'Could not read the ID as a photo — upload a clear JPG/PNG image of your ID (not a PDF).' }; }
-  const a = await faceapi.detectSingleFace(selfie).withFaceLandmarks().withFaceDescriptor();
-  const b = await faceapi.detectSingleFace(id).withFaceLandmarks().withFaceDescriptor();
+  const a = await faceapi.detectSingleFace(selfie, opts).withFaceLandmarks().withFaceDescriptor();
+  const b = await faceapi.detectSingleFace(id, opts).withFaceLandmarks().withFaceDescriptor();
   if (!a || !b) {
     const reason = !a && !b ? 'No face detected in either image'
       : !a ? 'No face detected in the selfie' : 'No clear face detected on the ID';
     return { ok: false, reason };
   }
-  // euclidean distance → similarity %. Same person ≈ 0.3-0.4 (≈60-70%),
-  // different people ≈ 0.7+ (≈30% or less).
   const distance = faceapi.euclideanDistance(a.descriptor, b.descriptor);
-  const score = Math.max(0, Math.min(100, Math.round((1 - distance) * 100)));
-  return { ok: true, distance, score, likelySame: score > MATCH_THRESHOLD };
+  const score = scoreForDistance(distance);
+  // Verdict derived from the same score that's shown, so they can't disagree.
+  return { ok: true, distance, score, likelySame: score >= MATCH_THRESHOLD };
 }
 
 // Lightweight authenticity signal for the uploaded ID: does it actually contain
@@ -84,7 +107,7 @@ export async function detectIdFace(idUrl) {
   try {
     const faceapi = await loadFaceApi();
     const img = await loadImage(idUrl);
-    const d = await faceapi.detectSingleFace(img);
+    const d = await faceapi.detectSingleFace(img, detectorOptions(faceapi));
     return { ok: true, hasFace: Boolean(d) };
   } catch {
     return { ok: false, hasFace: false };
