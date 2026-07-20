@@ -372,7 +372,7 @@ export default function WorkerOnboarding() {
               {method === 'online' && <p className="meta" style={{ marginBottom: '0.5rem' }}>Your ID &amp; selfie are submitted securely for verification and are <strong>visible only to an admin</strong> confirming your identity — never shown publicly.</p>}
               <p className="meta">{method === 'online'
                 ? 'An admin reviews the match result and approves you.'
-                : 'An admin, office or agent confirms your identity in person and approves you.'} You&apos;ll appear in Browse once verified — or earn Peer-Verified from well-reviewed jobs.</p>
+                : 'An admin, office or agent confirms your identity in person and approves you.'} You&apos;ll appear in Browse and be bookable once an admin approves you.</p>
             </div>
           )}
 

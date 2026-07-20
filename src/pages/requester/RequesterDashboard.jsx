@@ -211,7 +211,6 @@ function HireView({ savedIds, bookedIds = [], onBooked, onSavedChange }) {
 function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
   const [term, setTerm] = useState('');
   const [skill, setSkill] = useState('');
-  const [tierFilter, setTierFilter] = useState('all');
   const workers = useAsync(() => getWorkers(skill), [skill]);
   const [err, setErr] = useState('');
 
@@ -223,16 +222,15 @@ function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
     } catch (e) { setErr(e.message); }
   }
 
-  // Show trusted workers (Admin-Certified + Peer-Verified); hide Unverified.
-  // Then apply the requester's tier filter.
-  const list = (workers.data || [])
-    .filter((w) => w.tier && w.tier !== 'Unverified')
-    .filter((w) => tierFilter === 'all' || w.tier === tierFilter);
+  // Only verified (Admin-Certified) workers are bookable, and the server already
+  // filters browse to those — this is just belt-and-suspenders against any stray
+  // Unverified row.
+  const list = (workers.data || []).filter((w) => w.tier && w.tier !== 'Unverified');
 
   return (
     <>
       <h1>Find workers</h1>
-      <p className="subtitle">Browse trusted workers by tier, open a profile, and book — no task to post.</p>
+      <p className="subtitle">Browse admin-verified workers, open a profile, and book — no task to post.</p>
       <ErrorNote message={err} />
 
       <form className="row" onSubmit={(e) => { e.preventDefault(); setSkill(term.trim()); }} style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
@@ -240,12 +238,6 @@ function BrowseWorkers({ savedIds, onOpen, onSavedChange }) {
         <button className="btn-primary" type="submit">Search</button>
         {skill && <button type="button" className="btn-secondary" onClick={() => { setTerm(''); setSkill(''); }}>Clear</button>}
       </form>
-      <div className="subtabs" style={{ marginBottom: '1rem' }}>
-        {[{ k: 'all', l: 'All tiers' }, { k: 'Admin-Certified', l: 'Admin-Certified' }, { k: 'Peer-Verified', l: 'Peer-Verified' }].map((t) => (
-          <button key={t.k} type="button" className={`subtab ${tierFilter === t.k ? 'subtab--active' : ''}`} onClick={() => setTierFilter(t.k)}>{t.l}</button>
-        ))}
-      </div>
-
       {workers.loading ? <Loading /> : workers.error ? <ErrorNote message={workers.error} /> : list.length === 0 ? (
         <EmptyState icon={Icons.search} title={skill ? `No workers for “${skill}”` : 'No available workers yet'} hint="Try a different skill, or check back soon as more workers get verified." />
       ) : (
