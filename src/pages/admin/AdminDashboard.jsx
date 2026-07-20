@@ -193,6 +193,8 @@ function ReviewModal({ worker, onClose, onDone }) {
   const vMethod = profile?.verificationMethod;
   const fmScore = profile?.faceMatchScore;
   const fmPassed = profile?.faceMatchPassed;
+  const idDoc = profile?.idDocument;
+  const selfieImg = profile?.selfie;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -236,9 +238,29 @@ function ReviewModal({ worker, onClose, onDone }) {
                       <span><strong>Face match: {fmScore}%</strong> — {fmPassed ? 'likely the same person' : 'weak match — review closely'}</span>
                     </div>
                   ) : (
-                    <p className="meta">The on-device check wasn&apos;t conclusive — consider confirming in person.</p>
+                    <p className="meta">The face check wasn&apos;t conclusive — consider confirming in person.</p>
                   )}
-                  <p className="meta" style={{ marginTop: '0.4rem' }}>ID &amp; selfie were compared in the worker&apos;s browser and <strong>not stored</strong> (match-then-discard).</p>
+                  {(idDoc || selfieImg) ? (
+                    <>
+                      <p className="meta" style={{ marginTop: '0.5rem' }}>Confirm the ID looks like a genuine document, and that the ID photo and the selfie are the same person. Click to enlarge.</p>
+                      <div className="review-certs" style={{ marginTop: '0.4rem' }}>
+                        {idDoc && (
+                          <a className="review-cert" href={idDoc} target="_blank" rel="noreferrer" title="ID document">
+                            {isImg(idDoc) ? <img src={idDoc} alt="ID document" /> : <span className="review-cert-ic">{Icons.idCard}</span>}
+                            <span className="review-cert-name">ID document</span>
+                          </a>
+                        )}
+                        {selfieImg && (
+                          <a className="review-cert" href={selfieImg} target="_blank" rel="noreferrer" title="Selfie">
+                            {isImg(selfieImg) ? <img src={selfieImg} alt="Selfie" /> : <span className="review-cert-ic">{Icons.user}</span>}
+                            <span className="review-cert-name">Selfie</span>
+                          </a>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <p className="meta" style={{ marginTop: '0.4rem' }}>No images on file for this submission.</p>
+                  )}
                 </>
               )}
             </div>

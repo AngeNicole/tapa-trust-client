@@ -174,14 +174,14 @@ export default function WorkerOnboarding() {
       const online = method === 'online';
       // On the online path we send the ID + selfie so the SERVER recomputes the
       // authoritative match (the on-device score below is just a hint it may
-      // override). The server matches them in memory and discards them — the
-      // images are never stored. Skip when the scan was simulated (no camera).
+      // override) AND keeps them for the admin to review. Skip when the scan was
+      // simulated (no camera).
       const sendImages = online && selfie && selfie !== 'simulated' && Boolean(idDoc?.dataUrl);
       await submitVerification({
         method,                                  // 'physical' | 'online'
         faceMatchScore: online && faceMatch && !faceMatch.error ? faceMatch.score : null,
         faceMatchPassed: online && faceMatch && !faceMatch.error ? faceMatch.passed : null,
-        selfie: sendImages ? selfie : null,      // matched in memory server-side, not stored
+        selfie: sendImages ? selfie : null,      // stored for admin review (admin-only)
         idImage: sendImages ? idDoc.dataUrl : null,
         certificationFiles: certFiles,           // credentials (kept for admin review)
       });
@@ -234,7 +234,7 @@ export default function WorkerOnboarding() {
             <div className="onb-pane">
               <h3 className="onb-h">Upload your ID document</h3>
               <p className="meta">A national ID, passport, or driver&apos;s licence.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Private by design:</strong> your ID and selfie are used <em>only to verify you</em> — matched in memory and never stored, only the match result is saved. Prefer not to? Go back and choose in-person.</span></div>
+              <div className="onb-why">{Icons.shield} <span><strong>Private &amp; secure:</strong> your ID and selfie are used <em>only to verify you</em> — sent securely and visible <em>only to an admin</em> confirming your identity, never shown publicly. Prefer not to? Go back and choose in-person.</span></div>
               <label className={`onb-drop ${idBusy ? 'is-busy' : ''}`}>
                 {idBusy ? <span className="meta">Processing…</span>
                   : idDoc ? (
@@ -273,7 +273,7 @@ export default function WorkerOnboarding() {
             <div className="onb-pane">
               <h3 className="onb-h">Scan your face</h3>
               <p className="meta">Center your face and capture — a free on-device face engine scans it and matches it to the photo on your ID.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Matched, not stored:</strong> your face scan and ID are compared only to verify you — matched in memory and never kept, only the match result is saved.</span></div>
+              <div className="onb-why">{Icons.shield} <span><strong>Private &amp; secure:</strong> your face scan and ID are used only to verify you — sent securely and seen <em>only by an admin</em> confirming your identity, never shown publicly.</span></div>
               <div className="onb-cam">
                 {selfie && selfie !== 'simulated'
                   ? <img src={selfie} alt="Captured selfie" />
@@ -369,7 +369,7 @@ export default function WorkerOnboarding() {
                 <li><span>Education</span><b>{education || '—'}</b></li>
                 <li><span>Certificates</span><b>{certFiles.length ? `✓ ${certFiles.length} uploaded` : '—'}</b></li>
               </ul>
-              {method === 'online' && <p className="meta" style={{ marginBottom: '0.5rem' }}>Your ID &amp; selfie are used only to verify you — <strong>matched in memory and not stored</strong>, only the match result above is saved.</p>}
+              {method === 'online' && <p className="meta" style={{ marginBottom: '0.5rem' }}>Your ID &amp; selfie are submitted securely for verification and are <strong>visible only to an admin</strong> confirming your identity — never shown publicly.</p>}
               <p className="meta">{method === 'online'
                 ? 'An admin reviews the match result and approves you.'
                 : 'An admin, office or agent confirms your identity in person and approves you.'} You&apos;ll appear in Browse once verified — or earn Peer-Verified from well-reviewed jobs.</p>
