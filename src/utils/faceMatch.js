@@ -67,7 +67,7 @@ export const MATCH_THRESHOLD = 65;
 // Calibrated distance → similarity %. Linear, clamped, with MATCH_DISTANCE
 // mapped to MATCH_THRESHOLD. Beats the naive (1 - distance) * 100, which put a
 // genuine 0.5-distance match at only 50% and failed real people.
-function scoreForDistance(distance) {
+export function scoreForDistance(distance) {
   const pct = 100 - ((100 - MATCH_THRESHOLD) / MATCH_DISTANCE) * distance;
   return Math.max(0, Math.min(100, Math.round(pct)));
 }

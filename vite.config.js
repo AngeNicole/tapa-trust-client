@@ -9,4 +9,13 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  // Vitest: jsdom environment for component tests, with a setup file that wires
+  // up jest-dom matchers. Playwright specs live under e2e/ and are excluded.
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.js',
+    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    exclude: ['e2e/**', 'node_modules/**'],
+  },
 });
