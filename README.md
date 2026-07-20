@@ -53,8 +53,8 @@ review) is the heart of the product and the focus of the demo.
 - Only **admin-verified** workers are shown publicly; unverified profiles never surface.
 
 ### Requester
-- **Browse-and-book by trust tier** — filter workers by **Admin-Certified / Peer-Verified**; book
-  directly from a profile (no task posting).
+- **Browse-and-book verified workers** — browse **admin-verified** workers and book directly from a
+  profile (no task posting). Unverified workers never appear and can't be booked.
 - **Chat & price agreement** — one composer to message and **propose / counter / accept a price**.
   A **price must be agreed before the worker can accept** the job.
 - **Digital agreement** — both parties **draw a signature** (canvas), then the requester **pays**;
@@ -68,10 +68,13 @@ review) is the heart of the product and the focus of the demo.
 
 ### Worker
 - **Two-path verification (non-skippable)** — choose **In-person** (admin confirms; no device/upload)
-  or **Online** (upload ID + live **face scan**; a free in-browser biometric matches the face to the
-  ID and must exceed **65%**). **Match-then-discard**: images are compared on-device and never
-  uploaded — only the verdict is stored. Both paths reach the same **Verified** status.
-- **Trust tiers** — Unverified → Peer-Verified (earned from well-reviewed jobs) → Admin-Certified.
+  or **Online** (upload ID + live **face scan**). On the online path the browser shows an instant
+  on-device match, then the **server recomputes the authoritative match** (must exceed **65%**) so
+  the stored verdict can't be spoofed by a tampered client. The **ID + selfie are kept for the admin
+  to review** (confirm the document is genuine and the faces match) — **admin-only, never shown
+  publicly**. Both paths reach the same **Verified** status.
+- **Trust status** — **Unverified** (can't be booked or browsed) → **Admin-Certified** once an admin
+  approves. Admin verification is the single gate to appear in Browse and take bookings.
 - **Profile** — upload a **profile picture**, skills, education, certificate uploads.
 - **Availability toggle** (always visible in the top bar).
 - **Bookings + History**, **check-in/out** with tracked **duration**, a data-minimizing
@@ -205,12 +208,20 @@ and this client on **Vercel**.
 
 ### A. Database + API — Render
 1. Create a **PostgreSQL** instance on Render; copy its connection string.
-2. Create a **Web Service** from `tapa-trust-server`. Build: `npm install`. Start: `npm start`.
+2. Create a **Web Service** from `tapa-trust-server`.
+   - Build: **`npm install && npm run face:models`** — the second step fetches the face-recognition
+     model weights (~12 MB) that server-side verification needs. With only `npm install`, the app
+     runs but the online face match fails on first use (weights are gitignored, so the build fetches
+     them).
+   - Start: `npm start`.
 3. Set env vars: `DATABASE_URL` (the Render DB), `JWT_SECRET`, `CLIENT_ORIGIN` (the Vercel URL).
-4. **One-time DB setup** against the managed DB (run locally with `DATABASE_URL` pointed at Render):
+4. **One-time DB + account setup** against the managed DB (run locally with `DATABASE_URL` pointed at
+   Render):
    ```bash
    npm run migrate        # first deploy only — creates the schema
    npm run seed           # skill categories
+   npm run seed:admin     # admin login (admins can't self-register)
+   npm run seed:demo      # optional: demo requester + a bookable, verified worker
    ```
    For later feature migrations on a live DB, use `npm run alter <file>` (non-destructive), e.g.
    `npm run alter alter-add-booking-chat.sql`.
