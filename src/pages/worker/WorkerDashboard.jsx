@@ -148,9 +148,8 @@ function AvailabilityToggle({ me, reload }) {
 }
 
 const TIER_HINT = {
-  'Admin-Certified': "You're Admin-Certified — the top tier. An admin reviewed and approved your submission.",
-  'Peer-Verified': 'Peer-Verified from your completed, well-reviewed jobs. Get Admin-Certified by finishing identity verification.',
-  Unverified: 'Complete verification — or finish 2+ jobs with strong reviews — to climb the trust ladder.',
+  'Admin-Certified': "You're Admin-Certified — an admin reviewed and approved your identity. You appear in Browse and can be booked.",
+  Unverified: 'Finish identity verification and get admin-approved to appear in Browse and take bookings.',
 };
 
 function VerificationCard({ status, tier }) {

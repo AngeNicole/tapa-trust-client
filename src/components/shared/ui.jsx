@@ -71,10 +71,10 @@ export function PaymentBadge({ payment }) {
   return <span className={`badge ${p.cls}`}>{p.label}</span>;
 }
 
-// Three-tier trust ladder badge.
+// Two-tier trust badge: admin-verified workers are Admin-Certified; everyone
+// else is Unverified (and can't be booked or browsed).
 const TIER = {
   'Admin-Certified': { cls: 'badge--tier-admin', icon: Icons.shield, label: 'Admin-Certified' },
-  'Peer-Verified': { cls: 'badge--tier-peer', icon: Icons.thumbsUp, label: 'Peer-Verified' },
   Unverified: { cls: 'badge--neutral', icon: null, label: 'Unverified' },
 };
 export function TierBadge({ tier }) {
