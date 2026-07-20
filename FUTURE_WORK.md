@@ -4,16 +4,19 @@ These are specified and justified but deliberately **not** in the graded build.
 
 ## Verification: two paths, one status (built)
 At verification the worker **chooses their path**, and both reach the same
-`verified` status / tier:
+`verified` status:
 - **In person** — an admin/office/agent confirms them; no device, no upload, no
   biometrics. The inclusive path for the no-smartphone worker.
-- **Online** — the worker's ID + live selfie are compared **in their browser**
-  (match-then-discard): the images are **never uploaded or stored**, only the
-  match verdict (a score) is saved. Self-service from a phone.
+- **Online** — the worker uploads their ID and takes a live selfie. The browser
+  shows an instant on-device match for feedback, then the **server recomputes the
+  authoritative match** and stores *its* verdict (so a tampered client can't fake
+  a pass). The **ID + selfie are kept for the admin to review** — admin-only,
+  never shown publicly. Self-service from a phone.
 
-The biometric compare is **built and offered on the online path**, but it is
-**never an auto-gate** — the admin confirms either way, the images are
-discarded after matching, and the in-person path needs no biometric at all.
+An admin still makes the final call on either path (the biometric score assists;
+it isn't a standalone auto-gate), and **admin verification is the single gate to
+be booked**: an unverified worker never appears in Browse and can't be booked.
+Trust status is therefore two states — **Unverified** or **Admin-Certified**.
 
 ## Real identity verification (NIDA / Smile ID) — future work
 The online compare is currently selfie↔self-supplied-ID (the admin is the trusted
