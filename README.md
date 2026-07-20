@@ -264,7 +264,9 @@ Run these with a **requester** and a **worker** side-by-side (two windows), plus
 ### 2. Automated tests
 Two layers, run independently:
 
-**API (server) — Jest + supertest, `107 tests across 11 suites`.** Covers auth, RBAC, the full
+**API integration (server) — Jest + supertest, `115 tests across 12 suites`.** True integration
+tests: `supertest` drives the real Express app → controllers → a **real PostgreSQL** database (not
+mocks). Covers auth, RBAC, the full
 booking lifecycle, and every trust feature: price-before-accept, dispute freeze/mediation/ruling,
 verification, the **verified-only gate** (an unverified worker is hidden from browse and returns
 `403` on booking), server-side face match storing the ID + selfie for admin review, safety
@@ -321,6 +323,17 @@ concurrent connections, 10 s each, **0 errors**):
 Point it at any environment: `TARGET=https://tapa-trust-server.onrender.com npm run perf`. On the
 deployed **Render free tier**, the first request after idle cold-starts in ~30 s; once warm, API
 responses are sub-second.
+
+**Stress test.** `npm run stress` ramps concurrency past normal to find where it degrades (the DB
+endpoint, local stack, 8 s per level). It **degrades gracefully — no errors even at 1,000
+concurrent connections**:
+
+| Connections | Requests/sec | Latency avg | p99 | Errors |
+| --- | --- | --- | --- | --- |
+| 50 | ≈ 12,500 | 3.4 ms | 6 ms | 0 |
+| 200 | ≈ 12,100 | 16 ms | 19 ms | 0 |
+| 500 | ≈ 10,900 | 45 ms | 52 ms | 0 |
+| 1,000 | ≈ 10,400 | 95 ms | 174 ms | 0 |
 
 ### 5-minute demo script (core functionality first)
 > Avoid dwelling on sign-up/sign-in; lead with the trust loop.
