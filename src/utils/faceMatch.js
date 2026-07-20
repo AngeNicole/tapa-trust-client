@@ -72,10 +72,13 @@ function scoreForDistance(distance) {
   return Math.max(0, Math.min(100, Math.round(pct)));
 }
 
-// A more tolerant detector than the 0.5 default, so small/low-contrast faces on
-// an ID photo are still found (a missed face is worse than a slightly weak one).
+// Very low confidence on purpose: the face photo on a real ID card is only ~15%
+// of the frame, and SSD (which resizes internally, so absolute pixels don't help)
+// scores such small faces ~0.16 — the 0.5 default and even 0.3 MISS them, so the
+// ID reads as "no face". 0.1 catches them. It can't wave impostors through: the
+// match verdict is descriptor DISTANCE (the 65% bar), not detection confidence.
 function detectorOptions(faceapi) {
-  return new faceapi.SsdMobilenetv1Options({ minConfidence: 0.3, maxResults: 1 });
+  return new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1, maxResults: 1 });
 }
 
 // Returns { ok, score (0-100), distance, likelySame, reason }.
