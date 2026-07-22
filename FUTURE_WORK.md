@@ -7,11 +7,10 @@ At verification the worker **chooses their path**, and both reach the same
 `verified` status:
 - **In person** — an admin/office/agent confirms them; no device, no upload, no
   biometrics. The inclusive path for the no-smartphone worker.
-- **Online** — the worker uploads their ID and takes a live selfie. The browser
-  shows an instant on-device match for feedback, then the **server recomputes the
-  authoritative match** and stores *its* verdict (so a tampered client can't fake
-  a pass). The **ID + selfie are kept for the admin to review** — admin-only,
-  never shown publicly. Self-service from a phone.
+- **Online** — the worker uploads their ID and takes a live selfie. The selfie↔ID
+  comparison runs **entirely in the browser** (match-then-discard): the images
+  never leave the device, and only the **match score + verdict** are submitted.
+  Self-service from a phone.
 
 An admin still makes the final call on either path (the biometric score assists;
 it isn't a standalone auto-gate), and **admin verification is the single gate to

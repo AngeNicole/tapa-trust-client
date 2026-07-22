@@ -68,11 +68,11 @@ review) is the heart of the product and the focus of the demo.
 
 ### Worker
 - **Two-path verification (non-skippable)** — choose **In-person** (admin confirms; no device/upload)
-  or **Online** (upload ID + live **face scan**). On the online path the browser shows an instant
-  on-device match, then the **server recomputes the authoritative match** (must exceed **65%**) so
-  the stored verdict can't be spoofed by a tampered client. The **ID + selfie are kept for the admin
-  to review** (confirm the document is genuine and the faces match) — **admin-only, never shown
-  publicly**. Both paths reach the same **Verified** status.
+  or **Online** (upload ID + live **face scan**). On the online path the selfie↔ID comparison runs
+  **entirely in the browser** (face-api.js) and must exceed **65%** — **match-then-discard**: the
+  identity images never leave the device; only the **match score + pass/fail verdict** are
+  submitted. The admin reviews that score and the certificates — never the images. Both paths reach
+  the same **Verified** status.
 - **Trust status** — **Unverified** (can't be booked or browsed) → **Admin-Certified** once an admin
   approves. Admin verification is the single gate to appear in Browse and take bookings.
 - **Profile** — upload a **profile picture**, skills, education, certificate uploads.
@@ -269,7 +269,7 @@ tests: `supertest` drives the real Express app → controllers → a **real Post
 mocks). Covers auth, RBAC, the full
 booking lifecycle, and every trust feature: price-before-accept, dispute freeze/mediation/ruling,
 verification, the **verified-only gate** (an unverified worker is hidden from browse and returns
-`403` on booking), server-side face match storing the ID + selfie for admin review, safety
+`403` on booking), match-then-discard verification (identity images never persisted), safety
 check-in, 24h auto-release, and earnings. Runs against an isolated test DB, auto-created + migrated:
 ```bash
 cd tapa-trust-server

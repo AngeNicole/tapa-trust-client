@@ -8,11 +8,13 @@ import { fileToDataUrl } from '../../utils/files.js';
 import { matchFaces, detectIdFace } from '../../utils/faceMatch.js';
 
 // Guided worker verification onboarding: upload ID → capture selfie → skills →
-// certifications → submit for admin review. An admin compares the selfie with
-// the ID to confirm the same person, and previews the uploaded certificates.
-// Two verification paths — both end at the SAME "verified" status (same tier).
+// certifications → submit for admin review. The selfie↔ID comparison runs
+// ENTIRELY IN THE BROWSER (face-api.js) — match-then-discard: the identity images
+// never leave the device; only the match score + pass/fail verdict are submitted.
+// The admin reviews that score and the certificate files — never the ID/selfie.
+// Two verification paths — both end at the SAME "verified" status.
 //   physical → admin confirms in person; no device, no upload, no biometric.
-//   online   → upload ID + live selfie; the system compares them (self-service).
+//   online   → upload ID + live selfie; compared on-device (self-service).
 const STEP_LABELS = { id: 'Identity document', selfie: 'Face scan', skills: 'Skills', certs: 'Certifications', review: 'Review' };
 const STEPS_ONLINE = ['id', 'selfie', 'skills', 'certs', 'review'];
 const STEPS_PHYSICAL = ['skills', 'certs', 'review'];
@@ -172,17 +174,14 @@ export default function WorkerOnboarding() {
       // admin to preview.
       await updateMyWorkerProfile({ skills: skills.join(', '), bio, education, certifications: certFiles.map((f) => f.name).join('\n') });
       const online = method === 'online';
-      // On the online path we send the ID + selfie so the SERVER recomputes the
-      // authoritative match (the on-device score below is just a hint it may
-      // override) AND keeps them for the admin to review. Skip when the scan was
-      // simulated (no camera).
-      const sendImages = online && selfie && selfie !== 'simulated' && Boolean(idDoc?.dataUrl);
+      // Match-then-discard: the selfie↔ID comparison already ran ENTIRELY in the
+      // browser (the face-api.js match that gates the selfie step). The identity
+      // images never leave the device — we submit ONLY the score + verdict. The
+      // admin reviews that score and the certificate files, never the images.
       await submitVerification({
         method,                                  // 'physical' | 'online'
         faceMatchScore: online && faceMatch && !faceMatch.error ? faceMatch.score : null,
         faceMatchPassed: online && faceMatch && !faceMatch.error ? faceMatch.passed : null,
-        selfie: sendImages ? selfie : null,      // stored for admin review (admin-only)
-        idImage: sendImages ? idDoc.dataUrl : null,
         certificationFiles: certFiles,           // credentials (kept for admin review)
       });
       navigate('/worker', { replace: true });
@@ -234,7 +233,7 @@ export default function WorkerOnboarding() {
             <div className="onb-pane">
               <h3 className="onb-h">Upload your ID document</h3>
               <p className="meta">A national ID, passport, or driver&apos;s licence.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Private &amp; secure:</strong> your ID and selfie are used <em>only to verify you</em> — sent securely and visible <em>only to an admin</em> confirming your identity, never shown publicly. Prefer not to? Go back and choose in-person.</span></div>
+              <div className="onb-why">{Icons.shield} <span><strong>Private by design:</strong> your ID and selfie are compared <em>right here on your device</em> and never leave it — only the match result is submitted. Prefer not to? Go back and choose in-person.</span></div>
               <label className={`onb-drop ${idBusy ? 'is-busy' : ''}`}>
                 {idBusy ? <span className="meta">Processing…</span>
                   : idDoc ? (
@@ -273,7 +272,7 @@ export default function WorkerOnboarding() {
             <div className="onb-pane">
               <h3 className="onb-h">Scan your face</h3>
               <p className="meta">Center your face and capture — a free on-device face engine scans it and matches it to the photo on your ID.</p>
-              <div className="onb-why">{Icons.shield} <span><strong>Private &amp; secure:</strong> your face scan and ID are used only to verify you — sent securely and seen <em>only by an admin</em> confirming your identity, never shown publicly.</span></div>
+              <div className="onb-why">{Icons.shield} <span><strong>Match-then-discard:</strong> your face scan and ID are compared here in your browser and never uploaded — only the match result is submitted.</span></div>
               <div className="onb-cam">
                 {selfie && selfie !== 'simulated'
                   ? <img src={selfie} alt="Captured selfie" />
@@ -369,7 +368,7 @@ export default function WorkerOnboarding() {
                 <li><span>Education</span><b>{education || '—'}</b></li>
                 <li><span>Certificates</span><b>{certFiles.length ? `✓ ${certFiles.length} uploaded` : '—'}</b></li>
               </ul>
-              {method === 'online' && <p className="meta" style={{ marginBottom: '0.5rem' }}>Your ID &amp; selfie are submitted securely for verification and are <strong>visible only to an admin</strong> confirming your identity — never shown publicly.</p>}
+              {method === 'online' && <p className="meta" style={{ marginBottom: '0.5rem' }}>Your ID &amp; selfie were compared <strong>on your device and never uploaded</strong> — only the match result is submitted.</p>}
               <p className="meta">{method === 'online'
                 ? 'An admin reviews the match result and approves you.'
                 : 'An admin, office or agent confirms your identity in person and approves you.'} You&apos;ll appear in Browse and be bookable once an admin approves you.</p>

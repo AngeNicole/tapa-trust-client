@@ -193,6 +193,10 @@ function ReviewModal({ worker, onClose, onDone }) {
   const vMethod = profile?.verificationMethod;
   const fmScore = profile?.faceMatchScore;
   const fmPassed = profile?.faceMatchPassed;
+  // Match-then-discard: identity images never leave the worker's device, so these
+  // are normally null and the online panel shows "No images on file" — the admin
+  // reviews the match score + certificates. These stay defensively in case a
+  // legacy record ever had a value.
   const idDoc = profile?.idDocument;
   const selfieImg = profile?.selfie;
 
