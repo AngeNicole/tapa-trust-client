@@ -38,7 +38,7 @@ The project spans **two repositories** plus its deployment and demo artefacts:
 
 **Key files**
 - Client: `src/routes.jsx` (routes + role gating), `src/api/client.js` (API calls), `src/context/` (Auth/Chat/Toast), `src/pages/` (public, auth, requester, worker, admin), `src/components/` (shared UI, `BookingStepper`, `DashShell`), `src/styles.css` (Tailwind + design tokens), `vercel.json` (SPA config).
-- Server: `src/routes/` + `src/controllers/` (auth, workers, bookings, disputes, admin, public), `src/middleware/` (`auth`, `requireRole`), `src/lib/trust.js`, `db/schema.sql`, `src/startupMigrations.js`, and the **`tests/` suite** (`npm test` — 107 tests).
+- Server: `src/routes/` + `src/controllers/` (auth, workers, bookings, disputes, admin, public), `src/middleware/` (`auth`, `requireRole`), `src/lib/trust.js`, `db/schema.sql`, `src/startupMigrations.js`, and the **`tests/` suite** (`npm test` — 115 tests).
 
 ---
 
