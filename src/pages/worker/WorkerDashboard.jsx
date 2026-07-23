@@ -16,6 +16,7 @@ import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, VerifyBadge, TierBadge, Avatar, Loading, ErrorNote, EmptyState, rwf, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
 import { WelcomeGetStarted } from '../../components/WelcomeGetStarted.jsx';
+import { WorkerJobs } from '../../components/jobs/WorkerJobs.jsx';
 import { BookingStepper } from '../../components/BookingStepper.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Settings } from '../../components/Settings.jsx';
@@ -73,6 +74,7 @@ export default function WorkerDashboard() {
 
   const items = [
     { key: 'overview', label: 'Dashboard', icon: Icons.grid || Icons.spark },
+    { key: 'jobs', label: 'Browse jobs', icon: Icons.briefcase },
     { key: 'bookings', label: 'My bookings', icon: Icons.calendar, count: activeCount },
     { key: 'history', label: 'History', icon: Icons.clock, count: doneCount },
     { key: 'messages', label: 'Messages', icon: Icons.chat },
@@ -112,6 +114,7 @@ export default function WorkerDashboard() {
       ) : (
       <>
       {tab === 'overview' && <OverviewView user={user} bookings={bookings.data || []} />}
+      {tab === 'jobs' && <WorkerJobs />}
       {tab === 'profile' && <Settings profileTab={<ProfileView user={user} embedded />} />}
       {tab === 'bookings' && <BookingsView state={bookings} only="active" />}
       {tab === 'history' && <BookingsView state={bookings} only="done" />}

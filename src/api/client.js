@@ -244,3 +244,33 @@ export function verifyWorker(workerId) {
 export function rejectWorker(workerId, note) {
   return apiFetch(`/admin/workers/${workerId}/reject`, { method: 'POST', body: JSON.stringify({ note: note || null }) });
 }
+
+// --- jobs (requester posts; workers browse + express interest via chat) ---
+export function createJob(payload) {
+  return apiFetch('/jobs', { method: 'POST', body: JSON.stringify(payload) });
+}
+export function getMyJobs() {
+  return apiFetch('/jobs/mine');
+}
+export function closeJob(id) {
+  return apiFetch(`/jobs/${id}/close`, { method: 'POST' });
+}
+export function browseJobs(skill) {
+  const q = skill && skill.trim() ? `?skill=${encodeURIComponent(skill.trim())}` : '';
+  return apiFetch(`/jobs${q}`);
+}
+export function expressJobInterest(jobId, message) {
+  return apiFetch(`/jobs/${jobId}/interest`, { method: 'POST', body: JSON.stringify({ message }) });
+}
+export function getJobInterests(jobId) {
+  return apiFetch(`/jobs/${jobId}/interests`);
+}
+export function getMyJobInterests() {
+  return apiFetch('/jobs/interests/mine');
+}
+export function getJobInterestMessages(interestId) {
+  return apiFetch(`/jobs/interests/${interestId}/messages`);
+}
+export function postJobInterestMessage(interestId, body) {
+  return apiFetch(`/jobs/interests/${interestId}/messages`, { method: 'POST', body: JSON.stringify({ body }) });
+}
