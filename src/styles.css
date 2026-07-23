@@ -2221,12 +2221,22 @@ body {
   }
 
   /* analytics / dashboard overview */
-  .kpi-grid { @apply grid gap-4 mt-4; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-  .kpi-card { @apply rounded-2xl p-4; background: var(--color-bg-white-0); border: 1px solid var(--color-stroke-soft-200); }
-  .kpi-ic { @apply inline-flex items-center justify-center w-9 h-9 rounded-xl mb-2; background: var(--color-primary-alpha-10, rgba(109,40,217,0.1)); color: var(--color-primary-base); }
-  .kpi-num { @apply text-2xl font-bold; color: var(--color-text-strong-950); }
+  .kpi-grid { @apply grid gap-4 mt-4; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .kpi-card { @apply flex items-center gap-3 rounded-2xl p-4; background: var(--color-bg-white-0); border: 1px solid var(--color-stroke-soft-200); }
+  .kpi-ic { @apply inline-flex items-center justify-center w-11 h-11 rounded-xl shrink-0; background: var(--color-bg-white-0); color: var(--color-text-sub-600); box-shadow: var(--shadow-regular-sm); }
+  .kpi-ic svg { @apply w-5 h-5; }
+  .kpi-body { @apply min-w-0; }
   .kpi-lbl { @apply text-sm; color: var(--color-text-sub-600); }
-  .kpi-hint { @apply text-xs mt-1; color: var(--color-text-soft-400); }
+  .kpi-num { @apply text-2xl font-bold leading-tight; color: var(--color-text-strong-950); }
+  .kpi-hint { @apply text-xs mt-0.5; color: var(--color-text-soft-400); }
+  /* soft-tinted tones (theme-safe alpha tints), rotated across the row */
+  .kpi-card--neutral { background: var(--color-bg-weak-50); border-color: transparent; }
+  .kpi-card--primary { background: var(--color-primary-alpha-10); border-color: transparent; }
+  .kpi-card--primary .kpi-ic { color: var(--color-primary-base); }
+  .kpi-card--success { background: var(--color-green-alpha-10); border-color: transparent; }
+  .kpi-card--success .kpi-ic { color: var(--color-green-600); }
+  .kpi-card--info { background: var(--color-blue-alpha-10); border-color: transparent; }
+  .kpi-card--info .kpi-ic { color: var(--color-blue-600); }
   .analytics-row { @apply grid gap-4 mt-4; grid-template-columns: 1fr; }
   @media (min-width: 900px) { .analytics-row { grid-template-columns: 1.4fr 1fr; } }
 

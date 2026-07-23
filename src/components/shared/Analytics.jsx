@@ -21,6 +21,27 @@ export function bookingActivity(bookings = [], role) {
     }));
 }
 
+// Soft-tinted stat cards (icon tile + label + big number). Tones rotate across
+// the row for a lively-but-tasteful look; pass `tone` on a kpi to pin one.
+// Shared by the dashboards and the Earnings page so stats look consistent.
+const KPI_TONES = ['primary', 'success', 'info', 'neutral'];
+export function KpiGrid({ kpis = [] }) {
+  return (
+    <div className="kpi-grid">
+      {kpis.map((k, i) => (
+        <div className={`kpi-card kpi-card--${k.tone || KPI_TONES[i % KPI_TONES.length]}`} key={k.label}>
+          {k.icon && <span className="kpi-ic">{k.icon}</span>}
+          <div className="kpi-body">
+            <div className="kpi-lbl">{k.label}</div>
+            <div className="kpi-num">{k.value}</div>
+            {k.hint && <div className="kpi-hint">{k.hint}</div>}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // Generic analytics/overview page: KPI tiles + a chart + a recent-activity feed.
 // Each dashboard computes its own numbers and passes them in.
 export function Analytics({ title = 'Dashboard', subtitle, kpis = [], chart, activity = [] }) {
@@ -29,16 +50,7 @@ export function Analytics({ title = 'Dashboard', subtitle, kpis = [], chart, act
       <h1>{title}</h1>
       {subtitle && <p className="subtitle">{subtitle}</p>}
 
-      <div className="kpi-grid">
-        {kpis.map((k) => (
-          <div className="kpi-card" key={k.label}>
-            {k.icon && <span className="kpi-ic">{k.icon}</span>}
-            <div className="kpi-num">{k.value}</div>
-            <div className="kpi-lbl">{k.label}</div>
-            {k.hint && <div className="kpi-hint">{k.hint}</div>}
-          </div>
-        ))}
-      </div>
+      <KpiGrid kpis={kpis} />
 
       <div className="analytics-row">
         {chart && (

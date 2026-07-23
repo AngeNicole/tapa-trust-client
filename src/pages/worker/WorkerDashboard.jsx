@@ -20,7 +20,7 @@ import { BookingStepper } from '../../components/BookingStepper.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Settings } from '../../components/Settings.jsx';
 import { MessagesView } from '../../components/MessagesView.jsx';
-import { Analytics, bookingActivity } from '../../components/shared/Analytics.jsx';
+import { Analytics, KpiGrid, bookingActivity } from '../../components/shared/Analytics.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
 import { BarChart } from '../../components/shared/Charts.jsx';
@@ -529,12 +529,12 @@ function EarningsView() {
         </div>
       </div>
 
-      <div className="earn-tiles">
-        <div className="earn-tile"><span className="earn-tile-n">{rwf(monthTotal)}</span><span className="earn-tile-l">This month</span></div>
-        <div className="earn-tile"><span className="earn-tile-n">{released.length}</span><span className="earn-tile-l">Jobs paid</span></div>
-        <div className="earn-tile"><span className="earn-tile-n">{pending.length}</span><span className="earn-tile-l">Pending payouts</span></div>
-        <div className="earn-tile"><span className="earn-tile-n">{(earn.avgRating || 0).toFixed(1)}★</span><span className="earn-tile-l">Avg rating</span></div>
-      </div>
+      <KpiGrid kpis={[
+        { icon: Icons.calendar, label: 'This month', value: rwf(monthTotal) },
+        { icon: Icons.checkCircle, label: 'Jobs paid', value: released.length },
+        { icon: Icons.clock, label: 'Pending payouts', value: pending.length },
+        { icon: Icons.thumbsUp, label: 'Avg rating', value: `${(earn.avgRating || 0).toFixed(1)}★` },
+      ]} />
 
       <div className="card">
         <div className="card-head" style={{ marginBottom: '0.75rem' }}>
