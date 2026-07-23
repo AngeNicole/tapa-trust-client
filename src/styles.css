@@ -1863,6 +1863,19 @@ body {
   .section-sub { @apply mt-3 text-paragraph-lg text-text-sub-600; }
 
   .how { @apply grid gap-6 md:grid-cols-3; }
+  /* two-column "how it works" (per audience) */
+  .how2 { @apply mx-auto grid max-w-4xl gap-5 md:grid-cols-2; }
+  .how2-col { @apply flex flex-col rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-6; }
+  .how2-head { @apply mb-4 flex flex-wrap items-center gap-x-2 text-title-h6 font-semibold text-text-strong-950; }
+  .how2-head svg { @apply h-5 w-5 text-primary-base; }
+  .how2-head span { @apply text-paragraph-sm font-normal text-text-sub-600; }
+  .how2-steps { @apply flex flex-1 list-none flex-col gap-4 p-0; }
+  .how2-step { @apply flex items-start gap-3; }
+  .how2-num { @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-bg-weak-50 text-label-sm font-semibold text-text-sub-600; }
+  .how2-t { @apply flex items-center gap-1.5 text-label-md font-semibold text-text-strong-950; }
+  .how2-t svg { @apply h-4 w-4 shrink-0 text-text-soft-400; }
+  .how2-d { @apply mt-0.5 text-paragraph-sm text-text-sub-600; }
+  .how2-cta { @apply mt-5 inline-flex w-full items-center justify-center gap-1; }
   .step-card { @apply rounded-3xl border border-stroke-soft-200 p-8 transition-transform hover:-translate-y-1; }
   .step-num { @apply mb-4 flex h-11 w-11 items-center justify-center rounded-2xl text-label-lg font-bold text-static-white; background: linear-gradient(135deg, var(--a, var(--color-primary-base)), var(--a2, var(--color-primary-dark))); }
   .step-card .card-title { @apply mb-1 text-label-lg; }

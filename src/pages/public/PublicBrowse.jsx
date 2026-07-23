@@ -19,10 +19,18 @@ const TRADES = [
   { name: 'Furniture Assembly', ic: Icons.hammer, d: 'Flat-pack and fittings', acc: 'acc-red', img: U('1595515106969-1ce29566ff1c') },
   { name: 'Tech Setup', ic: Icons.device, d: 'Wi-Fi, TVs and smart home', acc: 'acc-yellow', img: U('1550751827-4bd374c3f58b') },
 ];
-const STEPS = [
-  { t: 'Browse & compare', d: 'Search by trade and compare workers by rating, verification and track record — no account needed.', acc: 'acc-purple' },
-  { t: 'Book in a tap', d: 'Open a profile and book. Create a quick requester account only when you confirm.', acc: 'acc-blue' },
-  { t: 'Track it to done', d: 'Mutual check-in and check-out, confirm completion, then leave a review.', acc: 'acc-green' },
+// "How it works" — one column per audience.
+const REQUESTER_STEPS = [
+  { ic: Icons.search, t: 'Browse verified workers', d: 'Search by trade and compare workers by rating, verification and track record — no account needed to look.' },
+  { ic: Icons.briefcase, t: 'Book or post a job', d: 'Book directly from a profile, or post a job for verified workers to respond to.' },
+  { ic: Icons.shield, t: 'Agree a price & pay into escrow', d: 'Negotiate in chat; your payment is held safely until the job is confirmed done.' },
+  { ic: Icons.checkCircle, t: 'Track to done & review', d: 'Mutual check-in / check-out, confirm completion to release payment, then leave a review.' },
+];
+const WORKER_STEPS = [
+  { ic: Icons.user, t: 'Create your profile', d: 'Sign up and add your skills, experience and a photo.' },
+  { ic: Icons.idCard, t: 'Get verified', d: 'Complete identity verification to become Admin-Certified and appear in Browse.' },
+  { ic: Icons.calendar, t: 'Get booked or respond to jobs', d: 'Requesters book you from your profile, or you respond to posted jobs.' },
+  { ic: Icons.wallet, t: 'Complete work & get paid', d: 'Agree a price, do the job, and get paid securely from escrow.' },
 ];
 const FEATURES = [
   { ic: Icons.check, t: 'Verified identity', d: 'Workers submit ID verification, reviewed and approved by an admin before they appear.', lg: true, acc: 'acc-green' },
@@ -171,15 +179,30 @@ export default function PublicBrowse() {
       <section className="section" id="how" style={{ paddingTop: 0 }}>
         <div className="section-center">
           <div className="section-eyebrow">How it works</div>
-          <div className="section-head">From search to done, in three steps</div>
-          <p className="section-sub">Browsing is open to everyone — you only sign up when you book.</p>
+          <div className="section-head">How TaPa Trust works</div>
+          <p className="section-sub">Whether you need a hand or you offer skilled services, the flow is simple, tracked, and trusted.</p>
         </div>
-        <div className="how">
-          {STEPS.map((s, i) => (
-            <div className={`step-card ${s.acc}`} key={s.t}>
-              <div className="step-num">{i + 1}</div>
-              <div className="card-title">{s.t}</div>
-              <div className="meta">{s.d}</div>
+        <div className="how2">
+          {[
+            { title: 'For requesters', tag: 'you need a worker', ic: Icons.search, steps: REQUESTER_STEPS, cta: { label: 'Find workers', to: '/workers' } },
+            { title: 'For workers', tag: 'you offer services', ic: Icons.hammer, steps: WORKER_STEPS, cta: { label: 'Register as a worker', to: '/register', state: { role: 'worker' } } },
+          ].map((col) => (
+            <div className="how2-col" key={col.title}>
+              <div className="how2-head">{col.ic} {col.title} <span>— {col.tag}</span></div>
+              <ol className="how2-steps">
+                {col.steps.map((s, i) => (
+                  <li className="how2-step" key={s.t}>
+                    <span className="how2-num">{i + 1}</span>
+                    <div>
+                      <div className="how2-t">{s.ic} {s.t}</div>
+                      <p className="how2-d">{s.d}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+              <Link to={col.cta.to} state={col.cta.state} className="btn-primary how2-cta">
+                {col.cta.label} <span aria-hidden="true">→</span>
+              </Link>
             </div>
           ))}
         </div>
