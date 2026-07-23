@@ -276,10 +276,10 @@ cd tapa-trust-server
 npm test                 # spins up tapa_trust_test, applies schema + startup migrations, runs all suites
 ```
 
-**Client — Vitest + Testing Library, `23 tests`.** Unit tests for the custom logic (face-match
+**Client — Vitest + Testing Library, `27 tests`.** Unit tests for the custom logic (face-match
 distance→score calibration, pending-booking session flow, currency/duration formatting) and
-component tests for the access guards (`ProtectedRoute`/`RoleGate` redirect by auth + role) and the
-status/tier/verify badges:
+component tests for the access guards (`ProtectedRoute`/`RoleGate` redirect by auth + role), the
+status/tier/verify badges, and the first-run welcome screen:
 ```bash
 cd tapa-trust-client
 npm test                 # vitest run (jsdom)

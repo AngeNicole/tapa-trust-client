@@ -15,6 +15,7 @@ import {
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, VerifyBadge, TierBadge, Avatar, Loading, ErrorNote, EmptyState, rwf, duration } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { WelcomeGetStarted } from '../../components/WelcomeGetStarted.jsx';
 import { BookingStepper } from '../../components/BookingStepper.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Settings } from '../../components/Settings.jsx';
@@ -79,15 +80,45 @@ export default function WorkerDashboard() {
     { key: 'profile', label: 'Settings', icon: Icons.settings },
   ];
 
+  // First-run welcome / get-started — shown once (remembered in localStorage).
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try { return !localStorage.getItem('tapa_welcome_worker'); } catch { return false; }
+  });
+  const dismissWelcome = () => {
+    try { localStorage.setItem('tapa_welcome_worker', '1'); } catch { /* ignore */ }
+    setShowWelcome(false);
+  };
+  const go = (t) => { dismissWelcome(); setTab(t); };
+
   return (
-    <DashShell items={items} active={tab} onSelect={setTab}
+    <DashShell items={items} active={tab} onSelect={go}
       headerExtra={meState.data ? <AvailabilityToggle me={meState.data} reload={meState.reload} /> : null}>
+      {showWelcome ? (
+        <WelcomeGetStarted
+          name={user?.name}
+          subtitle="Get verified, go available, and take bookings you get paid for — all in one place."
+          features={[
+            { icon: Icons.idCard, title: 'Get verified', desc: 'Complete verification to become Admin-Certified.' },
+            { icon: Icons.lightning, title: 'Go available', desc: 'Toggle availability so requesters can find and book you.' },
+            { icon: Icons.calendar, title: 'Take bookings', desc: 'Accept jobs, check in and out, and see them to completion.' },
+            { icon: Icons.wallet, title: 'Track earnings', desc: 'View your income and ratings, and export a PDF summary.' },
+          ]}
+          actions={[
+            { icon: Icons.idCard, title: 'Finish setup', desc: 'Complete verification so you appear in Browse and can take jobs.', cta: 'Get started', onClick: () => go('overview') },
+            { icon: Icons.calendar, title: 'My bookings', desc: "See and manage the jobs you've been booked for.", cta: 'View bookings', onClick: () => go('bookings') },
+          ]}
+          onSkip={() => go('overview')}
+        />
+      ) : (
+      <>
       {tab === 'overview' && <OverviewView user={user} bookings={bookings.data || []} />}
       {tab === 'profile' && <Settings profileTab={<ProfileView user={user} embedded />} />}
       {tab === 'bookings' && <BookingsView state={bookings} only="active" />}
       {tab === 'history' && <BookingsView state={bookings} only="done" />}
       {tab === 'messages' && <MessagesView bookings={bookings.data} loading={bookings.loading} />}
       {tab === 'earnings' && <EarningsView />}
+      </>
+      )}
     </DashShell>
   );
 }

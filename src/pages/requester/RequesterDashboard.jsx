@@ -16,6 +16,7 @@ import {
 import { useAsync, useBookingAlerts } from '../../api/hooks.js';
 import { StatusBadge, PaymentBadge, VerifyBadge, TierBadge, Stars, Avatar, Loading, ErrorNote, EmptyState, duration, rwf } from '../../components/shared/ui.jsx';
 import { DashShell } from '../../components/DashShell.jsx';
+import { WelcomeGetStarted } from '../../components/WelcomeGetStarted.jsx';
 import { BookingStepper } from '../../components/BookingStepper.jsx';
 import { Settings } from '../../components/Settings.jsx';
 import { MessagesView } from '../../components/MessagesView.jsx';
@@ -73,9 +74,41 @@ export default function RequesterDashboard() {
 
   const afterBook = () => { bookings.reload(); setTab('bookings'); notify('Booking requested — waiting for the worker to accept.'); };
 
+  // First-run welcome / get-started — shown once (remembered in localStorage) on a
+  // clean first arrival (not when resuming a booking or deep-linking a tab).
+  const [showWelcome, setShowWelcome] = useState(() => {
+    try {
+      return !localStorage.getItem('tapa_welcome_requester') && !resumedBooking
+        && !params.get('tab') && params.get('booked') !== '1';
+    } catch { return false; }
+  });
+  const dismissWelcome = () => {
+    try { localStorage.setItem('tapa_welcome_requester', '1'); } catch { /* ignore */ }
+    setShowWelcome(false);
+  };
+  const go = (t) => { dismissWelcome(); setTab(t); };
+
   return (
     <>
-    <DashShell items={items} active={tab} onSelect={setTab}>
+    <DashShell items={items} active={tab} onSelect={go}>
+      {showWelcome ? (
+        <WelcomeGetStarted
+          name={user?.name}
+          subtitle="Book verified skilled workers you can trust — for your home, business, or personal projects."
+          features={[
+            { icon: Icons.search, title: 'Find verified workers', desc: 'Browse admin-verified workers with ratings and reviews.' },
+            { icon: Icons.scales, title: 'Agree a price', desc: 'Chat and lock in a price before the job is accepted.' },
+            { icon: Icons.shield, title: 'Escrow-protected pay', desc: 'Your money is held safely and released only when the job is done.' },
+            { icon: Icons.calendar, title: 'Track every job', desc: 'Follow each booking from check-in to completion.' },
+          ]}
+          actions={[
+            { icon: Icons.search, title: 'Browse workers', desc: 'Find and book skilled workers in your area.', cta: 'Get started', onClick: () => go('hire') },
+            { icon: Icons.calendar, title: 'My bookings', desc: "Track and manage the jobs you've booked.", cta: 'View bookings', onClick: () => go('bookings') },
+          ]}
+          onSkip={() => go('overview')}
+        />
+      ) : (
+      <>
       {tab === 'overview' && <OverviewView user={user} bookings={all} savedCount={(saved.data || []).length} />}
       {tab === 'hire' && (
         <HireView
@@ -90,6 +123,8 @@ export default function RequesterDashboard() {
       {tab === 'history' && <HistoryView state={bookings} bookings={history} onReview={setReviewBooking} savedIds={(saved.data || []).map((w) => w.worker_id)} bookedIds={bookedIds} onSavedChange={() => saved.reload()} />}
       {tab === 'saved' && <SavedView state={saved} bookedIds={bookedIds} onRebook={afterBook} />}
       {tab === 'profile' && <Settings profileTab={<ProfileView user={user} bookings={all} saved={saved.data || []} />} />}
+      </>
+      )}
     </DashShell>
     {reviewBooking && (
       <ReviewModal

@@ -1357,6 +1357,31 @@ body {
   .empty-hint { @apply mt-1 max-w-sm text-paragraph-sm text-text-sub-600; }
   .empty-state .btn-primary, .empty-state .btn-secondary { @apply mt-5; }
 
+  /* first-run welcome / get-started */
+  .welcome { @apply mx-auto max-w-3xl py-6 text-center; }
+  .welcome-hero-ic { @apply mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-bg-weak-50 text-text-sub-600; box-shadow: var(--shadow-regular-sm); }
+  .welcome-hero-ic svg { @apply h-8 w-8; }
+  .welcome-title { @apply text-title-h5 font-semibold text-text-strong-950; }
+  .welcome-sub { @apply mx-auto mt-1 max-w-md text-paragraph-md text-text-sub-600; }
+  .welcome-features { @apply mt-8 grid grid-cols-2 gap-3 md:grid-cols-4; }
+  .welcome-feature { @apply rounded-2xl bg-bg-weak-50 p-4 text-center; }
+  .welcome-feature-ic { @apply mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-bg-white-0 text-text-sub-600; box-shadow: var(--shadow-regular-sm); }
+  .welcome-feature-ic svg { @apply h-5 w-5; }
+  .welcome-feature-t { @apply text-label-sm font-semibold text-text-strong-950; }
+  .welcome-feature-d { @apply mt-1 text-paragraph-xs text-text-sub-600; }
+  .welcome-q { @apply mt-10 text-title-h6 font-semibold text-text-strong-950; }
+  .welcome-actions { @apply mx-auto mt-4 grid max-w-xl gap-4 sm:grid-cols-2; }
+  .welcome-action { @apply flex flex-col items-center rounded-3xl border border-stroke-soft-200 bg-bg-white-0 p-6 text-center; }
+  .welcome-action.is-primary { @apply bg-bg-weak-50; }
+  .welcome-action-ic { @apply mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-bg-white-0 text-text-sub-600; box-shadow: var(--shadow-regular-sm); }
+  .welcome-action.is-primary .welcome-action-ic { @apply bg-primary-base text-static-white; box-shadow: none; }
+  .welcome-action-ic svg { @apply h-6 w-6; }
+  .welcome-action-t { @apply text-label-lg font-semibold text-text-strong-950; }
+  .welcome-action-d { @apply mb-4 mt-1 text-paragraph-sm text-text-sub-600; }
+  .welcome-action .btn-primary, .welcome-action .btn-secondary { @apply mt-auto; }
+  .welcome-skip { @apply mt-8 cursor-pointer text-label-sm text-text-sub-600 underline underline-offset-2 transition-colors; }
+  .welcome-skip:hover { @apply text-text-strong-950; }
+
   /* admin worker-review modal */
   .review-modal { @apply max-w-lg; max-height: 88vh; overflow-y: auto; }
   .review-id { @apply flex items-center gap-3 border-b border-stroke-soft-200 pb-4; }
