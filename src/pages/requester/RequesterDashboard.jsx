@@ -109,7 +109,7 @@ export default function RequesterDashboard() {
         />
       ) : (
       <>
-      {tab === 'overview' && <OverviewView user={user} bookings={all} savedCount={(saved.data || []).length} />}
+      {tab === 'overview' && <OverviewView user={user} bookings={all} />}
       {tab === 'hire' && (
         <HireView
           savedIds={(saved.data || []).map((w) => w.worker_id)}
@@ -141,7 +141,7 @@ export default function RequesterDashboard() {
   );
 }
 
-function OverviewView({ user, bookings, savedCount }) {
+function OverviewView({ user, bookings }) {
   const amountOf = (b) => Number(b.agreedPrice) || 0;
   const active = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status)).length;
   const completed = bookings.filter((b) => b.status === 'completed').length;
@@ -164,7 +164,6 @@ function OverviewView({ user, bookings, savedCount }) {
         { icon: Icons.clock, value: active, label: 'Active' },
         { icon: Icons.checkCircle, value: completed, label: 'Completed' },
         { icon: Icons.wallet, value: rwf(spent), label: 'Total spent' },
-        { icon: Icons.bookmark, value: savedCount, label: 'Saved workers' },
       ]}
       chart={{ title: 'Bookings by stage', data: buckets, format: (v) => v }}
       activity={bookingActivity(bookings, 'requester')}

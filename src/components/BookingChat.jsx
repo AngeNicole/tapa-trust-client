@@ -37,7 +37,22 @@ function Sig({ label, signed, value }) {
   );
 }
 
-export default function BookingChat({ booking, me, onClose, onAgreed }) {
+// The chat renders as a right-side drawer by default, or as an inline panel that
+// fills its container when embedded in the two-pane Messages inbox.
+function ChatShell({ inline, onClose, children }) {
+  if (inline) {
+    return <section className="chat-panel chat-panel--inline" role="region" aria-label="Booking chat">{children}</section>;
+  }
+  return (
+    <div className="drawer-scrim" onClick={onClose}>
+      <aside className="chat-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Booking chat">
+        {children}
+      </aside>
+    </div>
+  );
+}
+
+export default function BookingChat({ booking, me, onClose, onAgreed, inline = false }) {
   const [messages, setMessages] = useState([]);
   const [agreed, setAgreed] = useState(booking.agreedPrice ?? null);
   const [text, setText] = useState('');
@@ -160,8 +175,7 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
   }
 
   return (
-    <div className="drawer-scrim" onClick={onClose}>
-      <aside className="chat-drawer" onClick={(e) => e.stopPropagation()} role="dialog" aria-label="Booking chat">
+    <ChatShell inline={inline} onClose={onClose}>
         <header className="chat-dhead">
           <Avatar name={otherName} className="avatar" style={{ width: 40, height: 40, borderRadius: 999, fontSize: '0.85rem' }} />
           <div className="chat-dhead-info">
@@ -366,7 +380,6 @@ export default function BookingChat({ booking, me, onClose, onAgreed }) {
             </div>
           </div>
         )}
-      </aside>
-    </div>
+    </ChatShell>
   );
 }
