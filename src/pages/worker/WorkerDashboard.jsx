@@ -17,6 +17,7 @@ import { StatusBadge, PaymentBadge, VerifyBadge, TierBadge, Avatar, Loading, Err
 import { DashShell } from '../../components/DashShell.jsx';
 import { WelcomeGetStarted } from '../../components/WelcomeGetStarted.jsx';
 import { WorkerJobs } from '../../components/jobs/WorkerJobs.jsx';
+import { useT } from '../../i18n/index.jsx';
 import { BookingStepper } from '../../components/BookingStepper.jsx';
 import { useChat } from '../../context/ChatContext.jsx';
 import { Settings } from '../../components/Settings.jsx';
@@ -63,6 +64,7 @@ const earnFmt = (v) => (v >= 1000 ? Math.round(v / 1000) + 'k' : v);
 
 export default function WorkerDashboard() {
   const { user } = useAuth();
+  const t = useT();
   const [tab, setTab] = useState('overview');
   const notify = useToast();
   const bookings = useAsync(() => getBookings(), [], { intervalMs: 7000 });
@@ -73,13 +75,13 @@ export default function WorkerDashboard() {
   const doneCount = all.filter((b) => b.status === 'completed').length;
 
   const items = [
-    { key: 'overview', label: 'Dashboard', icon: Icons.grid || Icons.spark },
-    { key: 'jobs', label: 'Browse jobs', icon: Icons.briefcase },
-    { key: 'bookings', label: 'My bookings', icon: Icons.calendar, count: activeCount },
-    { key: 'history', label: 'History', icon: Icons.clock, count: doneCount },
-    { key: 'messages', label: 'Messages', icon: Icons.chat },
-    { key: 'earnings', label: 'Earnings', icon: Icons.wallet },
-    { key: 'profile', label: 'Settings', icon: Icons.settings },
+    { key: 'overview', label: t('nav.dashboard'), icon: Icons.grid || Icons.spark },
+    { key: 'jobs', label: t('nav.browseJobs'), icon: Icons.briefcase },
+    { key: 'bookings', label: t('nav.myBookings'), icon: Icons.calendar, count: activeCount },
+    { key: 'history', label: t('nav.history'), icon: Icons.clock, count: doneCount },
+    { key: 'messages', label: t('nav.messages'), icon: Icons.chat },
+    { key: 'earnings', label: t('nav.earnings'), icon: Icons.wallet },
+    { key: 'profile', label: t('nav.settings'), icon: Icons.settings },
   ];
 
   // First-run welcome / get-started — shown once (remembered in localStorage).

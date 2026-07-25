@@ -18,6 +18,7 @@ import { StatusBadge, PaymentBadge, VerifyBadge, TierBadge, Stars, Avatar, Loadi
 import { DashShell } from '../../components/DashShell.jsx';
 import { WelcomeGetStarted } from '../../components/WelcomeGetStarted.jsx';
 import { RequesterJobs } from '../../components/jobs/RequesterJobs.jsx';
+import { useT } from '../../i18n/index.jsx';
 import { BookingStepper } from '../../components/BookingStepper.jsx';
 import { Settings } from '../../components/Settings.jsx';
 import { MessagesView } from '../../components/MessagesView.jsx';
@@ -33,6 +34,7 @@ function initials(name = '') {
 
 export default function RequesterDashboard() {
   const { user } = useAuth();
+  const t = useT();
   const [params] = useSearchParams();
   const TABS = ['overview', 'hire', 'jobs', 'bookings', 'messages', 'history', 'saved', 'profile'];
   // Land on Bookings if arriving from a resumed booking — via ?tab=bookings OR
@@ -64,14 +66,14 @@ export default function RequesterDashboard() {
   const bookedIds = [...new Set(all.filter((b) => !['completed', 'cancelled'].includes(b.status)).map((b) => b.worker_id))];
 
   const items = [
-    { key: 'overview', label: 'Dashboard', icon: Icons.grid || Icons.spark },
-    { key: 'hire', label: 'Find workers', icon: Icons.briefcase },
-    { key: 'jobs', label: 'Post a job', icon: Icons.plus },
-    { key: 'bookings', label: 'Bookings', icon: Icons.calendar, count: active.length },
-    { key: 'history', label: 'History', icon: Icons.clock, count: history.length },
-    { key: 'messages', label: 'Messages', icon: Icons.chat },
-    { key: 'saved', label: 'Saved workers', icon: Icons.bookmark, count: (saved.data || []).length },
-    { key: 'profile', label: 'Settings', icon: Icons.settings },
+    { key: 'overview', label: t('nav.dashboard'), icon: Icons.grid || Icons.spark },
+    { key: 'hire', label: t('nav.findWorkers'), icon: Icons.briefcase },
+    { key: 'jobs', label: t('nav.postJob'), icon: Icons.plus },
+    { key: 'bookings', label: t('nav.bookings'), icon: Icons.calendar, count: active.length },
+    { key: 'history', label: t('nav.history'), icon: Icons.clock, count: history.length },
+    { key: 'messages', label: t('nav.messages'), icon: Icons.chat },
+    { key: 'saved', label: t('nav.saved'), icon: Icons.bookmark, count: (saved.data || []).length },
+    { key: 'profile', label: t('nav.settings'), icon: Icons.settings },
   ];
 
   const afterBook = () => { bookings.reload(); setTab('bookings'); notify('Booking requested — waiting for the worker to accept.'); };

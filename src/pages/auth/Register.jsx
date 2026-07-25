@@ -4,6 +4,7 @@ import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
 import { resumeAfterAuth } from '../../api/pendingBooking.js';
 import PasswordInput from '../../components/PasswordInput.jsx';
 import AuthLayout from '../../components/AuthLayout.jsx';
+import { useT } from '../../i18n/index.jsx';
 
 // A strong password: at least 8 characters with an uppercase letter, a
 // lowercase letter, a number, and a special character.
@@ -21,6 +22,7 @@ export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const t = useT();
   // Coming from a "Book" click while logged out → requester-only, no picker.
   const bookingFlow = location.state?.book != null;
   const initialRole = bookingFlow ? 'requester' : location.state?.role || 'requester';
@@ -74,46 +76,46 @@ export default function Register() {
 
   return (
     <AuthLayout
-      title="Create your account"
+      title={t('auth.registerTitle')}
       subtitle={bookingFlow
         ? 'Create a requester account to finish booking the worker you selected.'
-        : 'Set up your account in under a minute.'}
-      altText="Already have an account?"
+        : t('auth.registerSub')}
+      altText={t('auth.haveAccount')}
       altTo="/login"
-      altLabel="Log in"
+      altLabel={t('auth.logIn')}
     >
       <form className="form" onSubmit={onSubmit}>
         {!bookingFlow && (
           <label>
-            I am a
+            {t('auth.iAmA')}
             <div className="role-picker">
               <button
                 type="button"
                 className={`role-option ${form.role === 'requester' ? 'role-option--active' : ''}`}
                 onClick={() => update('role', 'requester')}
               >
-                Requester
-                <span className="role-hint">I need to hire skilled help</span>
+                {t('auth.requester')}
+                <span className="role-hint">{t('auth.requesterHint')}</span>
               </button>
               <button
                 type="button"
                 className={`role-option ${form.role === 'worker' ? 'role-option--active' : ''}`}
                 onClick={() => update('role', 'worker')}
               >
-                Worker
-                <span className="role-hint">I offer skilled services</span>
+                {t('auth.worker')}
+                <span className="role-hint">{t('auth.workerHint')}</span>
               </button>
             </div>
           </label>
         )}
 
         <label>
-          Full name
+          {t('auth.fullName')}
           <input value={form.name} onChange={(e) => update('name', e.target.value)} />
         </label>
 
         <label>
-          Email
+          {t('auth.email')}
           <input
             type="email"
             value={form.email}
@@ -122,12 +124,12 @@ export default function Register() {
         </label>
 
         <label>
-          Phone (optional)
+          {t('auth.phoneOpt')}
           <input value={form.phone} onChange={(e) => update('phone', e.target.value)} />
         </label>
 
         <label>
-          Location (optional)
+          {t('auth.locationOpt')}
           <input
             value={form.location}
             onChange={(e) => update('location', e.target.value)}
@@ -136,22 +138,19 @@ export default function Register() {
         </label>
 
         <label>
-          Password
+          {t('auth.password')}
           <PasswordInput
             value={form.password}
             onChange={(e) => update('password', e.target.value)}
             autoComplete="new-password"
           />
-          <span className="role-hint">
-            At least 8 characters, with an uppercase letter, a lowercase letter, a number, and a
-            special character.
-          </span>
+          <span className="role-hint">{t('auth.passwordHint')}</span>
         </label>
 
         {error && <div className="form-error">{error}</div>}
 
         <button className="btn-primary" type="submit" disabled={submitting}>
-          {submitting ? 'Creating account...' : 'Create account'}
+          {submitting ? t('auth.creating') : t('auth.createAccount')}
         </button>
       </form>
     </AuthLayout>

@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom';
 import { Icons } from './shared/icons.jsx';
 import { ThemeToggle } from './ThemeToggle.jsx';
+import { LanguageSwitcher } from './LanguageSwitcher.jsx';
+import { useT } from '../i18n/index.jsx';
 
 // Public marketing chrome: sticky navbar (logo, section links on the landing,
-// Log in + Join CTAs). Distinct from the dashboard sidebar shell.
+// language + Log in + Join CTAs). Distinct from the dashboard sidebar shell.
 export function PublicShell({ children, landing }) {
+  const t = useT();
   return (
     <div className="public-page">
       <header className="public-top">
@@ -15,16 +18,17 @@ export function PublicShell({ children, landing }) {
 
         {landing && (
           <nav className="public-nav">
-            <Link to="/workers">Workers</Link>
-            <a href="/#how">How it works</a>
-            <a href="/#why">Why us</a>
+            <Link to="/workers">{t('nav.workers')}</Link>
+            <a href="/#how">{t('nav.how')}</a>
+            <a href="/#why">{t('nav.why')}</a>
           </nav>
         )}
 
         <div className="public-actions">
+          <LanguageSwitcher />
           <ThemeToggle />
-          <Link to="/login" className="public-link">Log in</Link>
-          <Link to="/register" state={{ role: 'worker' }} className="btn-dark">Join as a worker</Link>
+          <Link to="/login" className="public-link">{t('nav.login')}</Link>
+          <Link to="/register" state={{ role: 'worker' }} className="btn-dark">{t('nav.joinWorker')}</Link>
         </div>
       </header>
       <main className="public-main">{children}</main>

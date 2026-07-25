@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { Icons } from './shared/icons.jsx';
 import { NotificationsBell } from './NotificationsBell.jsx';
 import { ThemeToggle } from './ThemeToggle.jsx';
+import { LanguageSwitcher } from './LanguageSwitcher.jsx';
 
 function initials(name = '') {
   const p = name.trim().split(/\s+/);
@@ -76,6 +77,7 @@ export function DashShell({ items, active, onSelect, children, headerExtra }) {
             <input type="text" placeholder="Search…" aria-label="Search" />
           </label>
           {headerExtra}
+          <LanguageSwitcher />
           <ThemeToggle />
           <NotificationsBell />
           <span className="top-divider" />

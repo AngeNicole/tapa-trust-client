@@ -7,6 +7,7 @@ import { useToast } from '../../components/Toast.jsx';
 import { Avatar } from '../../components/shared/ui.jsx';
 import { PublicShell } from '../../components/PublicShell.jsx';
 import { Icons } from '../../components/shared/icons.jsx';
+import { useT } from '../../i18n/index.jsx';
 
 const U = (id, w = 800) => `https://images.unsplash.com/photo-${id}?w=${w}&q=75&auto=format&fit=crop`;
 const HERO_IMG = U('1621905252507-b35492cc74b4', 1200);
@@ -19,18 +20,15 @@ const TRADES = [
   { name: 'Furniture Assembly', ic: Icons.hammer, d: 'Flat-pack and fittings', acc: 'acc-red', img: U('1595515106969-1ce29566ff1c') },
   { name: 'Tech Setup', ic: Icons.device, d: 'Wi-Fi, TVs and smart home', acc: 'acc-yellow', img: U('1550751827-4bd374c3f58b') },
 ];
-// "How it works" — one column per audience.
+// "How it works" — one column per audience. Text comes from i18n keys
+// (how.r1t/r1d … how.w4t/w4d); each entry keeps its icon + key prefix.
 const REQUESTER_STEPS = [
-  { ic: Icons.search, t: 'Browse verified workers', d: 'Search by trade and compare workers by rating, verification and track record — no account needed to look.' },
-  { ic: Icons.briefcase, t: 'Book or post a job', d: 'Book directly from a profile, or post a job for verified workers to respond to.' },
-  { ic: Icons.shield, t: 'Agree a price & pay into escrow', d: 'Negotiate in chat; your payment is held safely until the job is confirmed done.' },
-  { ic: Icons.checkCircle, t: 'Track to done & review', d: 'Mutual check-in / check-out, confirm completion to release payment, then leave a review.' },
+  { ic: Icons.search, k: 'r1' }, { ic: Icons.briefcase, k: 'r2' },
+  { ic: Icons.shield, k: 'r3' }, { ic: Icons.checkCircle, k: 'r4' },
 ];
 const WORKER_STEPS = [
-  { ic: Icons.user, t: 'Create your profile', d: 'Sign up and add your skills, experience and a photo.' },
-  { ic: Icons.idCard, t: 'Get verified', d: 'Complete identity verification to become Admin-Certified and appear in Browse.' },
-  { ic: Icons.calendar, t: 'Get booked or respond to jobs', d: 'Requesters book you from your profile, or you respond to posted jobs.' },
-  { ic: Icons.wallet, t: 'Complete work & get paid', d: 'Agree a price, do the job, and get paid securely from escrow.' },
+  { ic: Icons.user, k: 'w1' }, { ic: Icons.idCard, k: 'w2' },
+  { ic: Icons.calendar, k: 'w3' }, { ic: Icons.wallet, k: 'w4' },
 ];
 const FEATURES = [
   { ic: Icons.check, t: 'Verified identity', d: 'Workers submit ID verification, reviewed and approved by an admin before they appear.', lg: true, acc: 'acc-green' },
@@ -53,6 +51,7 @@ export default function PublicBrowse() {
   const { user, loading: authLoading } = useAuth();
   const notify = useToast();
   const navigate = useNavigate();
+  const tr = useT();
   const [email, setEmail] = useState('');
   const [q, setQ] = useState('');
   const [trade, setTrade] = useState('');
@@ -89,22 +88,22 @@ export default function PublicBrowse() {
         <div className="hero-glow" />
         <div className="phero-grid">
           <div className="phero-copy">
-            <span className="hero-eyebrow"><span className="pill-new">NEW</span> Connecting you with trusted skilled workers</span>
-            <h1 className="hero-h1">Skilled help you can <span className="hero-accent">trust,</span> on demand.</h1>
-            <p className="hero-lead"><span className="lead-mark">//</span> Every worker is verified and every job is tracked from booking to done — so you always know who is coming and what to expect.</p>
+            <span className="hero-eyebrow"><span className="pill-new">NEW</span> {tr('hero.eyebrow')}</span>
+            <h1 className="hero-h1">{tr('hero.title')}</h1>
+            <p className="hero-lead"><span className="lead-mark">//</span> {tr('hero.lead')}</p>
 
             <form className="hero-search" onSubmit={goBrowse}>
               <label className="hs-field">
                 {Icons.search}
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or skill" aria-label="Search name or skill" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('hero.searchNameSkill')} aria-label={tr('hero.searchNameSkill')} />
               </label>
               <label className="hs-field hs-select">
                 <select value={trade} onChange={(e) => setTrade(e.target.value)} aria-label="Trade">
-                  <option value="">All trades</option>
-                  {tradeList.map((t) => <option key={t} value={t}>{t}</option>)}
+                  <option value="">{tr('hero.allTrades')}</option>
+                  {tradeList.map((tName) => <option key={tName} value={tName}>{tName}</option>)}
                 </select>
               </label>
-              <button className="btn-dark" type="submit">Browse <span aria-hidden="true">→</span></button>
+              <button className="btn-dark" type="submit">{tr('hero.browse')} <span aria-hidden="true">→</span></button>
             </form>
 
             <div className="hero-metrics">
@@ -178,24 +177,24 @@ export default function PublicBrowse() {
       {/* how it works */}
       <section className="section" id="how" style={{ paddingTop: 0 }}>
         <div className="section-center">
-          <div className="section-eyebrow">How it works</div>
-          <div className="section-head">How TaPa Trust works</div>
-          <p className="section-sub">Whether you need a hand or you offer skilled services, the flow is simple, tracked, and trusted.</p>
+          <div className="section-eyebrow">{tr('how.eyebrow')}</div>
+          <div className="section-head">{tr('how.title')}</div>
+          <p className="section-sub">{tr('how.sub')}</p>
         </div>
         <div className="how2">
           {[
-            { title: 'For requesters', tag: 'you need a worker', ic: Icons.search, steps: REQUESTER_STEPS, cta: { label: 'Find workers', to: '/workers' } },
-            { title: 'For workers', tag: 'you offer services', ic: Icons.hammer, steps: WORKER_STEPS, cta: { label: 'Register as a worker', to: '/register', state: { role: 'worker' } } },
+            { title: tr('how.forRequesters'), tag: tr('how.tagRequester'), ic: Icons.search, steps: REQUESTER_STEPS, cta: { label: tr('how.ctaFindWorkers'), to: '/workers' } },
+            { title: tr('how.forWorkers'), tag: tr('how.tagWorker'), ic: Icons.hammer, steps: WORKER_STEPS, cta: { label: tr('how.ctaRegisterWorker'), to: '/register', state: { role: 'worker' } } },
           ].map((col) => (
             <div className="how2-col" key={col.title}>
               <div className="how2-head">{col.ic} {col.title} <span>— {col.tag}</span></div>
               <ol className="how2-steps">
                 {col.steps.map((s, i) => (
-                  <li className="how2-step" key={s.t}>
+                  <li className="how2-step" key={s.k}>
                     <span className="how2-num">{i + 1}</span>
                     <div>
-                      <div className="how2-t">{s.ic} {s.t}</div>
-                      <p className="how2-d">{s.d}</p>
+                      <div className="how2-t">{s.ic} {tr(`how.${s.k}t`)}</div>
+                      <p className="how2-d">{tr(`how.${s.k}d`)}</p>
                     </div>
                   </li>
                 ))}

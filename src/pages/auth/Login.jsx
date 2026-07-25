@@ -4,10 +4,12 @@ import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
 import { resumeAfterAuth, getPendingBooking } from '../../api/pendingBooking.js';
 import PasswordInput from '../../components/PasswordInput.jsx';
 import AuthLayout from '../../components/AuthLayout.jsx';
+import { useT } from '../../i18n/index.jsx';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const t = useT();
 
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
@@ -38,17 +40,17 @@ export default function Login() {
 
   return (
     <AuthLayout
-      title="Welcome back"
+      title={t('auth.loginTitle')}
       subtitle={getPendingBooking() != null
         ? 'Log in as a requester to finish booking the worker you selected.'
-        : 'Log in to manage your bookings and jobs.'}
-      altText="New here?"
+        : t('auth.loginSub')}
+      altText={t('auth.noAccount')}
       altTo="/register"
-      altLabel="Create an account"
+      altLabel={t('auth.createAccount')}
     >
       <form className="form" onSubmit={onSubmit}>
         <label>
-          Email
+          {t('auth.email')}
           <input
             type="email"
             value={form.email}
@@ -57,7 +59,7 @@ export default function Login() {
         </label>
 
         <label>
-          Password
+          {t('auth.password')}
           <PasswordInput
             value={form.password}
             onChange={(e) => update('password', e.target.value)}
@@ -68,7 +70,7 @@ export default function Login() {
         {error && <div className="form-error">{error}</div>}
 
         <button className="btn-primary" type="submit" disabled={submitting}>
-          {submitting ? 'Logging in...' : 'Log in'}
+          {submitting ? t('auth.loggingIn') : t('auth.logIn')}
         </button>
       </form>
     </AuthLayout>
