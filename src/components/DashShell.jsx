@@ -5,6 +5,7 @@ import { Icons } from './shared/icons.jsx';
 import { NotificationsBell } from './NotificationsBell.jsx';
 import { ThemeToggle } from './ThemeToggle.jsx';
 import { LanguageSwitcher } from './LanguageSwitcher.jsx';
+import { useT } from '../i18n/index.jsx';
 
 function initials(name = '') {
   const p = name.trim().split(/\s+/);
@@ -17,6 +18,7 @@ function initials(name = '') {
 export function DashShell({ items, active, onSelect, children, headerExtra }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const t = useT();
   // Track which menus have been opened so their count badge clears after a view.
   const [opened, setOpened] = useState(() => new Set([active]));
   const [menuOpen, setMenuOpen] = useState(false); // mobile drawer
@@ -74,7 +76,7 @@ export function DashShell({ items, active, onSelect, children, headerExtra }) {
           <button type="button" className="shell-menu-btn" aria-label="Open menu" onClick={() => setMenuOpen(true)}>{Icons.menu}</button>
           <label className="search">
             {Icons.search}
-            <input type="text" placeholder="Search…" aria-label="Search" />
+            <input type="text" placeholder={t('common.searchPlaceholder')} aria-label={t('common.search')} />
           </label>
           {headerExtra}
           <LanguageSwitcher />

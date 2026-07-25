@@ -135,18 +135,19 @@ function OverviewView({ user, bookings }) {
   const earned = bookings.filter((b) => b.status === 'completed').reduce((a, b) => a + amountOf(b), 0);
   const pending = bookings.filter((b) => !['completed', 'cancelled'].includes(b.status) && amountOf(b) > 0).length;
   const first = (user?.name || '').split(/\s+/)[0] || 'there';
+  const t = useT();
 
   return (
     <Analytics
-      title={`Good day, ${first}`}
-      subtitle="Your activity at a glance — keep jobs moving to build trust."
+      title={t('overview.greetingWorker', { name: first })}
+      subtitle={t('overview.subWorker')}
       kpis={[
-        { icon: Icons.calendar, value: active, label: 'Active jobs' },
-        { icon: Icons.checkCircle, value: completed, label: 'Completed' },
-        { icon: Icons.wallet, value: rwf(earned), label: 'Total earned' },
-        { icon: Icons.clock, value: pending, label: 'Pending payouts' },
+        { icon: Icons.calendar, value: active, label: t('overview.activeJobs') },
+        { icon: Icons.checkCircle, value: completed, label: t('overview.completed') },
+        { icon: Icons.wallet, value: rwf(earned), label: t('overview.totalEarned') },
+        { icon: Icons.clock, value: pending, label: t('overview.pendingPayouts') },
       ]}
-      chart={{ title: 'Earnings this week', note: 'Mon–Sun', data: weekEarnings(bookings), format: earnFmt }}
+      chart={{ title: t('overview.earningsWeek'), note: 'Mon–Sun', data: weekEarnings(bookings), format: earnFmt }}
       activity={bookingActivity(bookings, 'worker')}
     />
   );

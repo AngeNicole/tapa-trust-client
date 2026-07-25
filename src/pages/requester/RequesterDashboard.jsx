@@ -152,6 +152,7 @@ function OverviewView({ user, bookings }) {
   const completed = bookings.filter((b) => b.status === 'completed').length;
   const spent = bookings.filter((b) => b.status === 'completed').reduce((a, b) => a + amountOf(b), 0);
   const first = (user?.name || '').split(/\s+/)[0] || 'there';
+  const t = useT();
 
   const buckets = [
     { label: 'Pending', value: bookings.filter((b) => b.status === 'pending').length },
@@ -162,15 +163,15 @@ function OverviewView({ user, bookings }) {
 
   return (
     <Analytics
-      title={`Welcome, ${first}`}
-      subtitle="Your bookings at a glance — track every job through to done."
+      title={t('overview.greetingRequester', { name: first })}
+      subtitle={t('overview.subRequester')}
       kpis={[
-        { icon: Icons.calendar, value: bookings.length, label: 'Total bookings' },
-        { icon: Icons.clock, value: active, label: 'Active' },
-        { icon: Icons.checkCircle, value: completed, label: 'Completed' },
-        { icon: Icons.wallet, value: rwf(spent), label: 'Total spent' },
+        { icon: Icons.calendar, value: bookings.length, label: t('overview.totalBookings') },
+        { icon: Icons.clock, value: active, label: t('overview.active') },
+        { icon: Icons.checkCircle, value: completed, label: t('overview.completed') },
+        { icon: Icons.wallet, value: rwf(spent), label: t('overview.totalSpent') },
       ]}
-      chart={{ title: 'Bookings by stage', data: buckets, format: (v) => v }}
+      chart={{ title: t('overview.bookingsByStage'), data: buckets, format: (v) => v }}
       activity={bookingActivity(bookings, 'requester')}
     />
   );

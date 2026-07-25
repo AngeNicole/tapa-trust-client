@@ -1,4 +1,5 @@
 import { BarChart } from './Charts.jsx';
+import { useT } from '../../i18n/index.jsx';
 
 // A short human label for a booking's current stage (shared by the activity feed).
 export function stageLabel(b) {
@@ -45,6 +46,7 @@ export function KpiGrid({ kpis = [] }) {
 // Generic analytics/overview page: KPI tiles + a chart + a recent-activity feed.
 // Each dashboard computes its own numbers and passes them in.
 export function Analytics({ title = 'Dashboard', subtitle, kpis = [], chart, activity = [] }) {
+  const t = useT();
   return (
     <>
       <h1>{title}</h1>
@@ -61,13 +63,13 @@ export function Analytics({ title = 'Dashboard', subtitle, kpis = [], chart, act
             </div>
             {chart.data?.length
               ? <BarChart data={chart.data} format={chart.format} />
-              : <p className="meta">No data yet.</p>}
+              : <p className="meta">{t('overview.noData')}</p>}
           </div>
         )}
         <div className="card">
-          <div className="card-title" style={{ marginBottom: '0.5rem' }}>Recent activity</div>
+          <div className="card-title" style={{ marginBottom: '0.5rem' }}>{t('overview.recentActivity')}</div>
           {activity.length === 0 ? (
-            <p className="meta" style={{ marginTop: '0.5rem' }}>No activity yet.</p>
+            <p className="meta" style={{ marginTop: '0.5rem' }}>{t('overview.noActivity')}</p>
           ) : (
             <div className="activity">
               {activity.map((a, i) => (
