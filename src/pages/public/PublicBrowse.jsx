@@ -286,6 +286,8 @@ export default function PublicBrowse() {
           <div className="footer-col">
             <h4>Company</h4>
             <span className="meta" style={{ display: 'block', padding: '0.25rem 0' }}>Kigali, Rwanda</span>
+            <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/terms">Terms of Service</Link>
           </div>
         </div>
         <div className="footer-bottom">

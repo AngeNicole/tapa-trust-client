@@ -1,0 +1,58 @@
+/* Shared styling for the public legal pages (Privacy Policy, Terms of Service).
+   Theme-aware via the same design tokens the rest of the app uses, so these
+   pages read correctly in both light and dark. */
+.legal-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 3rem 1.25rem 5rem;
+}
+.legal-page h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  color: var(--color-text-strong-950, #0e121b);
+  margin-bottom: 0.4rem;
+}
+.legal-updated {
+  color: var(--color-text-sub-600, #6b7280);
+  font-size: 0.9rem;
+  margin-bottom: 1.75rem;
+}
+.legal-page h2 {
+  font-size: 1.2rem;
+  color: var(--color-text-strong-950, #0e121b);
+  margin: 2.25rem 0 0.6rem;
+}
+.legal-page p,
+.legal-page li {
+  line-height: 1.75;
+  color: var(--color-text-sub-600, #525866);
+}
+.legal-page p {
+  margin: 0.6rem 0;
+}
+.legal-page ul {
+  padding-left: 1.25rem;
+  margin: 0.5rem 0;
+}
+.legal-page li {
+  margin: 0.35rem 0;
+}
+.legal-page a {
+  color: var(--color-primary-base, #3559e9);
+  text-decoration: underline;
+}
+.legal-page strong {
+  color: var(--color-text-strong-950, #0e121b);
+}
+/* Highlighted callout for the demonstration / non-legal-advice notice. */
+.legal-note {
+  border-left: 3px solid var(--color-primary-base, #3559e9);
+  background: var(--color-bg-weak-50, #f5f7fa);
+  padding: 0.9rem 1.1rem;
+  border-radius: 8px;
+  margin: 1.25rem 0 0.5rem;
+}
+.legal-note p {
+  margin: 0;
+  font-size: 0.92rem;
+}

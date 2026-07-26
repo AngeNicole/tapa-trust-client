@@ -19,6 +19,8 @@ const loaders = {
   worker: () => import('./pages/worker/WorkerDashboard.jsx'),
   onboarding: () => import('./pages/worker/WorkerOnboarding.jsx'),
   admin: () => import('./pages/admin/AdminDashboard.jsx'),
+  privacy: () => import('./pages/PrivacyPolicy.jsx'),
+  terms: () => import('./pages/TermsOfService.jsx'),
 };
 const PublicBrowse = lazy(loaders.publicBrowse);
 const PublicWorkers = lazy(loaders.publicWorkers);
@@ -29,6 +31,8 @@ const RequesterDashboard = lazy(loaders.requester);
 const WorkerDashboard = lazy(loaders.worker);
 const WorkerOnboarding = lazy(loaders.onboarding);
 const AdminDashboard = lazy(loaders.admin);
+const PrivacyPolicy = lazy(loaders.privacy);
+const TermsOfService = lazy(loaders.terms);
 
 function NotFound() {
   return (
@@ -75,6 +79,8 @@ export default function AppRoutes() {
       <Route path="/" element={<PublicBrowse />} />
       <Route path="/workers" element={<PublicWorkers />} />
       <Route path="/workers/:id" element={<PublicWorkerProfile />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
       <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
       <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
 
