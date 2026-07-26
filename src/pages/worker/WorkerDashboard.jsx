@@ -100,16 +100,16 @@ export default function WorkerDashboard() {
       {showWelcome ? (
         <WelcomeGetStarted
           name={user?.name}
-          subtitle="Get verified, go available, and take bookings you get paid for — all in one place."
+          subtitle={t('welcome.wSub')}
           features={[
-            { icon: Icons.idCard, title: 'Get verified', desc: 'Complete verification to become Admin-Certified.' },
-            { icon: Icons.lightning, title: 'Go available', desc: 'Toggle availability so requesters can find and book you.' },
-            { icon: Icons.calendar, title: 'Take bookings', desc: 'Accept jobs, check in and out, and see them to completion.' },
-            { icon: Icons.wallet, title: 'Track earnings', desc: 'View your income and ratings, and export a PDF summary.' },
+            { icon: Icons.idCard, title: t('welcome.wF1t'), desc: t('welcome.wF1d') },
+            { icon: Icons.lightning, title: t('welcome.wF2t'), desc: t('welcome.wF2d') },
+            { icon: Icons.calendar, title: t('welcome.wF3t'), desc: t('welcome.wF3d') },
+            { icon: Icons.wallet, title: t('welcome.wF4t'), desc: t('welcome.wF4d') },
           ]}
           actions={[
-            { icon: Icons.idCard, title: 'Finish setup', desc: 'Complete verification so you appear in Browse and can take jobs.', cta: 'Get started', onClick: () => go('overview') },
-            { icon: Icons.calendar, title: 'My bookings', desc: "See and manage the jobs you've been booked for.", cta: 'View bookings', onClick: () => go('bookings') },
+            { icon: Icons.idCard, title: t('welcome.wA1t'), desc: t('welcome.wA1d'), cta: t('common.getStarted'), onClick: () => go('overview') },
+            { icon: Icons.calendar, title: t('welcome.wA2t'), desc: t('welcome.wA2d'), cta: t('welcome.viewBookings'), onClick: () => go('bookings') },
           ]}
           onSkip={() => go('overview')}
         />

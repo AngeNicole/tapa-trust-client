@@ -98,16 +98,16 @@ export default function RequesterDashboard() {
       {showWelcome ? (
         <WelcomeGetStarted
           name={user?.name}
-          subtitle="Book verified skilled workers you can trust — for your home, business, or personal projects."
+          subtitle={t('welcome.rSub')}
           features={[
-            { icon: Icons.search, title: 'Find verified workers', desc: 'Browse admin-verified workers with ratings and reviews.' },
-            { icon: Icons.scales, title: 'Agree a price', desc: 'Chat and lock in a price before the job is accepted.' },
-            { icon: Icons.shield, title: 'Escrow-protected pay', desc: 'Your money is held safely and released only when the job is done.' },
-            { icon: Icons.calendar, title: 'Track every job', desc: 'Follow each booking from check-in to completion.' },
+            { icon: Icons.search, title: t('welcome.rF1t'), desc: t('welcome.rF1d') },
+            { icon: Icons.scales, title: t('welcome.rF2t'), desc: t('welcome.rF2d') },
+            { icon: Icons.shield, title: t('welcome.rF3t'), desc: t('welcome.rF3d') },
+            { icon: Icons.calendar, title: t('welcome.rF4t'), desc: t('welcome.rF4d') },
           ]}
           actions={[
-            { icon: Icons.search, title: 'Browse workers', desc: 'Find and book skilled workers in your area.', cta: 'Get started', onClick: () => go('hire') },
-            { icon: Icons.calendar, title: 'My bookings', desc: "Track and manage the jobs you've booked.", cta: 'View bookings', onClick: () => go('bookings') },
+            { icon: Icons.search, title: t('welcome.rA1t'), desc: t('welcome.rA1d'), cta: t('common.getStarted'), onClick: () => go('hire') },
+            { icon: Icons.calendar, title: t('welcome.rA2t'), desc: t('welcome.rA2d'), cta: t('welcome.viewBookings'), onClick: () => go('bookings') },
           ]}
           onSkip={() => go('overview')}
         />
