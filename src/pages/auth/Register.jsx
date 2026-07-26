@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth, homePathForRole } from '../../context/AuthContext.jsx';
 import { resumeAfterAuth } from '../../api/pendingBooking.js';
 import PasswordInput from '../../components/PasswordInput.jsx';
@@ -37,6 +37,7 @@ export default function Register() {
   });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [agreed, setAgreed] = useState(false);
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -49,6 +50,7 @@ export default function Register() {
       return 'Password must be at least 8 characters and include an uppercase letter, a lowercase letter, a number, and a special character.';
     }
     if (!['requester', 'worker'].includes(form.role)) return 'Please choose a role.';
+    if (!agreed) return t('auth.agreeError');
     return '';
   }
 
@@ -147,9 +149,24 @@ export default function Register() {
           <span className="role-hint">{t('auth.passwordHint')}</span>
         </label>
 
+        <label style={{ flexDirection: 'row', alignItems: 'flex-start', gap: '0.5rem' }}>
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            style={{ width: 'auto', marginTop: '0.2rem', flex: '0 0 auto' }}
+          />
+          <span className="role-hint" style={{ margin: 0 }}>
+            {t('auth.agreePre')}
+            <Link to="/terms" target="_blank" rel="noopener noreferrer">{t('auth.termsLink')}</Link>
+            {t('auth.agreeAnd')}
+            <Link to="/privacy" target="_blank" rel="noopener noreferrer">{t('auth.privacyLink')}</Link>
+          </span>
+        </label>
+
         {error && <div className="form-error">{error}</div>}
 
-        <button className="btn-primary" type="submit" disabled={submitting}>
+        <button className="btn-primary" type="submit" disabled={submitting || !agreed}>
           {submitting ? t('auth.creating') : t('auth.createAccount')}
         </button>
       </form>
