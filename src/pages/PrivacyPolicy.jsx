@@ -4,10 +4,8 @@ import './LegalPage.css';
 
 // Contact address for privacy questions and data requests.
 const CONTACT_EMAIL = 'nicole.mukundwa@ist.com';
-// Region where the backend (and its PostgreSQL database) is hosted on Render.
-const HOSTING_REGION = 'Oregon, United States';
 
-const LAST_UPDATED = '26 July 2026';
+const LAST_UPDATED = '27 July 2026';
 
 export default function PrivacyPolicy() {
   return (
@@ -70,9 +68,9 @@ export default function PrivacyPolicy() {
 
         <h2>5. Data storage and hosting</h2>
         <p>
-          The application front end is hosted on Vercel. The back end and our PostgreSQL database
-          are hosted on Render in the <strong>{HOSTING_REGION}</strong> region. Your data may be
-          processed on servers located there.
+          The application front end is hosted on Vercel and the back end on Render. The PostgreSQL
+          database is hosted by Railway. Your data may be processed on servers operated by these
+          providers.
         </p>
 
         <h2>6. Cookies and local storage</h2>
